@@ -1,0 +1,5 @@
+__pycache__
+cifar10_models
+data
+trained-models
+*.zip
