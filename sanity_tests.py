@@ -16,7 +16,6 @@ def test_gradient_estimation(model, estimator_fn, images, *args, output_threshol
     standard_loss = torch.sum(standard_outputs ** 2)
     standard_gradients = torch.autograd.grad(standard_loss, images)[0]
 
-    #estimated_outputs = torch_estimation.BinomialSamplingEstimator_F.apply(images, model, 1e-4, 3000)
     estimated_outputs = estimator_fn.apply(images, model.forward, *args)
     estimated_loss = torch.sum(estimated_outputs ** 2)
     estimated_gradients = torch.autograd.grad(estimated_loss, images)[0]
