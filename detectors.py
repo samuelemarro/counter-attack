@@ -85,3 +85,21 @@ class NormalisedDetectorModel(torch.nn.Module):
         assert final_predictions.shape == (x.shape[0], predictions.shape[1] + 1)
 
         return final_predictions
+
+class DetectorPool(Detector):
+    def __init__(self, detectors, p):
+        super().__init__()
+        self.detectors = detectors
+        self.p = p
+
+    def forward(self, x):
+        detector_scores = torch.stack([detector(x) for detector in self.detectors])
+
+        assert detector_scores.shape == (len(self.detectors), len(x))
+
+        # Pick the highest for each element of the batch
+        highest_scores, _ = torch.max(detector_scores, 0)
+
+        assert highest_scores.shape == (len(x),)
+
+        return highest_scores

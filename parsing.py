@@ -8,6 +8,7 @@ import torch
 import torchvision
 
 import cifar10_models
+import detectors
 import torch_utils
 import utils
 
@@ -114,7 +115,7 @@ def get_attack(attack_name, domain, distance_metric, attack_type, model, attack_
                 attack = advertorch.attacks.FGM(model, **kwargs)
             elif attack_type == 'evasion':
                 # TODO: è solo un placeholder
-                attack = advertorch.attacks.FGM(model, **kwargs)
+                attack = advertorch.attacks.FGM(defended_model, **kwargs)
             else:
                 raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, distance_metric, attack_type))
         else:
@@ -134,6 +135,53 @@ def get_attack_pool(attack_names, domain, distance_metric, attack_type, model, a
 
         p = get_p(distance_metric)
         return custom_attacks.AttackPool(attacks, p)
+
+def get_detector(attack_name, domain, distance_metric, attack_type, model, attack_config, device, substitute_architecture=None, substitute_state_dict_path=None):
+    model.to(device)
+    p = get_p(distance_metric)
+
+    if substitute_architecture is not None:
+        assert substitute_state_dict_path is not None
+
+    attack = get_attack(attack_name, domain, distance_metric, attack_type, model, attack_config, defended_model=None)
+    detector = detectors.CounterAttackDetector(attack, p)
+
+    if substitute_architecture is not None:
+        substitute_detector = get_model(domain, substitute_architecture, substitute_state_dict_path, True, load_weights=True, as_detector=True)
+
+        # The substitute model returns a [batch_size, 1] matrix, while we need a [batch_size] vector
+        substitute_detector = torch.nn.Sequential(substitute_detector, torch_utils.Squeeze(1))
+        substitute_detector.to(device)
+
+        detector = advertorch.bpda.BPDAWrapper(detector, forwardsub=substitute_detector)
+
+    return detector
+
+# TODO: Controllare/Finire/Usare
+
+def get_detector_pool(attack_names, domain, distance_metric, attack_type, model, attack_config, device, substitute_architectures=None, substitute_state_dict_paths=None):
+    p = get_p(distance_metric)
+
+    if substitute_architectures is not None:
+        assert len(substitute_architectures) == len(attack_names)
+        assert len(substitute_state_dict_paths) == len(attack_names)
+    
+    detector_pool = []
+
+    for i in range(len(attack_names)):
+        substitute_architecture = None
+        substitute_state_dict_path = None
+        if substitute_architectures is not None:
+            substitute_architecture = substitute_architectures[i]
+            substitute_state_dict_path = substitute_state_dict_paths[i]
+
+        detector = get_detector(attack_names[i], domain, distance_metric, attack_type, model, attack_config, device, substitute_architecture=substitute_architecture, substitute_state_dict_path=substitute_state_dict_path)
+        detector_pool.append(detector)
+
+    if len(detector_pool) == 1:
+        return detector_pool[0]
+    else:
+        return detectors.DetectorPool(detector_pool, p)
 
 _distance_to_p = {'l2': 2, 'linf' : np.inf}
 

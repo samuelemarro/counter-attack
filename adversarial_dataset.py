@@ -79,7 +79,7 @@ class EvasionDataset(data.Dataset):
         # Detach and convert to CPU each adversarial example
         for attack_result in self.attack_results:
             for key, value in attack_result.items():
-                attack_result[key] = attack_result.detach().cpu()
+                attack_result[key] = value.detach().cpu()
 
         self.p = p
         self.generation_kwargs = generation_kwargs

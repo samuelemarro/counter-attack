@@ -208,8 +208,8 @@ def attack(**kwargs):
 @click.argument('evasion_attacks', callback=parsing.ParameterList(parsing.attacks))
 @click.argument('distance_metric', type=click.Choice(parsing.distances))
 @click.argument('threshold', type=float)
-@click.argument('substitute_architecture', type=click.Choice(parsing.architectures))
-@click.argument('substitute_state_dict_path', type=click.Path(exists=True, file_okay=True, dir_okay=False))
+@click.argument('substitute_architectures', callback=parsing.ParameterList(parsing.architectures))
+@click.argument('substitute_state_dict_paths', callback=parsing.ParameterList())
 @click.option('--state-dict-path', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None)
 @click.option('--batch-size', type=click.IntRange(1), default=50, show_default=True)
 @click.option('--device', default='cuda', show_default=True)
@@ -228,20 +228,33 @@ def evasion_test(**kwargs):
     dataloader = torch.utils.data.DataLoader(dataset, kwargs['batch_size'], shuffle=False)
 
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
+
     p = parsing.get_p(kwargs['distance_metric'])
 
-    counter_attack_pool = parsing.get_attack_pool(kwargs['counter_attacks'], kwargs['domain'], kwargs['distance_metric'], 'standard', model, attack_config)
+    counter_attack_names = kwargs['counter_attacks']
+    substitute_architectures = kwargs['substitute_architectures']
+    substitute_state_dict_paths = kwargs['substitute_state_dict_paths']
 
-    detector = detectors.CounterAttackDetector(counter_attack_pool, p)
+    if len(substitute_architectures) == 1:
+        substitute_architectures = len(counter_attack_names) * [substitute_architectures[0]]
 
-    substitute_detector = parsing.get_model(kwargs['domain'], kwargs['substitute_architecture'], kwargs['substitute_state_dict_path'], True, load_weights=True, as_detector=True)
+    if len(substitute_architectures) != len(counter_attack_names):
+        raise click.BadArgumentUsage('substitute_architectures must be either one value or as many values as the number of counter attacks.')
+
+    if len(substitute_state_dict_paths) != len(counter_attack_names):
+        raise click.BadArgumentUsage('substitute_state_dict_paths must be as many values as the number of counter attacks.')
+
+    detector = parsing.get_detector_pool(counter_attack_names,
+                                        kwargs['domain'],
+                                        kwargs['distance_metric'],
+                                        'standard',
+                                        model,
+                                        attack_config,
+                                        kwargs['device'],
+                                        substitute_architectures=substitute_architectures,
+                                        substitute_state_dict_paths=substitute_state_dict_paths)
+
     
-    # The substitute model returns a [batch_size, 1] matrix, while we need a [batch_size] vector
-    substitute_detector = torch.nn.Sequential(substitute_detector, torch_utils.Squeeze(1))
-
-    substitute_detector.to(kwargs['device'])
-    detector = advertorch.bpda.BPDAWrapper(detector, forwardsub=substitute_detector)
-
     defended_model = detectors.NormalisedDetectorModel(model, detector, kwargs['threshold'])
 
     evasion_pool = parsing.get_attack_pool(kwargs['evasion_attacks'], kwargs['domain'], kwargs['distance_metric'], 'evasion', model, attack_config, defended_model=defended_model)
@@ -260,6 +273,7 @@ def evasion_test(**kwargs):
     if kwargs['save_to'] is not None:
         utils.save_zip(adversarial_dataset, kwargs['save_to'])
 
+# Nota: In questo test, il threshold indica "se togli l'attacco corrispondente, quanto deve ottenere la detector pool per rifiutare?"
 
 @main.command()
 @click.argument('domain', type=click.Choice(parsing.domains))
@@ -308,24 +322,26 @@ def cross_validation(**kwargs):
         raise click.BadArgumentUsage('substitute_architectures must be either one value or as many values as the number of attacks.')
 
     if len(substitute_state_dict_paths) != len(attack_names):
-        raise click.BadArgumentUsage('substitute_state_dict_paths must have as many values as the number of attacks.')
+        raise click.BadArgumentUsage('substitute_state_dict_paths must be as many values as the number of attacks.')
 
     test_names = []
     evasion_attacks = []
     defended_models = []
 
-    for evasion_attack_name, threshold, substitute_architecture, substitute_state_dict_path in zip(attack_names, thresholds, substitute_architectures, substitute_state_dict_paths):
-        counter_attack_names = [x for x in attack_names if x != evasion_attack_name]
-        #print('Running Cross-Validation test on "{}" against {}.'.format(evasion_attack_name, counter_attack_names))
-        counter_attack_pool = parsing.get_attack_pool(counter_attack_names, kwargs['domain'], kwargs['distance_metric'], 'standard', model, attack_config)
+    for i in range(len(attack_names)):
+        # The counter attacks, their substitute architectures and their state dict paths
+        # are all the passed values except for the one that will act as an evasion attack
 
-        detector = detectors.CounterAttackDetector(counter_attack_pool, p)
+        evasion_attack_name = attack_names[i]
+        counter_attack_names = [x for j, x in enumerate(attack_names) if j != i]
 
-        substitute_detector = parsing.get_model(kwargs['domain'], substitute_architecture, substitute_state_dict_path, True, load_weights=True, as_detector=True)
-        substitute_detector = torch.nn.Sequential(substitute_detector, torch_utils.Squeeze(1))
+        ca_substitute_architectures = [x for j, x in enumerate(substitute_architectures) if j != i]
+        ca_substitute_state_dict_paths = [x for j, x in enumerate(substitute_state_dict_paths) if j != i]
 
-        substitute_detector.to(kwargs['device'])
-        detector = advertorch.bpda.BPDAWrapper(detector, forwardsub=substitute_detector)
+        threshold = thresholds[i]
+        
+        detector = parsing.get_detector_pool(counter_attack_names, kwargs['domain'], kwargs['distance_metric'], 'standard', model, attack_config, kwargs['device'],
+        substitute_architectures=ca_substitute_architectures, substitute_state_dict_paths=ca_substitute_state_dict_paths)
 
         defended_model = detectors.NormalisedDetectorModel(model, detector, threshold)
 
@@ -336,6 +352,8 @@ def cross_validation(**kwargs):
         test_names.append(test_name)
         evasion_attacks.append(evasion_attack)
         defended_models.append(defended_model)
+
+    logger.info('Tests:\n{}'.format('\n'.join(test_names)))
 
     evasion_dataset = tests.multiple_evasion_test(model, test_names, evasion_attacks, defended_models, dataloader, p, not kwargs['keep_misclassified'], kwargs['device'], kwargs, True)
 
@@ -354,10 +372,6 @@ def cross_validation(**kwargs):
 
     if kwargs['save_to'] is not None:
         utils.save_zip(evasion_dataset, kwargs['save_to'])
-
-# TODO: Servono meno modelli substitute del previsto (uno per attacco)
-# Oppure bisogna fare modelli substitute per ogni pool?
-# In ogni caso, il numero ora è sbagliato
 
 @main.command()
 @click.argument('domain', type=click.Choice(parsing.domains))
@@ -406,25 +420,16 @@ def attack_matrix(**kwargs):
         raise click.BadArgumentUsage('substitute_architectures must be either one value or as many values as the number of attacks.')
 
     if len(substitute_state_dict_paths) != len(attack_names):
-        raise click.BadArgumentUsage('substitute_state_dict_paths must have as many values as the number of attacks.')
+        raise click.BadArgumentUsage('substitute_state_dict_paths must be as many values as the number of attacks.')
 
     test_names = []
     evasion_attacks = []
     defended_models = []
 
-    # TODO: Controllare
-
-    for evasion_attack_name, threshold, substitute_architecture, substitute_state_dict_path in zip(attack_names, thresholds, substitute_architectures, substitute_state_dict_paths):
-        for counter_attack_name in attack_names:
-            counter_attack = parsing.get_attack(counter_attack_name, kwargs['domain'], kwargs['distance_metric'], 'standard', model, attack_config)
-
-            detector = detectors.CounterAttackDetector(counter_attack, p)
-
-            substitute_detector = parsing.get_model(kwargs['domain'], substitute_architecture, substitute_state_dict_path, True, load_weights=True, as_detector=True)
-            substitute_detector = torch.nn.Sequential(substitute_detector, torch_utils.Squeeze(1))
-
-            substitute_detector.to(kwargs['device'])
-            detector = advertorch.bpda.BPDAWrapper(detector, forwardsub=substitute_detector)
+    for evasion_attack_name in attack_names:
+        for counter_attack_name, ca_substitute_architecture, ca_substitute_state_dict_path, threshold in zip(attack_names, substitute_architectures, substitute_state_dict_paths, thresholds):
+            detector = parsing.get_detector(counter_attack_name, kwargs['domain'], kwargs['distance_metric'], 'standard', model, attack_config, kwargs['device'],
+            substitute_architecture=ca_substitute_architecture, substitute_state_dict_path=ca_substitute_state_dict_path)
 
             defended_model = detectors.NormalisedDetectorModel(model, detector, threshold)
 
@@ -437,6 +442,8 @@ def attack_matrix(**kwargs):
             defended_models.append(defended_model)
 
     evasion_dataset = tests.multiple_evasion_test(model, test_names, evasion_attacks, defended_models, dataloader, p, not kwargs['keep_misclassified'], kwargs['device'], kwargs, True)
+
+    logger.info('Tests:\n{}'.format('\n'.join(test_names)))
 
     for test_name in test_names:
         print('Test "{}":'.format(test_name))
