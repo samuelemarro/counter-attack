@@ -6,6 +6,8 @@ class Detector(torch.nn.Module):
     def __init__(self):
         super().__init__()
 
+    def forward(self, x):
+        raise NotImplementedError
 
 # TODO: Come si deve comportare CA in caso di fallimento???
 
@@ -21,8 +23,12 @@ class CounterAttackDetector(Detector):
             # Nota l'assenza di y=
             adversarials = self.attack.perturb(x)
         adversarials = adversarials.detach()
+
+        assert len(adversarials) == len(x)
         
         distances = utils.adversarial_distance(x, adversarials, self.p)
+
+        assert len(distances) == len(x)
 
         # Distanza alta = bassa probabilità che sia un adversarial
         return -distances
@@ -55,11 +61,24 @@ class StandardDetectorModel(torch.nn.Module):
 class NormalisedDetectorModel(torch.nn.Module):
     """
     Appends the detector score to each prediction,
-    adding a "rejected" class. It also performs
-    normalisation following https://arxiv.org/abs/1705.07263
+    adding a "rejected" class. The score is
+    normalised following https://arxiv.org/abs/1705.07263
     """
 
     def __init__(self, model, detector, threshold):
+        """Initialises the NormalisedDetectorModel
+        
+        Parameters
+        ----------
+        model : torch.nn.Module
+            The undefended classifier.
+        detector : torch.nn.Module
+            The detector.
+        threshold : float
+            If a score is above the threshold, the
+            corresponding sample is considered
+            rejected.
+        """
         super().__init__()
         self.model = model
         self.detector = detector

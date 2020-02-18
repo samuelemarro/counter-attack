@@ -5,7 +5,7 @@ import utils
 
 # TODO: Anche attack_configuration?
 class AdversarialDataset(data.Dataset):
-    def __init__(self, genuines, original_labels, adversarials, p, total_count, generation_kwargs):
+    def __init__(self, genuines, original_labels, adversarials, p, total_count, attack_configuration, generation_kwargs):
         assert len(genuines) == len(original_labels)
         assert len(genuines) == len(adversarials)
 
@@ -14,6 +14,7 @@ class AdversarialDataset(data.Dataset):
         self.adversarials = adversarials.detach().cpu()
         self.p = p
         self.total_count = total_count
+        self.attack_configuration = attack_configuration
         self.generation_kwargs = generation_kwargs
 
     @property
@@ -67,7 +68,7 @@ class AdversarialDistanceDataset(data.Dataset):
         return len(self.images)
 
 class EvasionDataset(data.Dataset):
-    def __init__(self, genuines, original_labels, test_names, attack_results, p, generation_kwargs):
+    def __init__(self, genuines, original_labels, test_names, attack_results, p, attack_configuration, generation_kwargs):
         assert len(genuines) == len(original_labels)
         assert len(genuines) == len(attack_results)
 
@@ -82,6 +83,7 @@ class EvasionDataset(data.Dataset):
                 attack_result[key] = value.detach().cpu()
 
         self.p = p
+        self.attack_configuration = attack_configuration
         self.generation_kwargs = generation_kwargs
 
     def __getitem__(self, idx):
@@ -117,5 +119,5 @@ class EvasionDataset(data.Dataset):
             adversarials = torch.zeros((0,) + self.genuines.shape[1:])
 
         
-        return AdversarialDataset(genuines, original_labels, adversarials, self.p, len(self.genuines), self.generation_kwargs)
+        return AdversarialDataset(genuines, original_labels, adversarials, self.p, len(self.genuines), self.attack_configuration, self.generation_kwargs)
 

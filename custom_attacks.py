@@ -3,13 +3,19 @@ import torch
 
 import numpy as np
 
-class RandomTargetAttackAgainstDetector:
+class RandomTargetEvasionAttack:
+    """Chooses a random label that is not the
+    original one.
+    """
     def __init__(self, classifier, attack_on_detector_classifier):
         self.classifier = classifier
         self.attack_on_detector_classifier = attack_on_detector_classifier
 
     def perturb(self, x, y=None, **kwargs):
         predictions = self.classifier(x)
+
+        assert len(predictions) == len(x)
+
         num_classes = predictions.shape[1]
 
         original_labels = torch.argmax(predictions, axis=-1)
@@ -31,7 +37,9 @@ class RandomTargetAttackAgainstDetector:
         return self.attack_on_detector_classifier.perturb(x, y=target_labels, **kwargs)
 
 
-class KBestTargetAttackAgainstDetector:
+class TopKEvasionAttack:
+    """Chooses the kth top predicted label (by default the 2nd).
+    """
     def __init__(self, classifier, attack_on_detector_classifier, k=2):
         self.classifier = classifier
         self.attack_on_detector_classifier = attack_on_detector_classifier
@@ -46,8 +54,6 @@ class KBestTargetAttackAgainstDetector:
 
         return self.attack_on_detector_classifier.perturb(x, y=target_labels, **kwargs)
 
-# Nota: Non è una sottoclasse di Attack perché dovrebbe prendere
-# un classificatore
 class AttackPool:
     def __init__(self, attacks, p):
         self.attacks = attacks
@@ -65,7 +71,6 @@ class AttackPool:
             # Bisogna prima appiattire affinché pairwise_distance calcoli correttamente
             # (original è singolo, pool_result è una batch)
             distances = torch.pairwise_distance(original.flatten(), pool_result.flatten(1), self.p)
-            #print(distances)
 
             assert distances.shape == (len(pool_result),)
 

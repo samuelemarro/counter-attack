@@ -1,13 +1,16 @@
 import gzip
 import json
+import logging
 import pathlib
 import pickle
 
 import torch
 
+logger = logging.getLogger(__name__)
+
 def save_zip(object, path, protocol=0):
     """
-    Saves a compressed object to disk
+    Saves a compressed object to disk.
     """
     # Create the folder, if necessary
     pathlib.Path(path).parent.mkdir(parents=True, exist_ok=True)
@@ -17,11 +20,9 @@ def save_zip(object, path, protocol=0):
     file.write(pickled)
     file.close()
 
-
-
 def load_zip(path):
     """
-    Loads a compressed object from disk
+    Loads a compressed object from disk.
     """
     file = gzip.GzipFile(path, 'rb')
     buffer = b""
@@ -34,8 +35,6 @@ def load_zip(path):
     file.close()
     return obj
 
-# TODO: Dare errore quando sovrascrive? Nah
-
 class AttackConfig:
     def __init__(self, config_dict):
         self.config_dict = config_dict
@@ -44,21 +43,21 @@ class AttackConfig:
 
         def load_kwargs(new_kwargs):
             for key, value in new_kwargs.items():
+                if key in kwargs.keys():
+                    logger.debug('Overriding value "{}" by replacing {} with {}.'.format(key, kwargs[key], value))
                 kwargs[key] = value
 
-        def loop_across_dict(current_dict, branch_order):
-            if len(branch_order) == 0:
+        def loop_across_dict(current_dict, ramifications):
+            if len(ramifications) == 0:
                 load_kwargs(current_dict)
             else:
-                current_branching = branch_order[0]
+                current_ramification = ramifications[0]
 
-                for branch in current_branching:
-                    # print('Checking {}'.format(branch))
+                for branch in current_ramification:
                     if branch in current_dict.keys():
-                        # print('Exploring {}'.format(branch))
-                        loop_across_dict(current_dict[branch], branch_order[1:])
+                        loop_across_dict(current_dict[branch], ramifications[1:])
 
-        # La variante specifica sovrascrive quella generale
+        # The specific value overrides the general one
         loop_across_dict(self.config_dict, 
         [
             ['all_attacks', attack_name],
@@ -111,6 +110,8 @@ def remove_misclassified(model, images, labels):
     """
     predictions = model(images)
     predicted_labels = torch.argmax(predictions, axis=-1)
+
+    assert predicted_labels.shape == labels.shape
     
     correct_label = torch.eq(predicted_labels, labels)
 
@@ -121,14 +122,14 @@ def check_success(model, images, labels, adversarials, has_detector):
     assert len(images) == len(labels)
 
     adversarial_predictions = model(adversarials)
-    adversarial_labels = torch.argmax(adversarial_predictions, axis=-1)
+    adversarial_labels = torch.argmax(adversarial_predictions, axis=1)
     
     assert adversarial_labels.shape == labels.shape
 
     successful = torch.logical_not(torch.eq(adversarial_labels, labels))
 
     if has_detector:
-        num_classes = adversarial_predictions.shape[-1]
+        num_classes = adversarial_predictions.shape[1]
         rejected = torch.eq(adversarial_labels, num_classes - 1)
         accepted = torch.logical_not(rejected)
 

@@ -11,11 +11,11 @@ class BatchLimitedModel(torch.nn.Module):
         self.batch_size = batch_size
 
     def forward(self, x):
-        nb_batches = int(np.ceil(x.shape[0] / float(self.batch_size)))
+        num_batches = int(np.ceil(x.shape[0] / float(self.batch_size)))
 
         outputs = []
 
-        for batch_id in range(nb_batches):
+        for batch_id in range(num_batches):
             batch_begin = batch_id * self.batch_size
             batch_end = (batch_id + 1) * self.batch_size
 
@@ -30,17 +30,17 @@ class BatchLimitedModel(torch.nn.Module):
         return outputs
 
 class Normalisation(torch.nn.Module):
-    def __init__(self, means, stdevs):
+    def __init__(self, mean, std):
         super().__init__()
-        self.means = torch.from_numpy(np.array(means).reshape((3, 1, 1)))
-        self.stdevs = torch.from_numpy(np.array(stdevs).reshape((3, 1, 1)))
+        self.mean = torch.from_numpy(np.array(mean).reshape((3, 1, 1)))
+        self.std = torch.from_numpy(np.array(std).reshape((3, 1, 1)))
 
     def forward(self, input):
-        means = self.means.to(input)
-        stdevs = self.stdevs.to(input)
-        return (input - means) / stdevs
+        mean = self.mean.to(input)
+        std = self.std.to(input)
+        return (input - mean) / std
 
-# Versione modulare di torch.squeeze()
+# Modular version of torch.squeeze()
 class Squeeze(torch.nn.Module):
     def __init__(self, dim=None):
         super().__init__()
@@ -52,14 +52,10 @@ class Squeeze(torch.nn.Module):
         else:
             return torch.squeeze(x, self.dim)
 
-def train(model, train_loader, optimiser, loss, max_epochs, val_loader=None, additional_metrics={}):
+def train(model, train_loader, optimiser, loss, max_epochs, device, val_loader=None, additional_metrics={}):
     metrics = additional_metrics
     if 'Loss' not in metrics.keys():
         metrics['Loss'] = Loss(loss)
-
-    device = 'cpu'
-    if torch.cuda.is_available():
-        device = 'cuda'
 
     trainer = create_supervised_trainer(model, optimiser, loss, device=device)
     evaluator = create_supervised_evaluator(model,

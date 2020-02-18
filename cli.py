@@ -78,7 +78,7 @@ def train_classifier(**kwargs):
     loss = torch.nn.CrossEntropyLoss()
     optimiser = parsing.get_optimiser(kwargs['optimiser'], model.parameters(), kwargs)
 
-    torch_utils.train(model, train_dataloader, optimiser, loss, kwargs['epochs'], val_loader=val_dataloader, additional_metrics=additional_metrics)
+    torch_utils.train(model, train_dataloader, optimiser, loss, kwargs['epochs'], kwargs['device'], val_loader=val_dataloader, additional_metrics=additional_metrics)
 
     save_path = kwargs['save_path']
     pathlib.Path(save_path).parent.mkdir(parents=True, exist_ok=True)
@@ -122,7 +122,7 @@ def train_approximator(**kwargs):
     loss = torch.nn.MSELoss()
     optimiser = parsing.get_optimiser(kwargs['optimiser'], model.parameters(), kwargs)
 
-    torch_utils.train(model, train_dataloader, optimiser, loss, kwargs['epochs'], val_loader=val_dataloader)
+    torch_utils.train(model, train_dataloader, optimiser, loss, kwargs['epochs'], kwargs['device'], val_loader=val_dataloader)
 
     save_path = kwargs['save_path']
     pathlib.Path(save_path).parent.mkdir(parents=True, exist_ok=True)
@@ -185,7 +185,7 @@ def attack(**kwargs):
 
     p = parsing.get_p(kwargs['distance_metric'])
     
-    adversarial_dataset = tests.attack_test(model, attack_pool, dataloader, p, not kwargs['keep_misclassified'], kwargs['device'], kwargs, False)
+    adversarial_dataset = tests.attack_test(model, attack_pool, dataloader, p, not kwargs['keep_misclassified'], kwargs['device'], attack_config, kwargs, False)
     distances = adversarial_dataset.distances.numpy()
 
     success_rate = adversarial_dataset.attack_success_rate
@@ -259,7 +259,7 @@ def evasion_test(**kwargs):
 
     evasion_pool = parsing.get_attack_pool(kwargs['evasion_attacks'], kwargs['domain'], kwargs['distance_metric'], 'evasion', model, attack_config, defended_model=defended_model)
 
-    adversarial_dataset = tests.attack_test(defended_model, evasion_pool, dataloader, p, not kwargs['keep_misclassified'], kwargs['device'], kwargs, True)
+    adversarial_dataset = tests.attack_test(defended_model, evasion_pool, dataloader, p, not kwargs['keep_misclassified'], kwargs['device'], attack_config, kwargs, True)
     distances = adversarial_dataset.distances.numpy()
 
     success_rate = adversarial_dataset.attack_success_rate
@@ -355,7 +355,7 @@ def cross_validation(**kwargs):
 
     logger.info('Tests:\n{}'.format('\n'.join(test_names)))
 
-    evasion_dataset = tests.multiple_evasion_test(model, test_names, evasion_attacks, defended_models, dataloader, p, not kwargs['keep_misclassified'], kwargs['device'], kwargs, True)
+    evasion_dataset = tests.multiple_evasion_test(model, test_names, evasion_attacks, defended_models, dataloader, p, not kwargs['keep_misclassified'], kwargs['device'], attack_config, kwargs, True)
 
     for test_name in test_names:
         print('Test "{}":'.format(test_name))
@@ -441,7 +441,7 @@ def attack_matrix(**kwargs):
             evasion_attacks.append(evasion_attack)
             defended_models.append(defended_model)
 
-    evasion_dataset = tests.multiple_evasion_test(model, test_names, evasion_attacks, defended_models, dataloader, p, not kwargs['keep_misclassified'], kwargs['device'], kwargs, True)
+    evasion_dataset = tests.multiple_evasion_test(model, test_names, evasion_attacks, defended_models, dataloader, p, not kwargs['keep_misclassified'], kwargs['device'], attack_config, kwargs, True)
 
     logger.info('Tests:\n{}'.format('\n'.join(test_names)))
 
