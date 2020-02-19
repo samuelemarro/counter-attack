@@ -86,11 +86,19 @@ def get_optimiser(optimiser_name, learnable_parameters, options):
 
     return optimiser
 
-def get_attack(attack_name, domain, distance_metric, attack_type, model, attack_config, defended_model=None):
-    kwargs = attack_config.get_arguments(attack_name, domain, distance_metric, attack_type)
+def get_attack(attack_name, domain, p, attack_type, model, attack_config, defended_model=None):
+    # Convert the float value to its standard name
+    if p == 2:
+        p = 'l2'
+    elif np.isposinf(p):
+        p = 'linf'
+    else:
+        raise NotImplementedError('Unsupported metric "l{}"'.format(p))
+
+    kwargs = attack_config.get_arguments(attack_name, domain, p, attack_type)
 
     logger.debug('Preparing attack {}, domain {}, distance metric {}, type {} with kwargs: {}'.format(
-        attack_name, domain, distance_metric, attack_type, kwargs 
+        attack_name, domain, p, attack_type, kwargs 
     ))
 
     if attack_type == 'evasion' and defended_model is None:
@@ -102,7 +110,7 @@ def get_attack(attack_name, domain, distance_metric, attack_type, model, attack_
         raise NotImplementedError('Unsupported domain "{}".'.format(domain))
 
     if attack_name == 'carlini':
-        if distance_metric == 'l2':
+        if p == 'l2':
             if attack_type == 'standard':
                 attack = advertorch.attacks.CarliniWagnerL2Attack(model, num_classes, **kwargs)
             elif attack_type == 'evasion':
@@ -110,44 +118,42 @@ def get_attack(attack_name, domain, distance_metric, attack_type, model, attack_
                 attack = advertorch.attacks.CarliniWagnerL2Attack(defended_model, num_classes + 1, **kwargs)
                 attack = custom_attacks.TopKEvasionAttack(model, attack)
             else:
-                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, distance_metric, attack_type))
+                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, p, attack_type))
         else:
-            raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, distance_metric))
+            raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, p))
     elif attack_name == 'fgm':
-        if distance_metric == 'l2':
+        if p == 'l2':
             if attack_type == 'standard':
                 attack = advertorch.attacks.FGM(model, **kwargs)
             elif attack_type == 'evasion':
                 # TODO: è solo un placeholder
                 attack = advertorch.attacks.FGM(defended_model, **kwargs)
             else:
-                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, distance_metric, attack_type))
+                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, p, attack_type))
         else:
-            raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, distance_metric))
+            raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, p))
     else:
         raise NotImplementedError('Unsupported attack "{}".'.format(attack_name))
 
     return attack
 
-def get_attack_pool(attack_names, domain, distance_metric, attack_type, model, attack_config, defended_model=None):
+def get_attack_pool(attack_names, domain, p, attack_type, model, attack_config, defended_model=None):
     attacks = []
     for attack_name in attack_names:
-        attacks.append(get_attack(attack_name, domain, distance_metric, attack_type, model, attack_config, defended_model=defended_model))
+        attacks.append(get_attack(attack_name, domain, p, attack_type, model, attack_config, defended_model=defended_model))
 
     if len(attacks) == 1:
         return attacks[1]
     else:
-        p = get_p(distance_metric)
         return custom_attacks.AttackPool(attacks, p)
 
-def get_detector(attack_name, domain, distance_metric, attack_type, model, attack_config, device, substitute_architecture=None, substitute_state_dict_path=None):
+def get_detector(attack_name, domain, p, attack_type, model, attack_config, device, substitute_architecture=None, substitute_state_dict_path=None):
     model.to(device)
-    p = get_p(distance_metric)
 
     if substitute_architecture is not None:
         assert substitute_state_dict_path is not None
 
-    attack = get_attack(attack_name, domain, distance_metric, attack_type, model, attack_config, defended_model=None)
+    attack = get_attack(attack_name, domain, p, attack_type, model, attack_config, defended_model=None)
     detector = detectors.CounterAttackDetector(attack, p)
 
     if substitute_architecture is not None:
@@ -162,9 +168,7 @@ def get_detector(attack_name, domain, distance_metric, attack_type, model, attac
 
     return detector
 
-def get_detector_pool(attack_names, domain, distance_metric, attack_type, model, attack_config, device, substitute_architectures=None, substitute_state_dict_paths=None):
-    p = get_p(distance_metric)
-
+def get_detector_pool(attack_names, domain, p, attack_type, model, attack_config, device, substitute_architectures=None, substitute_state_dict_paths=None):
     if substitute_architectures is not None:
         assert len(substitute_architectures) == len(attack_names)
         assert len(substitute_state_dict_paths) == len(attack_names)
@@ -178,7 +182,7 @@ def get_detector_pool(attack_names, domain, distance_metric, attack_type, model,
             substitute_architecture = substitute_architectures[i]
             substitute_state_dict_path = substitute_state_dict_paths[i]
 
-        detector = get_detector(attack_names[i], domain, distance_metric, attack_type, model, attack_config, device, substitute_architecture=substitute_architecture, substitute_state_dict_path=substitute_state_dict_path)
+        detector = get_detector(attack_names[i], domain, p, attack_type, model, attack_config, device, substitute_architecture=substitute_architecture, substitute_state_dict_path=substitute_state_dict_path)
         detector_pool.append(detector)
 
     if len(detector_pool) == 1:
@@ -188,13 +192,13 @@ def get_detector_pool(attack_names, domain, distance_metric, attack_type, model,
 
 _distance_to_p = {'l2': 2, 'linf' : np.inf}
 
-def get_p(distance_metric):
-    if distance_metric == 'l2':
+def validate_lp_distance(ctx, param, value):
+    if value == 'l2':
         return 2
-    elif distance_metric == 'linf':
+    elif value == 'linf':
         return np.inf
     else:
-        raise NotImplementedError('Unsupported distance metric "{}."'.format(distance_metric))
+        raise NotImplementedError('Unsupported distance metric "{}."'.format(value))
 
 class ParameterList:
     def __init__(self, allowed_values=None, cast_to=None):

@@ -38,7 +38,7 @@ def load_zip(path):
 class AttackConfig:
     def __init__(self, config_dict):
         self.config_dict = config_dict
-    def get_arguments(self, attack_name, domain, distance_metric, attack_type):
+    def get_arguments(self, attack_name, domain, p, attack_type):
         kwargs = {}
 
         def load_kwargs(new_kwargs):
@@ -62,7 +62,7 @@ class AttackConfig:
         [
             ['all_attacks', attack_name],
             ['all_domains', domain],
-            ['all_distances', distance_metric],
+            ['all_distances', p],
             ['all_types', attack_type]
         ]
         )

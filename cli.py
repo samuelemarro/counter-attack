@@ -162,7 +162,7 @@ def accuracy(**kwargs):
 @click.argument('architecture', type=click.Choice(parsing.architectures))
 @click.argument('dataset')
 @click.argument('attacks', callback=parsing.ParameterList(parsing.attacks))
-@click.argument('distance_metric', type=click.Choice(parsing.distances))
+@click.argument('p', type=click.Choice(parsing.distances), callback=parsing.validate_lp_distance)
 @click.option('--state-dict-path', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None)
 @click.option('--batch-size', type=click.IntRange(1), default=50, show_default=True)
 @click.option('--device', default='cuda', show_default=True)
@@ -181,9 +181,9 @@ def attack(**kwargs):
 
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
 
-    attack_pool = parsing.get_attack_pool(kwargs['attacks'], kwargs['domain'], kwargs['distance_metric'], 'standard', model, attack_config)
+    attack_pool = parsing.get_attack_pool(kwargs['attacks'], kwargs['domain'], kwargs['p'], 'standard', model, attack_config)
 
-    p = parsing.get_p(kwargs['distance_metric'])
+    p = kwargs['p']
     
     adversarial_dataset = tests.attack_test(model, attack_pool, dataloader, p, not kwargs['keep_misclassified'], kwargs['device'], attack_config, kwargs, False)
     distances = adversarial_dataset.distances.numpy()
@@ -206,7 +206,7 @@ def attack(**kwargs):
 @click.argument('dataset')
 @click.argument('counter_attacks', callback=parsing.ParameterList(parsing.attacks))
 @click.argument('evasion_attacks', callback=parsing.ParameterList(parsing.attacks))
-@click.argument('distance_metric', type=click.Choice(parsing.distances))
+@click.argument('p', type=click.Choice(parsing.distances), callback=parsing.validate_lp_distance)
 @click.argument('threshold', type=float)
 @click.argument('substitute_architectures', callback=parsing.ParameterList(parsing.architectures))
 @click.argument('substitute_state_dict_paths', callback=parsing.ParameterList())
@@ -229,7 +229,7 @@ def evasion_test(**kwargs):
 
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
 
-    p = parsing.get_p(kwargs['distance_metric'])
+    p = kwargs['p']
 
     counter_attack_names = kwargs['counter_attacks']
     substitute_architectures = kwargs['substitute_architectures']
@@ -246,7 +246,7 @@ def evasion_test(**kwargs):
 
     detector = parsing.get_detector_pool(counter_attack_names,
                                         kwargs['domain'],
-                                        kwargs['distance_metric'],
+                                        kwargs['p'],
                                         'standard',
                                         model,
                                         attack_config,
@@ -255,9 +255,9 @@ def evasion_test(**kwargs):
                                         substitute_state_dict_paths=substitute_state_dict_paths)
 
     
-    defended_model = detectors.NormalisedDetectorModel(model, detector, kwargs['threshold'])
+    defended_model = detectors.NormalisedDetectorModel(model, detector, -kwargs['threshold'])
 
-    evasion_pool = parsing.get_attack_pool(kwargs['evasion_attacks'], kwargs['domain'], kwargs['distance_metric'], 'evasion', model, attack_config, defended_model=defended_model)
+    evasion_pool = parsing.get_attack_pool(kwargs['evasion_attacks'], kwargs['domain'], kwargs['p'], 'evasion', model, attack_config, defended_model=defended_model)
 
     adversarial_dataset = tests.attack_test(defended_model, evasion_pool, dataloader, p, not kwargs['keep_misclassified'], kwargs['device'], attack_config, kwargs, True)
     distances = adversarial_dataset.distances.numpy()
@@ -280,7 +280,7 @@ def evasion_test(**kwargs):
 @click.argument('architecture', type=click.Choice(parsing.architectures))
 @click.argument('dataset')
 @click.argument('attacks', callback=parsing.ParameterList(parsing.attacks))
-@click.argument('distance_metric', type=click.Choice(parsing.distances))
+@click.argument('p', type=click.Choice(parsing.distances), callback=parsing.validate_lp_distance)
 @click.argument('thresholds', callback=parsing.ParameterList(cast_to=float))
 @click.argument('substitute_architectures', callback=parsing.ParameterList(parsing.architectures))
 @click.argument('substitute_state_dict_paths', callback=parsing.ParameterList())
@@ -302,7 +302,7 @@ def cross_validation(**kwargs):
     dataloader = torch.utils.data.DataLoader(dataset, kwargs['batch_size'], shuffle=False)
 
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
-    p = parsing.get_p(kwargs['distance_metric'])
+    p = kwargs['p']
 
     attack_names = kwargs['attacks']
     thresholds = kwargs['thresholds']
@@ -340,12 +340,12 @@ def cross_validation(**kwargs):
 
         threshold = thresholds[i]
         
-        detector = parsing.get_detector_pool(counter_attack_names, kwargs['domain'], kwargs['distance_metric'], 'standard', model, attack_config, kwargs['device'],
+        detector = parsing.get_detector_pool(counter_attack_names, kwargs['domain'], kwargs['p'], 'standard', model, attack_config, kwargs['device'],
         substitute_architectures=ca_substitute_architectures, substitute_state_dict_paths=ca_substitute_state_dict_paths)
 
-        defended_model = detectors.NormalisedDetectorModel(model, detector, threshold)
+        defended_model = detectors.NormalisedDetectorModel(model, detector, -threshold)
 
-        evasion_attack = parsing.get_attack(evasion_attack_name, kwargs['domain'], kwargs['distance_metric'], 'evasion', model, attack_config, defended_model=defended_model)
+        evasion_attack = parsing.get_attack(evasion_attack_name, kwargs['domain'], kwargs['p'], 'evasion', model, attack_config, defended_model=defended_model)
 
         test_name = '{} vs {}'.format(evasion_attack_name, counter_attack_names)
 
@@ -378,7 +378,7 @@ def cross_validation(**kwargs):
 @click.argument('architecture', type=click.Choice(parsing.architectures))
 @click.argument('dataset')
 @click.argument('attacks', callback=parsing.ParameterList(parsing.attacks))
-@click.argument('distance_metric', type=click.Choice(parsing.distances))
+@click.argument('p', type=click.Choice(parsing.distances), callback=parsing.validate_lp_distance)
 @click.argument('thresholds', callback=parsing.ParameterList(cast_to=float))
 @click.argument('substitute_architectures', callback=parsing.ParameterList(parsing.architectures))
 @click.argument('substitute_state_dict_paths', callback=parsing.ParameterList())
@@ -400,7 +400,7 @@ def attack_matrix(**kwargs):
     dataloader = torch.utils.data.DataLoader(dataset, kwargs['batch_size'], shuffle=False)
 
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
-    p = parsing.get_p(kwargs['distance_metric'])
+    p = kwargs['p']
 
     attack_names = kwargs['attacks']
     thresholds = kwargs['thresholds']
@@ -428,12 +428,12 @@ def attack_matrix(**kwargs):
 
     for evasion_attack_name in attack_names:
         for counter_attack_name, ca_substitute_architecture, ca_substitute_state_dict_path, threshold in zip(attack_names, substitute_architectures, substitute_state_dict_paths, thresholds):
-            detector = parsing.get_detector(counter_attack_name, kwargs['domain'], kwargs['distance_metric'], 'standard', model, attack_config, kwargs['device'],
+            detector = parsing.get_detector(counter_attack_name, kwargs['domain'], kwargs['p'], 'standard', model, attack_config, kwargs['device'],
             substitute_architecture=ca_substitute_architecture, substitute_state_dict_path=ca_substitute_state_dict_path)
 
-            defended_model = detectors.NormalisedDetectorModel(model, detector, threshold)
+            defended_model = detectors.NormalisedDetectorModel(model, detector, -threshold)
 
-            evasion_attack = parsing.get_attack(evasion_attack_name, kwargs['domain'], kwargs['distance_metric'], 'evasion', model, attack_config, defended_model=defended_model)
+            evasion_attack = parsing.get_attack(evasion_attack_name, kwargs['domain'], kwargs['p'], 'evasion', model, attack_config, defended_model=defended_model)
 
             test_name = '{} vs {}'.format(evasion_attack_name, counter_attack_name)
 
