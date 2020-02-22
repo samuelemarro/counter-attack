@@ -4,6 +4,9 @@ import logging
 import pathlib
 import pickle
 
+
+import matplotlib.pyplot as plt
+import numpy as np
 import torch
 
 logger = logging.getLogger(__name__)
@@ -145,3 +148,14 @@ def remove_failed(model, images, labels, adversarials, has_detector):
     successful = check_success(model, images, labels, adversarials, has_detector)
     
     return images[successful], labels[successful], adversarials[successful]
+
+def show_images(count, *results):
+    for _, line in zip(range(count), results):
+        length = len(line)
+
+        line = [np.moveaxis(image.cpu().numpy(), 1, 3) for image in line]
+
+        _, axarr = plt.subplots(1, length)
+        for i, image in enumerate(line):
+            axarr[0, i].imshow(image)
+        plt.show()

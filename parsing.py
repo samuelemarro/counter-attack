@@ -7,6 +7,7 @@ import numpy as np
 import torch
 import torchvision
 
+import advertorch_attacks
 import cifar10_models
 import detectors
 import torch_utils
@@ -119,6 +120,11 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
                 attack = custom_attacks.TopKEvasionAttack(model, attack)
             else:
                 raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, p, attack_type))
+        elif p == 'linf':
+            if attack_type == 'standard':
+                attack = advertorch_attacks.CarliniWagnerLInfAttack(model, num_classes, **kwargs)
+            else:
+                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, p, attack_type))
         else:
             raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, p))
     elif attack_name == 'fgm':
@@ -143,7 +149,7 @@ def get_attack_pool(attack_names, domain, p, attack_type, model, attack_config, 
         attacks.append(get_attack(attack_name, domain, p, attack_type, model, attack_config, defended_model=defended_model))
 
     if len(attacks) == 1:
-        return attacks[1]
+        return attacks[0]
     else:
         return custom_attacks.AttackPool(attacks, p)
 

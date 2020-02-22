@@ -128,7 +128,6 @@ def train_approximator(**kwargs):
     pathlib.Path(save_path).parent.mkdir(parents=True, exist_ok=True)
     torch.save(model.state_dict(), save_path)
 
-# TODO: Supporto per dataset avversariali
 @main.command()
 @click.argument('domain', type=click.Choice(parsing.domains))
 @click.argument('architecture', type=click.Choice(parsing.architectures))
@@ -169,6 +168,7 @@ def accuracy(**kwargs):
 @click.option('--attack-config-file', type=click.Path(exists=True, file_okay=True, dir_okay=False), default='default_attack_configuration.cfg', show_default=True)
 @click.option('--keep-misclassified', is_flag=True)
 @click.option('--save-to', type=click.Path(exists=False, file_okay=True, dir_okay=False))
+@click.option('--show', type=click.IntRange(0, None), default=0, show_default=True)
 def attack(**kwargs):
     if kwargs['state_dict_path'] is None:
         logger.info('No state dict path provided. Using pretrained model.')
@@ -198,6 +198,9 @@ def attack(**kwargs):
 
     if kwargs['save_to'] is not None:
         utils.save_zip(adversarial_dataset, kwargs['save_to'])
+
+    if kwargs['show'] > 0:
+        utils.show_images(kwargs['show'], adversarial_dataset.genuines, adversarial_dataset.adversarials)
 
 # Supporto per metrica diversa?
 @main.command()
