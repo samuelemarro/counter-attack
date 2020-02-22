@@ -84,3 +84,18 @@ def train(model, train_loader, optimiser, loss, max_epochs, device, val_loader=N
             print(output_string)
 
     trainer.run(train_loader, max_epochs=max_epochs)
+
+
+class FirstNDataset(torch.utils.data.Dataset):
+    def __init__(self, dataset, num_samples):
+        if num_samples < 1:
+            raise ValueError('num_samples must be at least 1.')
+
+        self.dataset = dataset
+        self.num_samples = num_samples
+
+    def __getitem__(self, idx):
+        return self.dataset[idx]
+
+    def __len__(self):
+        return self.num_samples

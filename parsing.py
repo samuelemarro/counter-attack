@@ -7,7 +7,7 @@ import numpy as np
 import torch
 import torchvision
 
-import advertorch_attacks
+import additional_attacks
 import cifar10_models
 import detectors
 import torch_utils
@@ -54,7 +54,7 @@ def get_model(domain, architecture, state_dict_path, apply_normalisation, load_w
 
     return model
 
-def get_dataset(domain, dataset, allow_standard=True):
+def get_dataset(domain, dataset, allow_standard=True, max_samples=None):
     matched_dataset = None
     transform = torchvision.transforms.ToTensor()
     
@@ -71,6 +71,9 @@ def get_dataset(domain, dataset, allow_standard=True):
             matched_dataset = utils.load_zip(dataset)
         except:
             raise RuntimeError('Could not find a standard dataset or a dataset file "{}".'.format(dataset))
+
+    if max_samples is not None:
+        matched_dataset = torch_utils.FirstNDataset(matched_dataset, max_samples)
 
     return matched_dataset
 
@@ -122,7 +125,7 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
                 raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, p, attack_type))
         elif p == 'linf':
             if attack_type == 'standard':
-                attack = advertorch_attacks.CarliniWagnerLInfAttack(model, num_classes, **kwargs)
+                attack = additional_attacks.carlini_linf.CarliniWagnerLInfAttack(model, num_classes, **kwargs)
             else:
                 raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, p, attack_type))
         else:

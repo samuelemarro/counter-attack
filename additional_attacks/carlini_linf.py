@@ -96,6 +96,8 @@ class CarliniWagnerLInfAttack(advertorch.attacks.Attack, advertorch.attacks.Labe
     def successful(self, adversarials, y):
         predicted_labels = torch.argmax(self.predict(adversarials), axis=1)
 
+        assert predicted_labels.shape == y.shape
+
         return ~torch.eq(predicted_labels, y)
     def run_attack(self, x, y, initial_const, tau):
         batch_size = len(x)
@@ -139,7 +141,7 @@ class CarliniWagnerLInfAttack(advertorch.attacks.Attack, advertorch.attacks.Labe
 
 
             const *= self.const_multiplier
-            print(const)
+            print('Const: {}'.format(const))
 
         return best_adversarials
 
@@ -160,7 +162,7 @@ class CarliniWagnerLInfAttack(advertorch.attacks.Attack, advertorch.attacks.Labe
         tau = 1
 
         while torch.any(active_samples) and tau >= self.min_tau:
-            print(tau)
+            print('Tau: {}'.format(tau))
             adversarials = self.run_attack(x[active_samples], y[active_samples], initial_const, tau)
 
             # TODO: CONTROLLARE

@@ -149,13 +149,34 @@ def remove_failed(model, images, labels, adversarials, has_detector):
     
     return images[successful], labels[successful], adversarials[successful]
 
-def show_images(count, *results):
-    for _, line in zip(range(count), results):
-        length = len(line)
+# TODO: Usarlo in altri posti?
+def get_labels(model, images):
+    return torch.argmax(model(images.to(model.device)), axis=1).to(images.device)
 
-        line = [np.moveaxis(image.cpu().numpy(), 1, 3) for image in line]
+def show_images(images, adversarials, model=None):
+    assert images.shape == adversarials.shape
 
-        _, axarr = plt.subplots(1, length)
-        for i, image in enumerate(line):
-            axarr[0, i].imshow(image)
+    if model is None:
+        labels = [None] * len(images)
+        adversarial_labels = [None] * len(images)
+    else:
+        labels = get_labels(model, images)
+        adversarial_labels = get_labels(model, adversarials)
+
+    for image, label, adversarial, adversarial_label in zip(images, labels, adversarials, adversarial_labels):
+        image_title = 'Original'
+        adversarial_title = 'Adversarial'
+
+        if model is not None:
+            image_title += ' (label: {})'.format(label)
+            adversarial_title += ' (label: {})'.format(adversarial_label)
+
+        image = np.moveaxis(image.cpu().numpy(), 0, 2)
+        adversarial = np.moveaxis(adversarial.cpu().numpy(), 0, 2)
+
+        _, axes = plt.subplots(1, 2, squeeze=False)
+        axes[0, 0].title(image_title)
+        axes[0, 0].imshow(image)
+        axes[0, 1].title(adversarial_title)
+        axes[0, 1].imshow(adversarial)
         plt.show()

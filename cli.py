@@ -155,6 +155,7 @@ def accuracy(**kwargs):
 
     print('Accuracy: {:.2f}%'.format(accuracy * 100.0))
 
+# TODO: Aggiungere show e max_samples agli altri comandi?
 
 @main.command()
 @click.argument('domain', type=click.Choice(parsing.domains))
@@ -168,7 +169,8 @@ def accuracy(**kwargs):
 @click.option('--attack-config-file', type=click.Path(exists=True, file_okay=True, dir_okay=False), default='default_attack_configuration.cfg', show_default=True)
 @click.option('--keep-misclassified', is_flag=True)
 @click.option('--save-to', type=click.Path(exists=False, file_okay=True, dir_okay=False))
-@click.option('--show', type=click.IntRange(0, None), default=0, show_default=True)
+@click.option('--show', type=click.IntRange(1, None), default=None)
+@click.option('--max-samples', type=click.IntRange(1, None), default=None)
 def attack(**kwargs):
     if kwargs['state_dict_path'] is None:
         logger.info('No state dict path provided. Using pretrained model.')
@@ -176,7 +178,7 @@ def attack(**kwargs):
     model = parsing.get_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'], True, load_weights=True)
     model.eval()
 
-    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'])
+    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], max_samples=kwargs['max_samples'])
     dataloader = torch.utils.data.DataLoader(dataset, kwargs['batch_size'], shuffle=False)
 
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
@@ -199,8 +201,13 @@ def attack(**kwargs):
     if kwargs['save_to'] is not None:
         utils.save_zip(adversarial_dataset, kwargs['save_to'])
 
-    if kwargs['show'] > 0:
-        utils.show_images(kwargs['show'], adversarial_dataset.genuines, adversarial_dataset.adversarials)
+    if kwargs['show'] is not None:
+        n_samples = kwargs['show']
+        print(adversarial_dataset.genuines.shape)
+        print(adversarial_dataset.adversarials.shape)
+        genuines = adversarial_dataset.genuines[:n_samples]
+        adversarials = adversarial_dataset.adversarials[:n_samples]
+        utils.show_images(genuines, adversarials, model=model)
 
 # Supporto per metrica diversa?
 @main.command()
