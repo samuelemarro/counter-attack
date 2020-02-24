@@ -3,7 +3,6 @@ import torch.utils.data as data
 
 import utils
 
-# TODO: Anche attack_configuration?
 class AdversarialDataset(data.Dataset):
     def __init__(self, genuines, original_labels, adversarials, p, total_count, attack_configuration, generation_kwargs):
         assert len(genuines) == len(original_labels)

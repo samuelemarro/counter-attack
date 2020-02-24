@@ -153,7 +153,11 @@ def remove_failed(model, images, labels, adversarials, has_detector):
 def get_labels(model, images):
     return torch.argmax(model(images.to(model.device)), axis=1).to(images.device)
 
-def show_images(images, adversarials, model=None):
+def show_images(images, adversarials, limit=None, model=None):
+    if limit is not None:
+        images = images[:limit]
+        adversarials = adversarials[:limit]
+
     assert images.shape == adversarials.shape
 
     if model is None:

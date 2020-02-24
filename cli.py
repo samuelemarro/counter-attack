@@ -84,7 +84,7 @@ def train_classifier(**kwargs):
     pathlib.Path(save_path).parent.mkdir(parents=True, exist_ok=True)
     torch.save(model.state_dict(), save_path)
 
-# TODO: Che dati usare per addestrare l'approssimatore?
+# TODO: Che dati (genuine, adversarial, random) usare per addestrare l'approssimatore?
 # TODO: Messaggi di errore più accurati se non passi --is-adversarial-dataset
 
 @main.command()
@@ -155,7 +155,7 @@ def accuracy(**kwargs):
 
     print('Accuracy: {:.2f}%'.format(accuracy * 100.0))
 
-# TODO: Aggiungere show e max_samples agli altri comandi?
+# TODO: Aggiungere show agli altri comandi?
 
 @main.command()
 @click.argument('domain', type=click.Choice(parsing.domains))
@@ -168,9 +168,9 @@ def accuracy(**kwargs):
 @click.option('--device', default='cuda', show_default=True)
 @click.option('--attack-config-file', type=click.Path(exists=True, file_okay=True, dir_okay=False), default='default_attack_configuration.cfg', show_default=True)
 @click.option('--keep-misclassified', is_flag=True)
+@click.option('--max-samples', type=click.IntRange(1, None), default=None)
 @click.option('--save-to', type=click.Path(exists=False, file_okay=True, dir_okay=False))
 @click.option('--show', type=click.IntRange(1, None), default=None)
-@click.option('--max-samples', type=click.IntRange(1, None), default=None)
 def attack(**kwargs):
     if kwargs['state_dict_path'] is None:
         logger.info('No state dict path provided. Using pretrained model.')
@@ -202,12 +202,11 @@ def attack(**kwargs):
         utils.save_zip(adversarial_dataset, kwargs['save_to'])
 
     if kwargs['show'] is not None:
-        n_samples = kwargs['show']
         print(adversarial_dataset.genuines.shape)
         print(adversarial_dataset.adversarials.shape)
-        genuines = adversarial_dataset.genuines[:n_samples]
-        adversarials = adversarial_dataset.adversarials[:n_samples]
-        utils.show_images(genuines, adversarials, model=model)
+        utils.show_images(adversarial_dataset.genuines, adversarial_dataset.adversarials, limit=kwargs['show'], model=model)
+
+# TODO: Far passare un threshold negativo (al momento è positivo ma invertito), con avviso se lo passi positivo?
 
 # Supporto per metrica diversa?
 @main.command()
@@ -225,6 +224,7 @@ def attack(**kwargs):
 @click.option('--device', default='cuda', show_default=True)
 @click.option('--attack-config-file', type=click.Path(exists=True, file_okay=True, dir_okay=False), default='default_attack_configuration.cfg', show_default=True)
 @click.option('--keep-misclassified', is_flag=True)
+@click.option('--max-samples', type=click.IntRange(1, None), default=None)
 @click.option('--save-to', type=click.Path(exists=False, file_okay=True, dir_okay=False))
 def evasion_test(**kwargs):
     if kwargs['state_dict_path'] is None:
@@ -234,7 +234,7 @@ def evasion_test(**kwargs):
     model.eval()
     model.to(kwargs['device'])
 
-    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'])
+    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], max_samples=kwargs['max_samples'])
     dataloader = torch.utils.data.DataLoader(dataset, kwargs['batch_size'], shuffle=False)
 
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
@@ -299,6 +299,7 @@ def evasion_test(**kwargs):
 @click.option('--device', default='cuda', show_default=True)
 @click.option('--attack-config-file', type=click.Path(exists=True, file_okay=True, dir_okay=False), default='default_attack_configuration.cfg', show_default=True)
 @click.option('--keep-misclassified', is_flag=True)
+@click.option('--max-samples', type=click.IntRange(1, None), default=None)
 @click.option('--save-to', type=click.Path(exists=False, file_okay=True, dir_okay=False))
 def cross_validation(**kwargs):
     if kwargs['state_dict_path'] is None:
@@ -308,7 +309,7 @@ def cross_validation(**kwargs):
     model.eval()
     model.to(kwargs['device'])
 
-    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'])
+    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], max_samples=kwargs['max_samples'])
     dataloader = torch.utils.data.DataLoader(dataset, kwargs['batch_size'], shuffle=False)
 
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
@@ -397,6 +398,7 @@ def cross_validation(**kwargs):
 @click.option('--device', default='cuda', show_default=True)
 @click.option('--attack-config-file', type=click.Path(exists=True, file_okay=True, dir_okay=False), default='default_attack_configuration.cfg', show_default=True)
 @click.option('--keep-misclassified', is_flag=True)
+@click.option('--max-samples', type=click.IntRange(1, None), default=None)
 @click.option('--save-to', type=click.Path(exists=False, file_okay=True, dir_okay=False))
 def attack_matrix(**kwargs):
     if kwargs['state_dict_path'] is None:
@@ -406,7 +408,7 @@ def attack_matrix(**kwargs):
     model.eval()
     model.to(kwargs['device'])
 
-    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'])
+    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], max_samples=kwargs['max_samples'])
     dataloader = torch.utils.data.DataLoader(dataset, kwargs['batch_size'], shuffle=False)
 
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])

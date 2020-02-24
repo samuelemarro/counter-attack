@@ -180,7 +180,7 @@ class L2DeepFoolAttack(DeepFoolAttack):
         )
 
 
-class LinfDeepFoolAttack(DeepFoolAttack):
+class LInfDeepFoolAttack(DeepFoolAttack):
     """A simple and fast gradient-based adversarial attack.
 
         Implements the `DeepFool`_ L-Infinity attack.
