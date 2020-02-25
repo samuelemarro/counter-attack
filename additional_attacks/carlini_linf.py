@@ -15,29 +15,9 @@ The main differences between LInf and L2 are:
 - If delta_i < tau for all i, we multiply tau by tau_multiplier, otherwise we terminate
 """
 
-
-# L'attacco è nel TanH space
-# Usi arctanh per andare nel Tanh space, tanh per tornare nello spazio normale
-#anche abs(delta_i) si riferisce a delta_i nello spazio TanH
-
 CARLINI_COEFF_UPPER = 1e10
 TARGET_MULT = 10000.0
 EPS = 1e-6
-
-# IMPORTANTE: min_tau è la minima distanza restituita da CW
-# Questo significa che la distanza minima di default sarà 1/256 (cioè 3.9 * 10^-3)
-
-
-# Const viene modificata in due momenti:
-# Nel loop "inner" (in cui si cerca la più piccola const che fa aver successo),
-# si parte da una const iniziale che se fallisce viene moltiplicata per
-# const_factor (solitamente 2)
-# Nel loop "outer" si passa al loop inner la const. La const iniziale è 1e-5, e se
-# reduce_const è attivo ogni volta che il loop inner ha successo la const iniziale viene dimezzata
-
-# Il loop outer si ferma non appena il loop inner fallisce
-
-# L'inner loop usa moltiplicazione standard per trovare const, non binary search
 
 # TODO: Non sto usando il clipping (ha utilizzi nel rescale)
 
@@ -108,7 +88,7 @@ class CarliniWagnerLInfAttack(advertorch.attacks.Attack, advertorch.attacks.Labe
     def run_attack(self, x, y, initial_const, tau):
         batch_size = len(x)
         best_adversarials = x.clone().detach()
-        #print(x.cpu().detach().numpy())
+        
         active_samples = torch.ones((batch_size,), dtype=torch.bool, device=x.device)
 
         ws = torch.nn.Parameter(torch.zeros_like(x))

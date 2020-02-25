@@ -24,6 +24,8 @@ def accuracy(model, loader, device):
 
     return correct_count / total_count
 
+# TODO: REMOVE_MISCLASSIFIED RIMUOVE I GENUINI RIFIUTATI
+
 def attack_test(model, attack, loader, p, remove_misclassified, device, generation_kwargs, attack_configuration, has_detector):
     model.to(device)
 

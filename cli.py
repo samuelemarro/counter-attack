@@ -206,8 +206,6 @@ def attack(**kwargs):
         print(adversarial_dataset.adversarials.shape)
         utils.show_images(adversarial_dataset.genuines, adversarial_dataset.adversarials, limit=kwargs['show'], model=model)
 
-# TODO: Far passare un threshold negativo (al momento è positivo ma invertito), con avviso se lo passi positivo?
-
 # Supporto per metrica diversa?
 @main.command()
 @click.argument('domain', type=click.Choice(parsing.domains))
@@ -216,7 +214,7 @@ def attack(**kwargs):
 @click.argument('counter_attacks', callback=parsing.ParameterList(parsing.attacks))
 @click.argument('evasion_attacks', callback=parsing.ParameterList(parsing.attacks))
 @click.argument('p', type=click.Choice(parsing.distances), callback=parsing.validate_lp_distance)
-@click.argument('threshold', type=float)
+@click.argument('rejection_threshold', type=float)
 @click.argument('substitute_architectures', callback=parsing.ParameterList(parsing.architectures))
 @click.argument('substitute_state_dict_paths', callback=parsing.ParameterList())
 @click.option('--state-dict-path', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None)
@@ -245,6 +243,10 @@ def evasion_test(**kwargs):
     substitute_architectures = kwargs['substitute_architectures']
     substitute_state_dict_paths = kwargs['substitute_state_dict_paths']
 
+    if kwargs['rejection_threshold'] >= 0:
+        logger.warn('You are using a positive rejection rejection_threshold. Since Counter-Attack only outputs nonpositive values, '
+        'the detector will never reject an example.')
+
     if len(substitute_architectures) == 1:
         substitute_architectures = len(counter_attack_names) * [substitute_architectures[0]]
 
@@ -265,7 +267,7 @@ def evasion_test(**kwargs):
                                         substitute_state_dict_paths=substitute_state_dict_paths)
 
     
-    defended_model = detectors.NormalisedDetectorModel(model, detector, -kwargs['threshold'])
+    defended_model = detectors.NormalisedDetectorModel(model, detector, kwargs['rejection_threshold'])
 
     evasion_pool = parsing.get_attack_pool(kwargs['evasion_attacks'], kwargs['domain'], kwargs['p'], 'evasion', model, attack_config, defended_model=defended_model)
 
@@ -283,7 +285,7 @@ def evasion_test(**kwargs):
     if kwargs['save_to'] is not None:
         utils.save_zip(adversarial_dataset, kwargs['save_to'])
 
-# Nota: In questo test, il threshold indica "se togli l'attacco corrispondente, quanto deve ottenere la detector pool per rifiutare?"
+# Nota: In questo test, il rejection_threshold indica "se togli l'attacco corrispondente, quanto deve ottenere la detector pool per rifiutare?"
 
 @main.command()
 @click.argument('domain', type=click.Choice(parsing.domains))
@@ -291,7 +293,7 @@ def evasion_test(**kwargs):
 @click.argument('dataset')
 @click.argument('attacks', callback=parsing.ParameterList(parsing.attacks))
 @click.argument('p', type=click.Choice(parsing.distances), callback=parsing.validate_lp_distance)
-@click.argument('thresholds', callback=parsing.ParameterList(cast_to=float))
+@click.argument('rejection_thresholds', callback=parsing.ParameterList(cast_to=float))
 @click.argument('substitute_architectures', callback=parsing.ParameterList(parsing.architectures))
 @click.argument('substitute_state_dict_paths', callback=parsing.ParameterList())
 @click.option('--state-dict-path', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None)
@@ -316,24 +318,28 @@ def cross_validation(**kwargs):
     p = kwargs['p']
 
     attack_names = kwargs['attacks']
-    thresholds = kwargs['thresholds']
+    rejection_thresholds = kwargs['rejection_thresholds']
     substitute_architectures = kwargs['substitute_architectures']
     substitute_state_dict_paths = kwargs['substitute_state_dict_paths']
 
-    if len(thresholds) == 1:
-        thresholds = len(attack_names) * [thresholds[0]]
+    if len(rejection_thresholds) == 1:
+        rejection_thresholds = len(attack_names) * [rejection_thresholds[0]]
 
     if len(substitute_architectures) == 1:
         substitute_architectures = len(attack_names) * [substitute_architectures[0]]
 
-    if len(thresholds) != len(attack_names):
-        raise click.BadArgumentUsage('thresholds must be either one value or as many values as the number of attacks.')
+    if len(rejection_thresholds) != len(attack_names):
+        raise click.BadArgumentUsage('rejection_thresholds must be either one value or as many values as the number of attacks.')
 
     if len(substitute_architectures) != len(attack_names):
         raise click.BadArgumentUsage('substitute_architectures must be either one value or as many values as the number of attacks.')
 
     if len(substitute_state_dict_paths) != len(attack_names):
         raise click.BadArgumentUsage('substitute_state_dict_paths must be as many values as the number of attacks.')
+
+    if any(rejection_threshold >= 0 for rejection_threshold in rejection_thresholds):
+        logger.warn('You are using a positive rejection rejection_threshold. Since Counter-Attack only outputs nonpositive values, '
+        'the detector will never reject an example.')
 
     test_names = []
     evasion_attacks = []
@@ -349,12 +355,12 @@ def cross_validation(**kwargs):
         ca_substitute_architectures = [x for j, x in enumerate(substitute_architectures) if j != i]
         ca_substitute_state_dict_paths = [x for j, x in enumerate(substitute_state_dict_paths) if j != i]
 
-        threshold = thresholds[i]
+        rejection_threshold = rejection_thresholds[i]
         
         detector = parsing.get_detector_pool(counter_attack_names, kwargs['domain'], kwargs['p'], 'standard', model, attack_config, kwargs['device'],
         substitute_architectures=ca_substitute_architectures, substitute_state_dict_paths=ca_substitute_state_dict_paths)
 
-        defended_model = detectors.NormalisedDetectorModel(model, detector, -threshold)
+        defended_model = detectors.NormalisedDetectorModel(model, detector, rejection_threshold)
 
         evasion_attack = parsing.get_attack(evasion_attack_name, kwargs['domain'], kwargs['p'], 'evasion', model, attack_config, defended_model=defended_model)
 
@@ -390,7 +396,7 @@ def cross_validation(**kwargs):
 @click.argument('dataset')
 @click.argument('attacks', callback=parsing.ParameterList(parsing.attacks))
 @click.argument('p', type=click.Choice(parsing.distances), callback=parsing.validate_lp_distance)
-@click.argument('thresholds', callback=parsing.ParameterList(cast_to=float))
+@click.argument('rejection_thresholds', callback=parsing.ParameterList(cast_to=float))
 @click.argument('substitute_architectures', callback=parsing.ParameterList(parsing.architectures))
 @click.argument('substitute_state_dict_paths', callback=parsing.ParameterList())
 @click.option('--state-dict-path', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None)
@@ -415,18 +421,18 @@ def attack_matrix(**kwargs):
     p = kwargs['p']
 
     attack_names = kwargs['attacks']
-    thresholds = kwargs['thresholds']
+    rejection_thresholds = kwargs['rejection_thresholds']
     substitute_architectures = kwargs['substitute_architectures']
     substitute_state_dict_paths = kwargs['substitute_state_dict_paths']
 
-    if len(thresholds) == 1:
-        thresholds = len(attack_names) * [thresholds[0]]
+    if len(rejection_thresholds) == 1:
+        rejection_thresholds = len(attack_names) * [rejection_thresholds[0]]
 
     if len(substitute_architectures) == 1:
         substitute_architectures = len(attack_names) * [substitute_architectures[0]]
 
-    if len(thresholds) != len(attack_names):
-        raise click.BadArgumentUsage('thresholds must be either one value or as many values as the number of attacks.')
+    if len(rejection_thresholds) != len(attack_names):
+        raise click.BadArgumentUsage('rejection_thresholds must be either one value or as many values as the number of attacks.')
 
     if len(substitute_architectures) != len(attack_names):
         raise click.BadArgumentUsage('substitute_architectures must be either one value or as many values as the number of attacks.')
@@ -434,16 +440,20 @@ def attack_matrix(**kwargs):
     if len(substitute_state_dict_paths) != len(attack_names):
         raise click.BadArgumentUsage('substitute_state_dict_paths must be as many values as the number of attacks.')
 
+    if any(rejection_threshold >= 0 for rejection_threshold in rejection_thresholds):
+        logger.warn('You are using a positive rejection rejection_threshold. Since Counter-Attack only outputs nonpositive values, '
+        'the detector will never reject an example.')
+
     test_names = []
     evasion_attacks = []
     defended_models = []
 
     for evasion_attack_name in attack_names:
-        for counter_attack_name, ca_substitute_architecture, ca_substitute_state_dict_path, threshold in zip(attack_names, substitute_architectures, substitute_state_dict_paths, thresholds):
+        for counter_attack_name, ca_substitute_architecture, ca_substitute_state_dict_path, rejection_threshold in zip(attack_names, substitute_architectures, substitute_state_dict_paths, rejection_thresholds):
             detector = parsing.get_detector(counter_attack_name, kwargs['domain'], kwargs['p'], 'standard', model, attack_config, kwargs['device'],
             substitute_architecture=ca_substitute_architecture, substitute_state_dict_path=ca_substitute_state_dict_path)
 
-            defended_model = detectors.NormalisedDetectorModel(model, detector, -threshold)
+            defended_model = detectors.NormalisedDetectorModel(model, detector, rejection_threshold)
 
             evasion_attack = parsing.get_attack(evasion_attack_name, kwargs['domain'], kwargs['p'], 'evasion', model, attack_config, defended_model=defended_model)
 

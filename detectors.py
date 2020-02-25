@@ -93,7 +93,7 @@ class NormalisedDetectorModel(torch.nn.Module):
         # Accetta (positivo) se sono maggiori del threshold
         scores = scores - self.threshold
 
-        # Scala
+        # Scale the output
         prediction_max = predictions.max(1).values
         scores = (scores + 1) * prediction_max
         scores = scores.unsqueeze(1)

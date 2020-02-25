@@ -82,7 +82,6 @@ class DeepFoolAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         N = len(x)
         rows = range(N)
 
-        x0 = x
         adversarials = x.clone().detach()
 
         p_total = torch.zeros_like(x)
@@ -91,17 +90,16 @@ class DeepFoolAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             if is_adv.all():
                 break
 
-            # TODO: Perché serve il detach?
-            x_copy = adversarials.detach().clone()
-            x_copy.requires_grad = True
+            adv_copy = adversarials.detach().clone()
+            adv_copy.requires_grad = True
 
-            losses = [self.loss(x_copy, classes, k) for k in range(1, candidates)]
+            losses = [self.loss(adv_copy, classes, k) for k in range(1, candidates)]
 
-            grads = torch.stack([torch.autograd.grad(loss, x_copy, torch.ones_like(loss))[0] for loss in losses], axis=1)
+            grads = torch.stack([torch.autograd.grad(loss, adv_copy, torch.ones_like(loss))[0] for loss in losses], axis=1)
             losses = torch.stack(losses, axis=1)
             
             assert losses.shape == (N, candidates - 1)
-            assert grads.shape == (N, candidates - 1) + x0.shape[1:]
+            assert grads.shape == (N, candidates - 1) + x.shape[1:]
 
             # Calculate the distances
             distances = self.get_distances(losses, grads)
@@ -114,18 +112,18 @@ class DeepFoolAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             grads = grads[rows, best]
             assert distances.shape == (N,)
             assert losses.shape == (N,)
-            assert grads.shape == x0.shape
+            assert grads.shape == x.shape
 
             # Apply perturbation
             distances = distances + 1e-4  # For numerical stability
             p_step = self.get_perturbations(distances, grads)
-            assert p_step.shape == x0.shape
+            assert p_step.shape == x.shape
 
             p_total += p_step
 
             # Don't do anything for those that are already adversarial
             adversarials = torch.where(
-                atleast_kd(is_adv, adversarials.ndim), adversarials, x0 + (1.0 + self.overshoot) * p_total
+                atleast_kd(is_adv, adversarials.ndim), adversarials, x + (1.0 + self.overshoot) * p_total
             )
 
             adversarials = torch.clamp(adversarials, self.clip_min, self.clip_max)

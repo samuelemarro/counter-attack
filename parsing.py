@@ -166,14 +166,33 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
         else:
             raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, p))
     elif attack_name == 'pgd':
+        binary_search = 'enable_binary_search' in kwargs and kwargs['enable_binary_search']
+        
+        kwargs.pop('enable_binary_search', None)
+
+        if binary_search:
+            # Remove standard arguments
+            kwargs.pop('eps', None)
+        else:
+            # Remove binary search arguments
+            kwargs.pop('min_eps', None)
+            kwargs.pop('max_eps', None)
+            kwargs.pop('binary_search_steps', None)
+
         if p == 'l2':
             if attack_type == 'standard':
-                attack = advertorch.attacks.L2PGDAttack(model, **kwargs)
+                if binary_search:
+                    attack = custom_attacks.PGDBinarySearch(model, 2, **kwargs)
+                else:
+                    attack = advertorch.attacks.L2PGDAttack(model, **kwargs)
             else:
                 raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, p, attack_type))
         elif p == 'linf':
             if attack_type == 'standard':
-                attack = advertorch.attacks.LinfPGDAttack(model, **kwargs)
+                if binary_search:
+                    attack = custom_attacks.PGDBinarySearch(model, np.inf, **kwargs)
+                else:
+                    attack = advertorch.attacks.LinfPGDAttack(model, **kwargs)
             else:
                 raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, p, attack_type))
         else:
