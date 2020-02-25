@@ -187,7 +187,7 @@ def attack(**kwargs):
 
     p = kwargs['p']
     
-    adversarial_dataset = tests.attack_test(model, attack_pool, dataloader, p, not kwargs['keep_misclassified'], kwargs['device'], attack_config, kwargs, False)
+    adversarial_dataset = tests.attack_test(model, attack_pool, dataloader, p, not kwargs['keep_misclassified'], kwargs['device'], attack_config, kwargs, None)
     distances = adversarial_dataset.distances.numpy()
 
     success_rate = adversarial_dataset.attack_success_rate
@@ -202,8 +202,6 @@ def attack(**kwargs):
         utils.save_zip(adversarial_dataset, kwargs['save_to'])
 
     if kwargs['show'] is not None:
-        print(adversarial_dataset.genuines.shape)
-        print(adversarial_dataset.adversarials.shape)
         utils.show_images(adversarial_dataset.genuines, adversarial_dataset.adversarials, limit=kwargs['show'], model=model)
 
 # Supporto per metrica diversa?
@@ -271,7 +269,7 @@ def evasion_test(**kwargs):
 
     evasion_pool = parsing.get_attack_pool(kwargs['evasion_attacks'], kwargs['domain'], kwargs['p'], 'evasion', model, attack_config, defended_model=defended_model)
 
-    adversarial_dataset = tests.attack_test(defended_model, evasion_pool, dataloader, p, not kwargs['keep_misclassified'], kwargs['device'], attack_config, kwargs, True)
+    adversarial_dataset = tests.attack_test(model, evasion_pool, dataloader, p, not kwargs['keep_misclassified'], kwargs['device'], attack_config, kwargs, defended_model)
     distances = adversarial_dataset.distances.numpy()
 
     success_rate = adversarial_dataset.attack_success_rate
@@ -372,7 +370,7 @@ def cross_validation(**kwargs):
 
     logger.info('Tests:\n{}'.format('\n'.join(test_names)))
 
-    evasion_dataset = tests.multiple_evasion_test(model, test_names, evasion_attacks, defended_models, dataloader, p, not kwargs['keep_misclassified'], kwargs['device'], attack_config, kwargs, True)
+    evasion_dataset = tests.multiple_evasion_test(model, test_names, evasion_attacks, defended_models, dataloader, p, not kwargs['keep_misclassified'], kwargs['device'], attack_config, kwargs)
 
     for test_name in test_names:
         print('Test "{}":'.format(test_name))
@@ -463,7 +461,7 @@ def attack_matrix(**kwargs):
             evasion_attacks.append(evasion_attack)
             defended_models.append(defended_model)
 
-    evasion_dataset = tests.multiple_evasion_test(model, test_names, evasion_attacks, defended_models, dataloader, p, not kwargs['keep_misclassified'], kwargs['device'], attack_config, kwargs, True)
+    evasion_dataset = tests.multiple_evasion_test(model, test_names, evasion_attacks, defended_models, dataloader, p, not kwargs['keep_misclassified'], kwargs['device'], attack_config, kwargs)
 
     logger.info('Tests:\n{}'.format('\n'.join(test_names)))
 

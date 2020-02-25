@@ -24,9 +24,7 @@ def accuracy(model, loader, device):
 
     return correct_count / total_count
 
-# TODO: REMOVE_MISCLASSIFIED RIMUOVE I GENUINI RIFIUTATI
-
-def attack_test(model, attack, loader, p, remove_misclassified, device, generation_kwargs, attack_configuration, has_detector):
+def attack_test(model, attack, loader, p, remove_misclassified, device, generation_kwargs, attack_configuration, defended_model):
     model.to(device)
 
     total_count = 0
@@ -49,7 +47,7 @@ def attack_test(model, attack, loader, p, remove_misclassified, device, generati
         adversarials = attack.perturb(images, y=labels)
         assert adversarials.shape == images.shape
 
-        images, labels, adversarials = utils.remove_failed(model, images, labels, adversarials, has_detector)
+        images, labels, adversarials = utils.remove_failed(defended_model, images, labels, adversarials, defended_model is not None)
 
         all_images += list(images)
         all_labels += list(labels)
@@ -61,7 +59,7 @@ def attack_test(model, attack, loader, p, remove_misclassified, device, generati
 
     return adversarial_dataset.AdversarialDataset(all_images, all_labels, all_adversarials, p, total_count, attack_configuration, generation_kwargs)
 
-def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p, remove_misclassified, device, attack_configuration, generation_kwargs, has_detector):
+def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p, remove_misclassified, device, attack_configuration, generation_kwargs):
     model.to(device)
 
     for defended_model in defended_models:
@@ -93,7 +91,7 @@ def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p
 
             assert adversarials.shape == images.shape
             
-            successful = utils.check_success(defended_model, images, labels, adversarials, has_detector)
+            successful = utils.check_success(defended_model, images, labels, adversarials, True)
 
             for i in range(len(images)):
                 if successful[i]:
