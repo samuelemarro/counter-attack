@@ -151,7 +151,8 @@ def remove_failed(model, images, labels, adversarials, has_detector):
 
 # TODO: Usarlo in altri posti?
 def get_labels(model, images):
-    return torch.argmax(model(images.to(model.device)), axis=1).to(images.device)
+    model_device = next(model.parameters()).device
+    return torch.argmax(model(images.to(model_device)), axis=1).to(images.device)
 
 def show_images(images, adversarials, limit=None, model=None):
     if limit is not None:
@@ -177,10 +178,14 @@ def show_images(images, adversarials, limit=None, model=None):
 
         image = np.moveaxis(image.cpu().numpy(), 0, 2)
         adversarial = np.moveaxis(adversarial.cpu().numpy(), 0, 2)
+        difference = np.abs(image - adversarial)
 
-        _, axes = plt.subplots(1, 2, squeeze=False)
-        axes[0, 0].title(image_title)
+        _, axes = plt.subplots(1, 3, squeeze=False)
+        axes[0, 0].title.set_text(image_title)
         axes[0, 0].imshow(image)
-        axes[0, 1].title(adversarial_title)
+        axes[0, 1].title.set_text(adversarial_title)
         axes[0, 1].imshow(adversarial)
+        axes[0, 2].title.set_text('Difference')
+        axes[0, 2].imshow(difference)
+        print(np.max(difference))
         plt.show()

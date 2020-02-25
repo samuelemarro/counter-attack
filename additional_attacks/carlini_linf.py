@@ -15,19 +15,13 @@ The main differences between LInf and L2 are:
 - If delta_i < tau for all i, we multiply tau by tau_multiplier, otherwise we terminate
 """
 
+
 # L'attacco è nel TanH space
 # Usi arctanh per andare nel Tanh space, tanh per tornare nello spazio normale
 #anche abs(delta_i) si riferisce a delta_i nello spazio TanH
 
-CARLINI_L2DIST_UPPER = 1e10
 CARLINI_COEFF_UPPER = 1e10
-INVALID_LABEL = -1
-REPEAT_STEP = 10
-ONE_MINUS_EPS = 0.999999
-UPPER_CHECK = 1e9
-PREV_LOSS_INIT = 1e6
 TARGET_MULT = 10000.0
-NUM_CHECKS = 10
 EPS = 1e-6
 
 # IMPORTANTE: min_tau è la minima distanza restituita da CW
@@ -49,7 +43,7 @@ EPS = 1e-6
 
 class CarliniWagnerLInfAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     def __init__(self, predict, num_classes, min_tau=1/256,
-                 tau_multiplier=0.9, const_multiplier=2, confidence=0,
+                 tau_multiplier=0.9, const_multiplier=2, halve_const=True, confidence=0,
                  targeted=False, learning_rate=0.01,
                  max_iterations=10000,
                  abort_early=True, initial_const=1e-3,
@@ -59,6 +53,7 @@ class CarliniWagnerLInfAttack(advertorch.attacks.Attack, advertorch.attacks.Labe
         self.min_tau = min_tau
         self.tau_multiplier = tau_multiplier
         self.const_multiplier = const_multiplier
+        self.halve_const = halve_const
         self.confidence = confidence
         self.targeted = targeted
         self.learning_rate = learning_rate
@@ -80,15 +75,19 @@ class CarliniWagnerLInfAttack(advertorch.attacks.Attack, advertorch.attacks.Labe
                  ).max(1)[0]
         # - (y_onehot * TARGET_MULT) is for the true label not to be selected
 
+        #print(real.cpu().detach().numpy())
+        #print(other.cpu().detach().numpy())
         if self.targeted:
             loss1 = torch.clamp(other - real + self.confidence, min=0.)
         else:
             loss1 = torch.clamp(real - other + self.confidence, min=0.)
 
-        penalties = torch.clamp(delta - tau, min=0)
+        penalties = torch.clamp(torch.abs(delta) - tau, min=0)
 
         loss1 = const * loss1#torch.sum(const * loss1)
         loss2 = torch.sum(penalties, dim=(1, 2, 3))#torch.sum(penalties)
+
+        assert loss1.shape == loss2.shape
 
         loss = loss1 + loss2
         return loss
@@ -99,9 +98,17 @@ class CarliniWagnerLInfAttack(advertorch.attacks.Attack, advertorch.attacks.Labe
         assert predicted_labels.shape == y.shape
 
         return ~torch.eq(predicted_labels, y)
+
+    # Scales a 0-1 value to clip_min - clip_max range
+    def scale_to_bounds(self, value):
+        assert (value >= 0).all()
+        assert (value <= 1).all()
+        return self.clip_min + value * (self.clip_max - self.clip_min)
+
     def run_attack(self, x, y, initial_const, tau):
         batch_size = len(x)
-        best_adversarials = x
+        best_adversarials = x.clone().detach()
+        #print(x.cpu().detach().numpy())
         active_samples = torch.ones((batch_size,), dtype=torch.bool, device=x.device)
 
         ws = torch.nn.Parameter(torch.zeros_like(x))
@@ -111,7 +118,8 @@ class CarliniWagnerLInfAttack(advertorch.attacks.Attack, advertorch.attacks.Labe
 
         while torch.any(active_samples) and const < CARLINI_COEFF_UPPER:
             for i in range(self.max_iterations):
-                deltas = (0.5 + EPS) * (torch.tanh(ws) + 1) - x
+                deltas = self.scale_to_bounds((0.5 + EPS) * (torch.tanh(ws) + 1)) - x
+                
                 optimizer.zero_grad()
                 losses = self.loss(x[active_samples], deltas[active_samples], y[active_samples], const, tau)
                 total_loss = torch.sum(losses)
@@ -122,22 +130,18 @@ class CarliniWagnerLInfAttack(advertorch.attacks.Attack, advertorch.attacks.Labe
                 adversarials = (x + deltas).detach()
                 best_adversarials[active_samples] = adversarials[active_samples]
 
-
                 # If early aborting is enabled, drop successful samples with small losses
                 # (Notice that the current adversarials are saved regardless of whether they are dropped)
+                
                 if self.abort_early:
                     successful = self.successful(adversarials[active_samples], y[active_samples])
                     small_losses = losses < 0.0001 * const
 
                     drop = successful & small_losses
-                    #print(drop)
-                    #print(losses)
-
 
                     active_samples[active_samples] = ~drop
                 if not active_samples.any():
                     break
-                #print(len(torch.nonzero(active_samples)))
 
 
             const *= self.const_multiplier
@@ -152,9 +156,10 @@ class CarliniWagnerLInfAttack(advertorch.attacks.Attack, advertorch.attacks.Labe
         # Initialization
         if y is None:
             y = self._get_predicted_label(x)
+        
         x = replicate_input(x)
         batch_size = len(x)
-        final_advs = x
+        final_adversarials = x.clone()
 
         active_samples = torch.ones((batch_size,), dtype=torch.bool, device=x.device)
 
@@ -165,31 +170,14 @@ class CarliniWagnerLInfAttack(advertorch.attacks.Attack, advertorch.attacks.Labe
             print('Tau: {}'.format(tau))
             adversarials = self.run_attack(x[active_samples], y[active_samples], initial_const, tau)
 
-            # TODO: CONTROLLARE
             # Drop the failed adversarials (without saving them)
             successful = self.successful(adversarials, y[active_samples])
-            drop = torch.logical_not(successful)
-
-            active_samples[active_samples] = ~drop
-            final_advs[active_samples] = adversarials[successful]
-
+            active_samples[active_samples] = successful
+            final_adversarials[active_samples] = adversarials[successful]
 
             tau *= self.tau_multiplier
-            # TODO: Renderlo opzionale?
-            initial_const /= 2
+            
+            if self.halve_const:
+                initial_const /= 2
 
-
-        return final_advs
-
-    
-
-    
-# Nuovo parametro: Tau
-# Tau deve decadere con le iterazioni
-
-# IBM Art usa tanh, anche se non è nel paper
-# IBM Art ha anche eps, un upperbound sulla distanza L0 (è 0.3, quindi suppongo sia la percentuale di pixel)
-
-# Implementazione originale: https://github.com/carlini/nn_robust_attacks/blob/master/li_attack.py
-
-    
+        return final_adversarials

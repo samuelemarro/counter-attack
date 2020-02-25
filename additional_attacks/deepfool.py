@@ -1,5 +1,11 @@
 import advertorch
 import torch
+from advertorch.utils import replicate_input, to_one_hot
+
+
+def atleast_kd(x, k):
+    shape = x.shape + (1,) * (k - x.ndim)
+    return x.reshape(shape)
 
 class DeepFoolAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     """A simple and fast gradient-based adversarial attack.
@@ -23,58 +29,46 @@ class DeepFoolAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
     def __init__(
         self,
+        predict,
         steps = 50,
         candidates = 10,
         overshoot = 0.02,
-        loss = "logits"
+        clip_min = 0,
+        clip_max = 1
     ):
+        self.predict = predict
         self.steps = steps
         self.candidates = candidates
         self.overshoot = overshoot
-        self.loss = loss
 
-    def _get_loss_fn(
-        self, model, classes):
+        self.clip_min = 0
+        self.clip_max = 1
 
+    def loss(self, x, classes, k):
         N = len(classes)
         rows = range(N)
         i0 = classes[:, 0]
 
-        if self.loss == "logits":
+        logits = self.predict(x)
+        ik = classes[:, k]
+        l0 = logits[rows, i0]
+        lk = logits[rows, ik]
+        loss = lk - l0
+        return loss
 
-            def loss_fun(x, k):
-                logits = model(x)
-                ik = classes[:, k]
-                l0 = logits[rows, i0]
-                lk = logits[rows, ik]
-                loss = lk - l0
-                return loss.sum(), (loss, logits)
+    def successful(self, adversarials, y):
+        predicted_labels = torch.argmax(self.predict(adversarials), axis=1)
 
-        elif self.loss == "crossentropy":
+        assert predicted_labels.shape == y.shape
 
-            def loss_fun(x, k):
-                logits = model(x)
-                ik = classes[:, k]
-                l0 = -torch.crossentropy(logits, i0)
-                lk = -torch.crossentropy(logits, ik)
-                loss = lk - l0
-                return loss.sum(), (loss, logits)
+        return ~torch.eq(predicted_labels, y)
 
-        else:
-            raise ValueError(
-                f"expected loss to be 'logits' or 'crossentropy', got '{self.loss}'"
-            )
+    def perturb(self, x, y=None):
+        x = replicate_input(x)
 
-        return loss_fun
+        logits = self.predict(x)
+        classes = logits.argsort(axis=-1).flip(-1)
 
-    def perturb(self, x, y=None)::
-
-        criterion = get_criterion(criterion)
-
-        min_, max_ = model.bounds
-
-        logits = model(x)
-        classes = logits.argsort(axis=-1).flip(axis=-1)
         if self.candidates is None:
             candidates = logits.shape[-1]  # pragma: no cover
         else:
@@ -83,43 +77,37 @@ class DeepFoolAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                 raise ValueError(  # pragma: no cover
                     f"expected the model output to have atleast 2 classes, got {logits.shape[-1]}"
                 )
-            logging.info(f"Only testing the top-{candidates} classes")
             classes = classes[:, :candidates]
 
         N = len(x)
         rows = range(N)
 
-        loss_fun = self._get_loss_fn(model, classes)
-        loss_aux_and_grad = torch.value_and_grad_fn(x, loss_fun, has_aux=True)
-
         x0 = x
+        adversarials = x.clone().detach()
+
         p_total = torch.zeros_like(x)
         for _ in range(self.steps):
-            # let's first get the logits using k = 1 to see if we are done
-            diffs = [loss_aux_and_grad(x, 1)]
-            _, (_, logits), _ = diffs[0]
-
-            is_adv = criterion(x, logits)
+            is_adv = self.successful(adversarials, y)
             if is_adv.all():
                 break
 
-            # then run all the other k's as well
-            # we could avoid repeated forward passes and only repeat
-            # the backward pass, but this cannot currently be done in eagerpy
-            diffs += [loss_aux_and_grad(x, k) for k in range(2, candidates)]
+            # TODO: Perché serve il detach?
+            x_copy = adversarials.detach().clone()
+            x_copy.requires_grad = True
 
-            # we don't need the logits
-            diffs_ = [(losses, grad) for _, (losses, _), grad in diffs]
-            losses = torch.stack([l for l, _ in diffs_], axis=1)
-            grads = torch.stack([g for _, g in diffs_], axis=1)
+            losses = [self.loss(x_copy, classes, k) for k in range(1, candidates)]
+
+            grads = torch.stack([torch.autograd.grad(loss, x_copy, torch.ones_like(loss))[0] for loss in losses], axis=1)
+            losses = torch.stack(losses, axis=1)
+            
             assert losses.shape == (N, candidates - 1)
             assert grads.shape == (N, candidates - 1) + x0.shape[1:]
 
-            # calculate the distances
+            # Calculate the distances
             distances = self.get_distances(losses, grads)
             assert distances.shape == (N, candidates - 1)
 
-            # determine the best directions
+            # Determine the best directions
             best = distances.argmin(axis=1)
             distances = distances[rows, best]
             losses = losses[rows, best]
@@ -128,19 +116,21 @@ class DeepFoolAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             assert losses.shape == (N,)
             assert grads.shape == x0.shape
 
-            # apply perturbation
-            distances = distances + 1e-4  # for numerical stability
+            # Apply perturbation
+            distances = distances + 1e-4  # For numerical stability
             p_step = self.get_perturbations(distances, grads)
             assert p_step.shape == x0.shape
 
             p_total += p_step
-            # don't do anything for those that are already adversarial
-            x = torch.where(
-                atleast_kd(is_adv, x.ndim), x, x0 + (1.0 + self.overshoot) * p_total
-            )
-            x = torch.clip(x, min_, max_)
 
-        return x
+            # Don't do anything for those that are already adversarial
+            adversarials = torch.where(
+                atleast_kd(is_adv, adversarials.ndim), adversarials, x0 + (1.0 + self.overshoot) * p_total
+            )
+
+            adversarials = torch.clamp(adversarials, self.clip_min, self.clip_max)
+
+        return adversarials
 
     def get_distances(self, losses, grads):
         raise NotImplementedError
@@ -169,12 +159,12 @@ class L2DeepFoolAttack(DeepFoolAttack):
     """
 
     def get_distances(self, losses, grads):
-        return abs(losses) / (flatten(grads, keep=2).norms.l2(axis=-1) + 1e-8)
+        return abs(losses) / (grads.flatten(start_dim=2).norm(p=2, dim=-1) + 1e-8)
 
     def get_perturbations(self, distances, grads) -> torch.Tensor:
         return (
             atleast_kd(
-                distances / (flatten(grads).norms.l2(axis=-1) + 1e-8), grads.ndim,
+                distances / (grads.flatten().norm(p=2, dim=-1) + 1e-8), grads.ndim,
             )
             * grads
         )
@@ -201,7 +191,7 @@ class LInfDeepFoolAttack(DeepFoolAttack):
         """
 
     def get_distances(self, losses: torch.Tensor, grads: torch.Tensor) -> torch.Tensor:
-        return abs(losses) / (flatten(grads, keep=2).abs().sum(axis=-1) + 1e-8)
+        return abs(losses) / (grads.flatten(start_dim=2).abs().sum(axis=-1) + 1e-8)
 
     def get_perturbations(self, distances: torch.Tensor, grads: torch.Tensor) -> torch.Tensor:
         return atleast_kd(distances, grads.ndim) * grads.sign()
