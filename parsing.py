@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 domains = ['cifar10']
 architectures = ['resnet50']
 attacks = ['carlini', 'deepfool', 'fast_gradient', 'pgd']
+attacks_with_binary_search = ['fast_gradient', 'pgd']
 distances = ['l2', 'linf']
 
 def get_model(domain, architecture, state_dict_path, apply_normalisation, load_weights=False, as_detector=False):
@@ -90,33 +91,50 @@ def get_optimiser(optimiser_name, learnable_parameters, options):
 
     return optimiser
 
-# TODO: Anche FGM/FGSM hanno bisogno di binary search?
-
 def get_attack(attack_name, domain, p, attack_type, model, attack_config, defended_model=None):
     # Convert the float value to its standard name
     if p == 2:
-        p = 'l2'
+        metric = 'l2'
     elif np.isposinf(p):
-        p = 'linf'
+        metric = 'linf'
     else:
         raise NotImplementedError('Unsupported metric "l{}"'.format(p))
 
-    kwargs = attack_config.get_arguments(attack_name, domain, p, attack_type)
+    kwargs = attack_config.get_arguments(attack_name, domain, metric, attack_type)
 
     logger.debug('Preparing attack {}, domain {}, distance metric {}, type {} with kwargs: {}'.format(
-        attack_name, domain, p, attack_type, kwargs 
+        attack_name, domain, metric, attack_type, kwargs 
     ))
 
     if attack_type == 'evasion' and defended_model is None:
         raise ValueError('Evasion attacks require a defended model.')
+
+    if attack_type == 'standard' and defended_model is not None:
+        logger.warn('You are passing a defended model, even for a standard attack. Is this expected?')
 
     if domain == 'cifar10':
         num_classes = 10
     else:
         raise NotImplementedError('Unsupported domain "{}".'.format(domain))
 
+    binary_search = 'enable_binary_search' in kwargs and kwargs['enable_binary_search']
+        
+    kwargs.pop('enable_binary_search', None)
+
+    if binary_search:
+        # Remove standard arguments
+        kwargs.pop('eps', None)
+        if attack_name not in attacks_with_binary_search:
+            raise NotImplementedError('Attack {} does not support binary search'.format(attack_name))
+
+    # Pop binary search arguments
+    min_eps = kwargs.pop('min_eps', None)
+    max_eps = kwargs.pop('max_eps', None)
+    initial_search_steps = kwargs.pop('initial_search_steps', None)
+    binary_search_steps = kwargs.pop('binary_search_steps', None)
+
     if attack_name == 'carlini':
-        if p == 'l2':
+        if metric == 'l2':
             if attack_type == 'standard':
                 attack = advertorch.attacks.CarliniWagnerL2Attack(model, num_classes, **kwargs)
             elif attack_type == 'evasion':
@@ -124,81 +142,83 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
                 attack = advertorch.attacks.CarliniWagnerL2Attack(defended_model, num_classes + 1, **kwargs)
                 attack = custom_attacks.TopKEvasionAttack(model, attack)
             else:
-                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, p, attack_type))
-        elif p == 'linf':
+                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, metric, attack_type))
+        elif metric == 'linf':
             if attack_type == 'standard':
                 attack = additional_attacks.carlini_linf.CarliniWagnerLInfAttack(model, num_classes, **kwargs)
             else:
-                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, p, attack_type))
+                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, metric, attack_type))
         else:
-            raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, p))
+            raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, metric))
     elif attack_name == 'deepfool':
-        if p == 'l2':
+        if metric == 'l2':
             if attack_type == 'standard':
                 attack = additional_attacks.deepfool.L2DeepFoolAttack(model, **kwargs)
             else:
-                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, p, attack_type))
-        elif p == 'linf':
+                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, metric, attack_type))
+        elif metric == 'linf':
             if attack_type == 'standard':
                 attack = additional_attacks.deepfool.LInfDeepFoolAttack(model, **kwargs)
             else:
-                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, p, attack_type))
+                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, metric, attack_type))
         else:
-            raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, p))
+            raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, metric))
     elif attack_name == 'fast_gradient':
         # FGM is the L2 variant, FGSM is the LInf variant (TODO: Check to make sure)
-        if p == 'l2':
+        if metric == 'l2':
             if attack_type == 'standard':
                 attack = advertorch.attacks.FGM(model, **kwargs)
             elif attack_type == 'evasion':
                 # TODO: è solo un placeholder
                 attack = advertorch.attacks.FGM(defended_model, **kwargs)
             else:
-                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, p, attack_type))
-        elif p == 'linf':
+                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, metric, attack_type))
+        elif metric == 'linf':
             if attack_type == 'standard':
                 attack = advertorch.attacks.FGSM(model, **kwargs)
             elif attack_type == 'evasion':
                 # TODO: è solo un placeholder
                 attack = advertorch.attacks.FGSM(defended_model, **kwargs)
             else:
-                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, p, attack_type))
+                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, metric, attack_type))
         else:
-            raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, p))
+            raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, metric))
     elif attack_name == 'pgd':
-        binary_search = 'enable_binary_search' in kwargs and kwargs['enable_binary_search']
-        
-        kwargs.pop('enable_binary_search', None)
-
-        if binary_search:
-            # Remove standard arguments
-            kwargs.pop('eps', None)
-        else:
-            # Remove binary search arguments
-            kwargs.pop('min_eps', None)
-            kwargs.pop('max_eps', None)
-            kwargs.pop('binary_search_steps', None)
-
-        if p == 'l2':
+        if metric == 'l2':
             if attack_type == 'standard':
-                if binary_search:
-                    attack = custom_attacks.PGDBinarySearch(model, 2, **kwargs)
-                else:
-                    attack = advertorch.attacks.L2PGDAttack(model, **kwargs)
+                attack = advertorch.attacks.L2PGDAttack(model, **kwargs)
             else:
-                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, p, attack_type))
-        elif p == 'linf':
+                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, metric, attack_type))
+        elif metric == 'linf':
             if attack_type == 'standard':
-                if binary_search:
-                    attack = custom_attacks.PGDBinarySearch(model, np.inf, **kwargs)
-                else:
-                    attack = advertorch.attacks.LinfPGDAttack(model, **kwargs)
+                attack = advertorch.attacks.LinfPGDAttack(model, **kwargs)
             else:
-                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, p, attack_type))
+                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, metric, attack_type))
         else:
-            raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, p))
+            raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, metric))
     else:
         raise NotImplementedError('Unsupported attack "{}".'.format(attack_name))
+
+
+    # If necessary, wrap the attack in a binary search wrapper
+    # TODO: Detector support?
+    if binary_search:
+        if attack_name == 'pgd':
+            unsqueeze = False
+        elif attack_name == 'fast_gradient':
+            unsqueeze = True
+
+        binary_search_kwargs = dict()
+        if min_eps is not None:
+            binary_search_kwargs['min_eps'] = min_eps
+        if max_eps is not None:
+            binary_search_kwargs['max_eps'] = max_eps
+        if initial_search_steps is not None:
+            binary_search_kwargs['initial_search_steps'] = initial_search_steps
+        if binary_search_steps is not None:
+            binary_search_kwargs['binary_search_steps'] = binary_search_steps
+
+        attack = custom_attacks.EpsilonBinarySearchAttack(model, p, attack, unsqueeze, **binary_search_kwargs)
 
     return attack
 

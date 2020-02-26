@@ -1,3 +1,5 @@
+import copy
+
 import advertorch
 import torch
 import torch.nn as nn
@@ -6,6 +8,10 @@ from advertorch.utils import is_float_or_torch_tensor
 import advertorch.attacks.iterative_projected_gradient as ipg
 
 import numpy as np
+
+import utils
+
+MAX_DISTANCE = 1e10
 
 class RandomTargetEvasionAttack:
     """Chooses a random label that is not the
@@ -90,58 +96,36 @@ class AttackPool:
 
 # TODO: Usa check_success con has_detector=False
 
-class PGDBinarySearch(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
-    def __init__(
-            self, predict, ord, min_eps=0, max_eps=1, binary_search_steps=9,
-            loss_fn=None, nb_iter=40, eps_iter=0.01, rand_init=True,
-            clip_min=0., clip_max=1., l1_sparsity=None,
-            targeted=False):
+# Nota: Aggiorna eps se ha successo, ma restituisce l'adversarial con la distanza più bassa
+# TODO: Non c'è una differenza effettiva. Quindi quale scelgo?
 
-        super().__init__(
-            predict, loss_fn, clip_min, clip_max)
-
+class EpsilonBinarySearchAttack:
+    def __init__(self, predict, ord, attack, unsqueeze, min_eps=0, max_eps=1, initial_search_steps=9, binary_search_steps=9,):
+        self.predict = predict
+        self.ord = ord
+        self.attack = attack
+        self.unsqueeze = unsqueeze
         self.min_eps = min_eps
         self.max_eps = max_eps
+        self.initial_search_steps = initial_search_steps
         self.binary_search_steps = binary_search_steps
-        
-        self.nb_iter = nb_iter
-        self.eps_iter = eps_iter
-        self.rand_init = rand_init
-        self.ord = ord
-        self.targeted = targeted
-        if self.loss_fn is None:
-            self.loss_fn = nn.CrossEntropyLoss(reduction="sum")
-        self.l1_sparsity = l1_sparsity
-        assert is_float_or_torch_tensor(self.eps_iter)
-
-    def successful(self, adversarials, y):
-        predicted_labels = torch.argmax(self.predict(adversarials), axis=1)
-
-        assert predicted_labels.shape == y.shape
-
-        return ~torch.eq(predicted_labels, y)
 
     def perturb_standard(self, x, y, eps):
-        x, y = self._verify_and_process_inputs(x, y)
+        assert len(x) == len(y)
+        assert len(eps) == len(x)
 
-        delta = torch.zeros_like(x)
-        delta = nn.Parameter(delta)
-        if self.rand_init:
-            ipg.rand_init_delta(
-                delta, x, self.ord, eps, self.clip_min, self.clip_max)
-            delta.data = torch.clamp(
-                x + delta.data, min=self.clip_min, max=self.clip_max) - x
+        # Perform a shallow copy
+        attack = copy.copy(self.attack)
 
-        rval = ipg.perturb_iterative(
-            x, y, self.predict, nb_iter=self.nb_iter,
-            eps=eps, eps_iter=self.eps_iter,
-            loss_fn=self.loss_fn, minimize=self.targeted,
-            ord=self.ord, clip_min=self.clip_min,
-            clip_max=self.clip_max, delta_init=delta,
-            l1_sparsity=self.l1_sparsity,
-        )
+        if self.unsqueeze:
+            eps = eps.unsqueeze(1).unsqueeze(2).unsqueeze(3)
 
-        return rval.data
+        attack.eps = eps
+
+        return attack(x, y=y)
+
+    def successful(self, adversarials, y):
+        return utils.check_success(self.predict, adversarials, y, False)
 
     def perturb(self, x, y=None):
         best_adversarials = x.clone()
@@ -149,23 +133,42 @@ class PGDBinarySearch(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
         eps_lower_bound = torch.ones((N,), device=x.device) * self.min_eps
         eps_upper_bound = torch.ones((N,), device=x.device) * self.max_eps
+        last_distances = torch.ones((N), device=x.device) * MAX_DISTANCE
+
+        initial_search_eps = eps_upper_bound.clone()
+        for _ in range(self.initial_search_steps):
+            adversarials = self.perturb_standard(x, y, initial_search_eps)
+            successful = self.successful(adversarials, y)
+
+            distances = utils.adversarial_distance(x, adversarials, self.ord)
+            better_distances = distances < last_distances
+            replace = successful & better_distances
+
+            best_adversarials[replace] = adversarials[replace]
+            last_distances[replace] = distances[replace]
+
+            # Success: Reduce the upper bound
+            eps_upper_bound[replace] = initial_search_eps[replace]
+
+            # Halve eps, regardless of the success
+            initial_search_eps = initial_search_eps / 2
 
         for _ in range(self.binary_search_steps):
             eps = (eps_lower_bound + eps_upper_bound) / 2
             adversarials = self.perturb_standard(x, y, eps)
             successful = self.successful(adversarials, y)
 
-            # TODO: Controllare effettivamente se sono migliori?
-            best_adversarials[successful] = adversarials[successful]
+            distances = utils.adversarial_distance(x, adversarials, self.ord)
+            better_distances = distances < last_distances
+            replace = successful & better_distances
+
+            best_adversarials[replace] = adversarials[replace]
+            last_distances[replace] = distances[replace]
 
             # Success: Try again with a lower eps
-            eps_upper_bound[successful] = eps[successful]
+            eps_upper_bound[replace] = eps[replace]
 
             # Failure: Try again with a higher eps
-            eps_lower_bound[~successful] = eps[~successful]
+            eps_lower_bound[~replace] = eps[~replace]
 
         return best_adversarials
-
-# TODO: Si riesce a unificare PGD, FGM e FGSM?
-# TODO: Eps in FGM significa L2 o LInf?
-# FGSM è per LInf, FGM per L2?
