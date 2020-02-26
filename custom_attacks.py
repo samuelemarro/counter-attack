@@ -88,6 +88,7 @@ class AttackPool:
 
         return best_adversarials
 
+# TODO: Usa check_success con has_detector=False
 
 class PGDBinarySearch(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     def __init__(
@@ -164,3 +165,7 @@ class PGDBinarySearch(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             eps_lower_bound[~successful] = eps[~successful]
 
         return best_adversarials
+
+# TODO: Si riesce a unificare PGD, FGM e FGSM?
+# TODO: Eps in FGM significa L2 o LInf?
+# FGSM è per LInf, FGM per L2?

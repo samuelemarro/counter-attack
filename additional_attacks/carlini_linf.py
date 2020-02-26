@@ -19,6 +19,8 @@ CARLINI_COEFF_UPPER = 1e10
 TARGET_MULT = 10000.0
 EPS = 1e-6
 
+# TODO: Usa check_success con has_detector=False
+
 class CarliniWagnerLInfAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     def __init__(self, predict, num_classes, min_tau=1/256,
                  tau_multiplier=0.9, const_multiplier=2, halve_const=True, confidence=0,

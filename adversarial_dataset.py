@@ -63,7 +63,6 @@ class AdversarialDistanceDataset(data.Dataset):
         self.distances = distances
 
     def __getitem__(self, idx):
-        # TODO: Togliere unsqueeze?
         return (self.images[idx], self.distances[idx].unsqueeze(0))
 
     def __len__(self):

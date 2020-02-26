@@ -7,6 +7,8 @@ def atleast_kd(x, k):
     shape = x.shape + (1,) * (k - x.ndim)
     return x.reshape(shape)
 
+# TODO: Usa check_success con has_detector=False
+
 class DeepFoolAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     """A simple and fast gradient-based adversarial attack.
 
