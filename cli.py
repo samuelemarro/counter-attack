@@ -50,8 +50,6 @@ training_options = [
 def main():
     pass
 
-# TODO: Supporto per punto di partenza da state_dict?
-
 @main.command()
 @click.argument('domain', type=click.Choice(parsing.domains))
 @click.argument('architecture', type=click.Choice(parsing.architectures))
@@ -155,8 +153,6 @@ def accuracy(**kwargs):
 
     print('Accuracy: {:.2f}%'.format(accuracy * 100.0))
 
-# TODO: Aggiungere show agli altri comandi?
-
 @main.command()
 @click.argument('domain', type=click.Choice(parsing.domains))
 @click.argument('architecture', type=click.Choice(parsing.architectures))
@@ -222,6 +218,7 @@ def attack(**kwargs):
 @click.option('--keep-misclassified', is_flag=True)
 @click.option('--max-samples', type=click.IntRange(1, None), default=None)
 @click.option('--save-to', type=click.Path(exists=False, file_okay=True, dir_okay=False))
+@click.option('--show', type=click.IntRange(1, None), default=None)
 def evasion_test(**kwargs):
     if kwargs['state_dict_path'] is None:
         logger.info('No state dict path provided. Using pretrained model.')
@@ -283,6 +280,9 @@ def evasion_test(**kwargs):
     if kwargs['save_to'] is not None:
         utils.save_zip(adversarial_dataset, kwargs['save_to'])
 
+    if kwargs['show'] is not None:
+        utils.show_images(adversarial_dataset.genuines, adversarial_dataset.adversarials, limit=kwargs['show'], model=model)
+
 # Nota: In questo test, il rejection_threshold indica "se togli l'attacco corrispondente, quanto deve ottenere la detector pool per rifiutare?"
 
 @main.command()
@@ -301,6 +301,7 @@ def evasion_test(**kwargs):
 @click.option('--keep-misclassified', is_flag=True)
 @click.option('--max-samples', type=click.IntRange(1, None), default=None)
 @click.option('--save-to', type=click.Path(exists=False, file_okay=True, dir_okay=False))
+@click.option('--show', type=click.IntRange(1, None), default=None)
 def cross_validation(**kwargs):
     if kwargs['state_dict_path'] is None:
         logger.info('No state dict path provided. Using pretrained model.')
@@ -320,6 +321,9 @@ def cross_validation(**kwargs):
     substitute_architectures = kwargs['substitute_architectures']
     substitute_state_dict_paths = kwargs['substitute_state_dict_paths']
 
+    if len(attack_names) < 2:
+        raise click.BadArgumentUsage('attacks must be at least two.')
+
     if len(rejection_thresholds) == 1:
         rejection_thresholds = len(attack_names) * [rejection_thresholds[0]]
 
@@ -335,8 +339,8 @@ def cross_validation(**kwargs):
     if len(substitute_state_dict_paths) != len(attack_names):
         raise click.BadArgumentUsage('substitute_state_dict_paths must be as many values as the number of attacks.')
 
-    if any(rejection_threshold >= 0 for rejection_threshold in rejection_thresholds):
-        logger.warn('You are using a positive rejection rejection_threshold. Since Counter-Attack only outputs nonpositive values, '
+    if any(rejection_threshold > 0 for rejection_threshold in rejection_thresholds):
+        logger.warn('You are using a positive rejection threshold. Since Counter-Attack only outputs nonpositive values, '
         'the detector will never reject an example.')
 
     test_names = []
@@ -344,8 +348,7 @@ def cross_validation(**kwargs):
     defended_models = []
 
     for i in range(len(attack_names)):
-        # The counter attacks, their substitute architectures and their state dict paths
-        # are all the passed values except for the one that will act as an evasion attack
+        # Remove one attack from the pool. This attack will act as the evasion attack
 
         evasion_attack_name = attack_names[i]
         counter_attack_names = [x for j, x in enumerate(attack_names) if j != i]
@@ -372,6 +375,9 @@ def cross_validation(**kwargs):
 
     evasion_dataset = tests.multiple_evasion_test(model, test_names, evasion_attacks, defended_models, dataloader, p, not kwargs['keep_misclassified'], kwargs['device'], attack_config, kwargs)
 
+    if kwargs['save_to'] is not None:
+        utils.save_zip(evasion_dataset, kwargs['save_to'])
+
     for test_name in test_names:
         print('Test "{}":'.format(test_name))
         adversarial_dataset = evasion_dataset.to_adversarial_dataset(test_name)
@@ -385,8 +391,11 @@ def cross_validation(**kwargs):
         print('Median Distance: {}'.format(median_distance))
         print('Average Distance: {}'.format(average_distance))
 
-    if kwargs['save_to'] is not None:
-        utils.save_zip(evasion_dataset, kwargs['save_to'])
+        if kwargs['show'] is not None:
+            utils.show_images(adversarial_dataset.genuines, adversarial_dataset.adversarials, limit=kwargs['show'], model=model)
+
+# TODO: Perché il tasso di successo è diverso quando il threshold di rifiuto è 50?
+# TODO: La CLI è scomoda quando devi passare valori negativi
 
 @main.command()
 @click.argument('domain', type=click.Choice(parsing.domains))
@@ -404,6 +413,7 @@ def cross_validation(**kwargs):
 @click.option('--keep-misclassified', is_flag=True)
 @click.option('--max-samples', type=click.IntRange(1, None), default=None)
 @click.option('--save-to', type=click.Path(exists=False, file_okay=True, dir_okay=False))
+@click.option('--show', type=click.IntRange(1, None), default=None)
 def attack_matrix(**kwargs):
     if kwargs['state_dict_path'] is None:
         logger.info('No state dict path provided. Using pretrained model.')
@@ -438,8 +448,8 @@ def attack_matrix(**kwargs):
     if len(substitute_state_dict_paths) != len(attack_names):
         raise click.BadArgumentUsage('substitute_state_dict_paths must be as many values as the number of attacks.')
 
-    if any(rejection_threshold >= 0 for rejection_threshold in rejection_thresholds):
-        logger.warn('You are using a positive rejection rejection_threshold. Since Counter-Attack only outputs nonpositive values, '
+    if any(rejection_threshold > 0 for rejection_threshold in rejection_thresholds):
+        logger.warn('You are using a positive rejection threshold. Since Counter-Attack only outputs nonpositive values, '
         'the detector will never reject an example.')
 
     test_names = []
@@ -477,6 +487,9 @@ def attack_matrix(**kwargs):
         print('Success Rate: {:.2f}%'.format(success_rate * 100.0))
         print('Median Distance: {}'.format(median_distance))
         print('Average Distance: {}'.format(average_distance))
+
+        if kwargs['show'] is not None:
+            utils.show_images(adversarial_dataset.genuines, adversarial_dataset.adversarials, limit=kwargs['show'], model=model)
 
     if kwargs['save_to'] is not None:
         utils.save_zip(evasion_dataset, kwargs['save_to'])

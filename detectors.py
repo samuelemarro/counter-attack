@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 
 import utils
@@ -12,9 +13,10 @@ class Detector(torch.nn.Module):
 # TODO: Come si deve comportare CA in caso di fallimento???
 
 class CounterAttackDetector(Detector):
-    def __init__(self, attack, p):
+    def __init__(self, attack, model, p):
         super().__init__()
         self.attack = attack
+        self.model = model
         self.p = p
 
     def forward(self, x):
@@ -30,6 +32,13 @@ class CounterAttackDetector(Detector):
 
         assert len(distances) == len(x)
 
+        # TODO: Testare
+        labels = utils.get_labels(self.model, x)
+        successful = utils.check_success(self.model, adversarials, labels, False)
+
+        # Comportamento attuale: Accetta quando fallisci (dà problemi)
+        #distances[~successful] = -np.inf
+        
         # Distanza alta = bassa probabilità che sia un adversarial
         return -distances
 

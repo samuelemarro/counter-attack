@@ -19,8 +19,6 @@ CARLINI_COEFF_UPPER = 1e10
 TARGET_MULT = 10000.0
 EPS = 1e-6
 
-# TODO: Non sto usando il clipping (ha utilizzi nel rescale)
-
 class CarliniWagnerLInfAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     def __init__(self, predict, num_classes, min_tau=1/256,
                  tau_multiplier=0.9, const_multiplier=2, halve_const=True, confidence=0,
@@ -40,7 +38,6 @@ class CarliniWagnerLInfAttack(advertorch.attacks.Attack, advertorch.attacks.Labe
         self.max_iterations = max_iterations
         self.abort_early = abort_early
         self.initial_const = initial_const
-        # TODO: Togliere
         self.clip_min = clip_min
         self.clip_max = clip_max
 

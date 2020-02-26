@@ -105,18 +105,12 @@ class EvasionDataset(data.Dataset):
         assert len(genuines) == len(original_labels)
         assert len(genuines) == len(adversarials)
 
-        # torch.stack doesn't work with empty lists, so if necessary
-        # we manually build empty tensors
+        # torch.stack doesn't work with empty lists, so in such cases we
+        # return a tensor with 0 as the first dimension
 
-        if len(genuines) > 0:
-            genuines = torch.stack(genuines)
-            original_labels = torch.stack(original_labels)
-            adversarials = torch.stack(adversarials)
-        else:
-            genuines = torch.zeros((0,) + self.genuines.shape[1:])
-            original_labels = torch.zeros((0,) + self.original_labels.shape[1:])
-            adversarials = torch.zeros((0,) + self.genuines.shape[1:])
-
+        genuines = utils.maybe_stack(genuines, self.genuines.shape[1:])
+        original_labels = utils.maybe_stack(original_labels, None, torch.long)
+        adversarials = utils.maybe_stack(adversarials, self.genuines.shape[1:])
         
         return AdversarialDataset(genuines, original_labels, adversarials, self.p, len(self.genuines), self.attack_configuration, self.generation_kwargs)
 

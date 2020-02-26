@@ -120,9 +120,8 @@ def remove_misclassified(model, images, labels):
 
     return images[correct_label], labels[correct_label]
 
-def check_success(model, images, labels, adversarials, has_detector):
-    assert images.shape == adversarials.shape
-    assert len(images) == len(labels)
+def check_success(model, adversarials, labels, has_detector):
+    assert len(adversarials) == len(labels)
 
     adversarial_predictions = model(adversarials)
     adversarial_labels = torch.argmax(adversarial_predictions, axis=1)
@@ -145,7 +144,7 @@ def check_success(model, images, labels, adversarials, has_detector):
 # come successo anche se ha mantenuto la stessa label di partenza
 # Testare!
 def remove_failed(model, images, labels, adversarials, has_detector):
-    successful = check_success(model, images, labels, adversarials, has_detector)
+    successful = check_success(model, adversarials, labels, has_detector)
     
     return images[successful], labels[successful], adversarials[successful]
 
@@ -164,9 +163,12 @@ def show_images(images, adversarials, limit=None, model=None):
     if model is None:
         labels = [None] * len(images)
         adversarial_labels = [None] * len(images)
-    else:
+    elif len(images) > 0:
         labels = get_labels(model, images)
         adversarial_labels = get_labels(model, adversarials)
+    else:
+        labels = []
+        adversarial_labels = []
 
     for image, label, adversarial, adversarial_label in zip(images, labels, adversarials, adversarial_labels):
         image_title = 'Original'
@@ -187,5 +189,18 @@ def show_images(images, adversarials, limit=None, model=None):
         axes[0, 1].imshow(adversarial)
         axes[0, 2].title.set_text('Difference')
         axes[0, 2].imshow(difference)
-        print(np.max(difference))
+
+        print('L2 norm: {}'.format(np.linalg.norm(difference)))
+        print('LInf norm: {}'.format(np.max(difference)))
+
         plt.show()
+
+def maybe_stack(tensors, fallback_shape, dtype=torch.float):
+    if len(tensors) > 0:
+        return torch.stack(tensors)
+    else:
+        if fallback_shape is None:
+            shape = (0, )
+        else:
+            shape = (0, ) + fallback_shape
+        return torch.zeros(shape, dtype=dtype)

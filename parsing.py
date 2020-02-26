@@ -90,6 +90,8 @@ def get_optimiser(optimiser_name, learnable_parameters, options):
 
     return optimiser
 
+# TODO: Anche FGM/FGSM hanno bisogno di binary search?
+
 def get_attack(attack_name, domain, p, attack_type, model, attack_config, defended_model=None):
     # Convert the float value to its standard name
     if p == 2:
@@ -219,7 +221,7 @@ def get_detector(attack_name, domain, p, attack_type, model, attack_config, devi
         assert substitute_state_dict_path is not None
 
     attack = get_attack(attack_name, domain, p, attack_type, model, attack_config, defended_model=None)
-    detector = detectors.CounterAttackDetector(attack, p)
+    detector = detectors.CounterAttackDetector(attack, model, p)
 
     if substitute_architecture is not None:
         substitute_detector = get_model(domain, substitute_architecture, substitute_state_dict_path, True, load_weights=True, as_detector=True)
