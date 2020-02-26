@@ -5,6 +5,7 @@ import torch.optim as optim
 
 from advertorch.utils import replicate_input, to_one_hot
 
+import utils
 
 """
 This implementation tries to mirror the AdverTorch L2 implementation as closely as
@@ -72,11 +73,7 @@ class CarliniWagnerLInfAttack(advertorch.attacks.Attack, advertorch.attacks.Labe
         return loss
 
     def successful(self, adversarials, y):
-        predicted_labels = torch.argmax(self.predict(adversarials), axis=1)
-
-        assert predicted_labels.shape == y.shape
-
-        return ~torch.eq(predicted_labels, y)
+        return utils.check_success(self.predict, adversarials, y, False)
 
     # Scales a 0-1 value to clip_min - clip_max range
     def scale_to_bounds(self, value):

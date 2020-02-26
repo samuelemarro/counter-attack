@@ -87,8 +87,6 @@ def train_classifier(**kwargs):
 
 # TODO: Dividere in più file?
 
-# TODO: Spiegare che --from-adversarial-dataset usa genuine-adversarial per calcolare la distanza per i genuine
-
 # Nota: keep_misclassified viene ignorato per gli adversarial examples, dato che per definizione vengono misclassificati
 @main.command()
 @click.argument('domain', type=click.Choice(parsing.domains))
@@ -157,7 +155,7 @@ def distance_dataset(**kwargs):
 @click.option('--state-dict-path', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None)
 @click.option('--batch-size', type=click.IntRange(1), default=50, show_default=True)
 @click.option('--device', default='cuda', show_default=True)
-@click.option('--from-adversarial-dataset', is_flag=True)
+@click.option('--from-adversarial-dataset', is_flag=True, help='Use an adversarial dataset to compute the adversarial distance.')
 @click.option('--val-from-adversarial-dataset', is_flag=True)
 @add_options(training_options)
 def train_approximator(**kwargs):

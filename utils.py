@@ -111,8 +111,7 @@ def remove_misclassified(model, images, labels):
         A tuple containing the images that are classified
         correctly and the corresponding labels.
     """
-    predictions = model(images)
-    predicted_labels = torch.argmax(predictions, axis=-1)
+    predicted_labels = get_labels(model, images)
 
     assert predicted_labels.shape == labels.shape
     

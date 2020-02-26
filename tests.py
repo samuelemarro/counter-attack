@@ -16,8 +16,7 @@ def accuracy(model, loader, device):
         images = images.to(device)
         labels = labels.to(device)
 
-        predicted_labels = torch.argmax(model(images), dim=1)
-        assert predicted_labels.shape == labels.shape
+        predicted_labels = utils.get_labels(model, images)
 
         correct = torch.eq(predicted_labels, labels)
         correct_count += len(torch.nonzero(correct))
