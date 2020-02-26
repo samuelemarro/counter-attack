@@ -32,13 +32,13 @@ class CounterAttackDetector(Detector):
 
         assert len(distances) == len(x)
 
-        # TODO: Testare
         labels = utils.get_labels(self.model, x)
         successful = utils.check_success(self.model, adversarials, labels, False)
 
+        # TODO: Testare
         # Comportamento attuale: Accetta quando fallisci (dà problemi)
         #distances[~successful] = -np.inf
-        
+
         # Distanza alta = bassa probabilità che sia un adversarial
         return -distances
 

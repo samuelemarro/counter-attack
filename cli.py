@@ -86,6 +86,7 @@ def train_classifier(**kwargs):
     torch.save(model.state_dict(), save_to)
 
 # TODO: Dividere in più file?
+# TODO: Riorganizzare gli attacchi in più file?
 
 # Nota: keep_misclassified viene ignorato per gli adversarial examples, dato che per definizione vengono misclassificati
 @main.command()

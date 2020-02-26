@@ -147,7 +147,6 @@ def remove_failed(model, images, labels, adversarials, has_detector):
     
     return images[successful], labels[successful], adversarials[successful]
 
-# TODO: Usarlo in altri posti?
 def get_labels(model, images):
     model_device = next(model.parameters()).device
     return torch.argmax(model(images.to(model_device)), axis=1).to(images.device)

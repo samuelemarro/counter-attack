@@ -164,7 +164,7 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
         else:
             raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, metric))
     elif attack_name == 'fast_gradient':
-        # FGM is the L2 variant, FGSM is the LInf variant (TODO: Check to make sure)
+        # FGM is the L2 variant, FGSM is the LInf variant
         if metric == 'l2':
             if attack_type == 'standard':
                 attack = advertorch.attacks.FGM(model, **kwargs)

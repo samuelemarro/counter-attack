@@ -96,8 +96,7 @@ class AttackPool:
 
 # TODO: Usa check_success con has_detector=False
 
-# Nota: Aggiorna eps se ha successo, ma restituisce l'adversarial con la distanza più bassa
-# TODO: Non c'è una differenza effettiva. Quindi quale scelgo?
+# Nota: Aggiorna eps se ha una distanza più bassa
 
 class EpsilonBinarySearchAttack:
     def __init__(self, predict, ord, attack, unsqueeze, min_eps=0, max_eps=1, initial_search_steps=9, binary_search_steps=9,):
