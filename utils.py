@@ -204,3 +204,20 @@ def maybe_stack(tensors, fallback_shape, dtype=torch.float):
         else:
             shape = (0, ) + fallback_shape
         return torch.zeros(shape, dtype=dtype)
+
+def create_label_dataset(model, images, batch_size):
+    image_dataset = torch.utils.data.TensorDataset(images)
+    dataloader = torch.utils.data.DataLoader(image_dataset, batch_size=batch_size)
+
+    labels = []
+
+    for image_batch in dataloader:
+        # Convert to tensor
+        image_batch = torch.stack(image_batch).squeeze(0)
+
+        label_batch = get_labels(model, image_batch)
+        labels += list(label_batch)
+
+    labels = torch.stack(labels)
+
+    return torch.utils.data.TensorDataset(images, labels)

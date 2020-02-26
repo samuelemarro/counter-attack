@@ -7,6 +7,9 @@ import ignite
 import numpy as np
 import torch
 
+# To avoid name mismatches
+import adversarial_dataset as ad
+
 import custom_attacks
 import detectors
 import parsing
@@ -55,7 +58,7 @@ def main():
 @click.argument('architecture', type=click.Choice(parsing.architectures))
 @click.argument('dataset')
 @click.argument('epochs', type=click.IntRange(1, None))
-@click.argument('save_path', type=click.Path(exists=False, file_okay=True, dir_okay=False))
+@click.argument('save_to', type=click.Path(exists=False, file_okay=True, dir_okay=False))
 @click.option('--state-dict-path', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None)
 @click.option('--batch-size', type=click.IntRange(1), default=50, show_default=True)
 @click.option('--device', default='cuda', show_default=True)
@@ -78,23 +81,84 @@ def train_classifier(**kwargs):
 
     torch_utils.train(model, train_dataloader, optimiser, loss, kwargs['epochs'], kwargs['device'], val_loader=val_dataloader, additional_metrics=additional_metrics)
 
-    save_path = kwargs['save_path']
-    pathlib.Path(save_path).parent.mkdir(parents=True, exist_ok=True)
-    torch.save(model.state_dict(), save_path)
+    save_to = kwargs['save_to']
+    pathlib.Path(save_to).parent.mkdir(parents=True, exist_ok=True)
+    torch.save(model.state_dict(), save_to)
 
-# TODO: Che dati (genuine, adversarial, random) usare per addestrare l'approssimatore?
-# TODO: Messaggi di errore più accurati se non passi --is-adversarial-dataset
+# TODO: Dividere in più file?
 
+# TODO: Spiegare che --from-adversarial-dataset usa genuine-adversarial per calcolare la distanza per i genuine
+
+# Nota: keep_misclassified viene ignorato per gli adversarial examples, dato che per definizione vengono misclassificati
+@main.command()
+@click.argument('domain', type=click.Choice(parsing.domains))
+@click.argument('architecture', type=click.Choice(parsing.architectures))
+@click.argument('attacks', callback=parsing.ParameterList(parsing.attacks))
+@click.argument('p', type=click.Choice(parsing.distances), callback=parsing.validate_lp_distance)
+@click.argument('save_to', type=click.Path(exists=False, file_okay=True, dir_okay=False))
+@click.option('--state-dict-path', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None)
+@click.option('--from-genuine', default=None)
+@click.option('--from-adversarial', default=None)
+@click.option('--batch-size', type=click.IntRange(1), default=50, show_default=True)
+@click.option('--attack-config-file', type=click.Path(exists=True, file_okay=True, dir_okay=False), default='default_attack_configuration.cfg', show_default=True)
+@click.option('--keep-misclassified', is_flag=True)
+@click.option('--device', default='cuda', show_default=True)
+@click.option('--max-samples', type=click.IntRange(1, None), default=None)
+def distance_dataset(**kwargs):
+    model = parsing.get_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'], True, load_weights=True)
+    model.eval()
+    model.to(kwargs['device'])
+
+    attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
+
+    attack_pool = parsing.get_attack_pool(kwargs['attacks'], kwargs['domain'], kwargs['p'], 'standard', model, attack_config)
+
+    p = kwargs['p']
+
+    if kwargs['from_genuine'] is None and kwargs['from_adversarial'] is None:
+        raise RuntimeError('At least one among --from-genuine and --from-adversarial must be provided.')
+
+    images = []
+    distances = []
+
+    if kwargs['from_genuine'] is not None:
+        genuine_dataset = parsing.get_dataset(kwargs['domain'], kwargs['from_genuine'], max_samples=kwargs['max_samples'])
+        genuine_loader = torch.utils.data.DataLoader(genuine_dataset, kwargs['batch_size'], shuffle=False)
+        genuine_result_dataset = tests.attack_test(model, attack_pool, genuine_loader, p, not kwargs['keep_misclassified'], kwargs['device'], attack_config, kwargs, None)
+
+        images += list(genuine_result_dataset.genuines)
+        distances += list(genuine_result_dataset.distances)
+
+    if kwargs['from_adversarial'] is not None:
+        adversarial_dataset = parsing.get_dataset(kwargs['domain'], kwargs['from_adversarial'], allow_standard=False, max_samples=kwargs['max_samples'])
+
+        # Get the labels for the adversarial samples
+        adversarial_dataset = utils.create_label_dataset(model, adversarial_dataset.adversarials, kwargs['batch_size'])
+
+        adversarial_loader = torch.utils.data.DataLoader(adversarial_dataset, kwargs['batch_size'], shuffle=False)
+        adversarial_result_dataset = tests.attack_test(model, attack_pool, adversarial_loader, p, False, kwargs['device'], attack_config, kwargs, None)
+
+        images += list(adversarial_result_dataset.genuines)
+        distances += list(adversarial_result_dataset.distances)
+
+    images = torch.stack(images)
+    distances = torch.stack(distances)
+
+    final_dataset = ad.AdversarialDistanceDataset(images, distances)
+
+    utils.save_zip(final_dataset, kwargs['save_to'])
+    
 @main.command()
 @click.argument('domain', type=click.Choice(parsing.domains))
 @click.argument('architecture', type=click.Choice(parsing.architectures))
 @click.argument('dataset', type=click.Path(exists=True, file_okay=True, dir_okay=False))
 @click.argument('epochs', type=click.IntRange(1, None))
-@click.argument('save_path', type=click.Path(exists=False, file_okay=True, dir_okay=False))
+@click.argument('save_to', type=click.Path(exists=False, file_okay=True, dir_okay=False))
 @click.option('--state-dict-path', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None)
 @click.option('--batch-size', type=click.IntRange(1), default=50, show_default=True)
 @click.option('--device', default='cuda', show_default=True)
 @click.option('--from-adversarial-dataset', is_flag=True)
+@click.option('--val-from-adversarial-dataset', is_flag=True)
 @add_options(training_options)
 def train_approximator(**kwargs):
     model = parsing.get_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'], True, load_weights=False, as_detector=True)
@@ -104,6 +168,9 @@ def train_approximator(**kwargs):
 
     if kwargs['from_adversarial_dataset']:
         train_dataset = train_dataset.to_distance_dataset()
+    elif isinstance(train_dataset, ad.AdversarialDataset):
+        raise click.BadArgumentUsage('Expected a distance dataset as training dataset, got an adversarial dataset. '
+                                    'If this is intentional, use --from-adversarial-dataset .')
 
     train_dataloader = torch.utils.data.DataLoader(train_dataset, kwargs['batch_size'], shuffle=kwargs['shuffle'])
 
@@ -111,8 +178,11 @@ def train_approximator(**kwargs):
     if kwargs['validation_dataset'] is not None:
         val_dataset = parsing.get_dataset(kwargs['domain'], kwargs['validation_dataset'], allow_standard=False)
 
-        if kwargs['from_adversarial_dataset']:
+        if kwargs['val_from_adversarial_dataset']:
             val_dataset = val_dataset.to_distance_dataset()
+        elif isinstance(val_dataset, ad.AdversarialDataset):
+            raise click.BadArgumentUsage('Expected a distance dataset as validation dataset, got an adversarial dataset. '
+                                        'If this is intentional, use --val-from-adversarial-dataset .')
 
         # There's no point in shuffling the validation dataset
         val_dataloader = torch.utils.data.DataLoader(val_dataset, kwargs['batch_size'], shuffle=False)
@@ -122,9 +192,9 @@ def train_approximator(**kwargs):
 
     torch_utils.train(model, train_dataloader, optimiser, loss, kwargs['epochs'], kwargs['device'], val_loader=val_dataloader)
 
-    save_path = kwargs['save_path']
-    pathlib.Path(save_path).parent.mkdir(parents=True, exist_ok=True)
-    torch.save(model.state_dict(), save_path)
+    save_to = kwargs['save_to']
+    pathlib.Path(save_to).parent.mkdir(parents=True, exist_ok=True)
+    torch.save(model.state_dict(), save_to)
 
 @main.command()
 @click.argument('domain', type=click.Choice(parsing.domains))

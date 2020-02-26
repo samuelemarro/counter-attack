@@ -40,6 +40,7 @@ class AdversarialDataset(data.Dataset):
     def __len__(self):
         return len(self.genuines)
 
+# TODO: Rimuovere?
 class AdversarialTrainingDataset(data.Dataset):
     def __init__(self, adversarials, original_labels):
         assert len(adversarials) == len(original_labels)
@@ -53,6 +54,7 @@ class AdversarialTrainingDataset(data.Dataset):
     def __len__(self):
         return len(self.adversarials)
 
+# TODO: Rimuovere?
 class AdversarialDistanceDataset(data.Dataset):
     def __init__(self, images, distances):
         assert len(images) == len(distances)
@@ -61,6 +63,7 @@ class AdversarialDistanceDataset(data.Dataset):
         self.distances = distances
 
     def __getitem__(self, idx):
+        # TODO: Togliere unsqueeze?
         return (self.images[idx], self.distances[idx].unsqueeze(0))
 
     def __len__(self):
