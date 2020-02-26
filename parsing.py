@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 domains = ['cifar10']
 architectures = ['resnet50']
-attacks = ['carlini', 'deepfool', 'fgm', 'fgsm', 'pgd']
+attacks = ['carlini', 'deepfool', 'fast_gradient', 'pgd']
 distances = ['l2', 'linf']
 
 def get_model(domain, architecture, state_dict_path, apply_normalisation, load_weights=False, as_detector=False):
@@ -145,7 +145,8 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
                 raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, p, attack_type))
         else:
             raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, p))
-    elif attack_name == 'fgm':
+    elif attack_name == 'fast_gradient':
+        # FGM is the L2 variant, FGSM is the LInf variant (TODO: Check to make sure)
         if p == 'l2':
             if attack_type == 'standard':
                 attack = advertorch.attacks.FGM(model, **kwargs)
@@ -154,10 +155,7 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
                 attack = advertorch.attacks.FGM(defended_model, **kwargs)
             else:
                 raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, p, attack_type))
-        else:
-            raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, p))
-    elif attack_name == 'fgsm':
-        if p == 'l2':
+        elif p == 'linf':
             if attack_type == 'standard':
                 attack = advertorch.attacks.FGSM(model, **kwargs)
             elif attack_type == 'evasion':
