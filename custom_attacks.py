@@ -79,7 +79,7 @@ class AttackPool(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 # Nota: Aggiorna eps se ha una distanza più bassa
 
 class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
-    def __init__(self, predict, ord, attack, unsqueeze, targeted=False, min_eps=0, max_eps=1, initial_search_steps=9, binary_search_steps=9):
+    def __init__(self, predict, ord, attack, unsqueeze, targeted=False, defended_model=None, min_eps=0, max_eps=1, initial_search_steps=9, binary_search_steps=9):
         super().__init__(predict, None, None, None)
 
         self.predict = predict
@@ -87,6 +87,7 @@ class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.La
         self.attack = attack
         self.unsqueeze = unsqueeze
         self.targeted = targeted
+        self.defended_model = defended_model
         self.min_eps = min_eps
         self.max_eps = max_eps
         self.initial_search_steps = initial_search_steps
@@ -107,7 +108,11 @@ class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.La
         return attack(x, y=y)
 
     def successful(self, adversarials, y):
-        return utils.check_success(self.predict, adversarials, y, False)
+        if self.defended_model is None:
+            return utils.check_success(self.predict, adversarials, y, False)
+        else:
+            # The adversarials must be misclassified and must not be rejected.
+            return utils.check_success(self.defended_model, adversarials, y, True)
 
     def perturb(self, x, y=None):
         x, y = self._verify_and_process_inputs(x, y)

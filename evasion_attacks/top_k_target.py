@@ -1,12 +1,11 @@
 import torch
 
-# TODO: Controllare
-
+# Importante: predict è il modello non difeso
 class TopKTargetEvasionAttack:
     """Chooses the kth top predicted label (by default the 2nd).
     """
-    def __init__(self, classifier, attack_on_detector_classifier, k=2):
-        self.classifier = classifier
+    def __init__(self, predict, attack_on_detector_classifier, k=2):
+        self.predict = predict
 
         assert attack_on_detector_classifier.targeted
         self.attack_on_detector_classifier = attack_on_detector_classifier
@@ -16,7 +15,7 @@ class TopKTargetEvasionAttack:
         self.targeted = False # Always false
 
     def perturb(self, x, y=None, **kwargs):
-        predictions = self.classifier(x)
+        predictions = self.predict(x)
         _, target_labels = torch.topk(predictions, k=self.k)
         target_labels = target_labels[:, -1]
 

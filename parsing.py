@@ -142,7 +142,7 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
         raise ValueError('Evasion attacks require a defended model.')
 
     if attack_type == 'standard' and defended_model is not None:
-        logger.warn('You are passing a defended model, even for a standard attack. Is this expected?')
+        raise ValueError('Passed a defended_model for a standard attack.')
 
     if domain == 'cifar10':
         num_classes = 10
@@ -233,7 +233,6 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
 
 
     # If necessary, wrap the attack in a binary search wrapper
-    # TODO: Detector support?
     if binary_search:
         if attack_name == 'pgd':
             unsqueeze = False
@@ -249,6 +248,9 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
             binary_search_kwargs['initial_search_steps'] = initial_search_steps
         if binary_search_steps is not None:
             binary_search_kwargs['binary_search_steps'] = binary_search_steps
+
+        if attack_type == 'evasion':
+            binary_search_kwargs['defended_model'] = defended_model
 
         attack = custom_attacks.EpsilonBinarySearchAttack(model, p, attack, unsqueeze, **binary_search_kwargs)
 

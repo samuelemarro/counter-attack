@@ -1,20 +1,20 @@
 import torch
 
-# TODO: Prendere num_classes in input?
 # TODO: Controllare
 
+# Importante: predict è il modello non difeso
 class RandomTargetEvasionAttack:
     """Chooses a random label that is not the
     original one.
     """
-    def __init__(self, classifier, attack_on_detector_classifier):
-        self.classifier = classifier
+    def __init__(self, predict, attack_on_detector_classifier):
+        self.predict = predict
         assert attack_on_detector_classifier.targeted
         self.attack_on_detector_classifier = attack_on_detector_classifier
         self.targeted = False # Always false
 
     def perturb(self, x, y=None, **kwargs):
-        predictions = self.classifier(x)
+        predictions = self.predict(x)
 
         assert len(predictions) == len(x)
 
