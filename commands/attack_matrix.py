@@ -11,7 +11,6 @@ import utils
 
 logger = logging.getLogger(__name__)
 
-# TODO: Perché il tasso di successo è diverso quando il threshold di rifiuto è 50?
 # TODO: La CLI è scomoda quando devi passare valori negativi
 
 @click.command()

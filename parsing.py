@@ -1,6 +1,7 @@
 import logging
 
 import advertorch
+import advertorch.bpda
 import click
 import custom_attacks
 import numpy as np
@@ -169,7 +170,7 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
                 attack = advertorch.attacks.CarliniWagnerL2Attack(model, num_classes, **kwargs)
             elif attack_type == 'evasion':
                 # TODO: è la scelta migliore?
-                attack = advertorch.attacks.CarliniWagnerL2Attack(defended_model, num_classes + 1, **kwargs)
+                attack = advertorch.attacks.CarliniWagnerL2Attack(defended_model, num_classes + 1, targeted=True, **kwargs)
                 attack = custom_attacks.TopKEvasionAttack(model, attack)
             else:
                 raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, metric, attack_type))
@@ -260,7 +261,7 @@ def get_attack_pool(attack_names, domain, p, attack_type, model, attack_config, 
     if len(attacks) == 1:
         return attacks[0]
     else:
-        return custom_attacks.AttackPool(attacks, p)
+        return custom_attacks.AttackPool(model, attacks, p)
 
 def get_detector(attack_name, domain, p, attack_type, model, attack_config, device, substitute_architecture=None, substitute_state_dict_path=None):
     model.to(device)

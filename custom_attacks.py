@@ -13,13 +13,18 @@ import utils
 
 MAX_DISTANCE = 1e10
 
+# TODO: Remember to always check the .targeted of what you're working with,
+# as well as if you're using the standard or defended model
+
 class RandomTargetEvasionAttack:
     """Chooses a random label that is not the
     original one.
     """
     def __init__(self, classifier, attack_on_detector_classifier):
         self.classifier = classifier
+        assert attack_on_detector_classifier.targeted
         self.attack_on_detector_classifier = attack_on_detector_classifier
+        self.targeted = False # Always false
 
     def perturb(self, x, y=None, **kwargs):
         predictions = self.classifier(x)
@@ -52,8 +57,10 @@ class TopKEvasionAttack:
     """
     def __init__(self, classifier, attack_on_detector_classifier, k=2):
         self.classifier = classifier
+        assert attack_on_detector_classifier.targeted
         self.attack_on_detector_classifier = attack_on_detector_classifier
         self.k = k
+        self.targeted = False # Always false
 
     def perturb(self, x, y=None, **kwargs):
         predictions = self.classifier(x)
@@ -64,12 +71,29 @@ class TopKEvasionAttack:
 
         return self.attack_on_detector_classifier.perturb(x, y=target_labels, **kwargs)
 
-class AttackPool:
-    def __init__(self, attacks, p):
+# TODO: Usa check_success con has_detector=False
+
+
+# Nota: In ogni attacco, per "predict" si intende il modello indifeso
+
+class AttackPool(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
+    def __init__(self, predict, attacks, p):
+        self.predict = predict
+        assert all(not attack.targeted for attack in attacks)
         self.attacks = attacks
         self.p = p
+        self.targeted = False # Always false
+
+    def successful(self, adversarials, y):
+        return utils.check_success(self.predict, adversarials, y, False)
 
     def perturb(self, x, y=None):
+        x, y = self._verify_and_process_inputs(x, y)
+
+        # Initialization
+        if y is None:
+            y = self._get_predicted_label(x)
+        
         pool_results = torch.stack([attack.perturb(x, y=y) for attack in self.attacks], 1)
 
         assert pool_results.shape[1] == len(self.attacks)
@@ -77,16 +101,29 @@ class AttackPool:
         
         best_adversarials = []
 
-        for original, pool_result in zip(x, pool_results):
-            # Bisogna prima appiattire affinché pairwise_distance calcoli correttamente
-            # (original è singolo, pool_result è una batch)
-            distances = torch.pairwise_distance(original.flatten(), pool_result.flatten(1), self.p)
-
-            assert distances.shape == (len(pool_result),)
-
-            best_distance_index = torch.argmin(distances)
+        for original, pool_result, label in zip(x, pool_results, y):
+            expanded_label = label.expand(len(pool_result))
             
-            best_adversarials.append(pool_result[best_distance_index])
+            successful = self.successful(pool_result, expanded_label)
+            assert successful.shape == (len(successful),)
+
+            if successful.any():
+                successful_adversarials = pool_result[successful]
+
+                # Bisogna prima appiattire affinché pairwise_distance calcoli correttamente
+                # (original è singolo, pool_result è una batch)
+                distances = torch.pairwise_distance(original.flatten(), pool_result.flatten(1), self.p)
+
+                assert distances.shape == (len(successful_adversarials),)
+
+                best_distance_index = torch.argmin(distances)
+            
+                best_adversarials.append(successful_adversarials[best_distance_index])
+            else:
+                # All the attacks failed: Return the original
+                best_adversarials.append(original)
+
+            
 
         best_adversarials = torch.stack(best_adversarials)
 
@@ -98,12 +135,15 @@ class AttackPool:
 
 # Nota: Aggiorna eps se ha una distanza più bassa
 
-class EpsilonBinarySearchAttack:
-    def __init__(self, predict, ord, attack, unsqueeze, min_eps=0, max_eps=1, initial_search_steps=9, binary_search_steps=9,):
+class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
+    def __init__(self, predict, ord, attack, unsqueeze, targeted=False, min_eps=0, max_eps=1, initial_search_steps=9, binary_search_steps=9):
+        super().__init__(predict, None, None, None)
+
         self.predict = predict
         self.ord = ord
         self.attack = attack
         self.unsqueeze = unsqueeze
+        self.targeted = targeted
         self.min_eps = min_eps
         self.max_eps = max_eps
         self.initial_search_steps = initial_search_steps
@@ -127,6 +167,12 @@ class EpsilonBinarySearchAttack:
         return utils.check_success(self.predict, adversarials, y, False)
 
     def perturb(self, x, y=None):
+        x, y = self._verify_and_process_inputs(x, y)
+
+        # Initialization
+        if y is None:
+            y = self._get_predicted_label(x)
+        
         best_adversarials = x.clone()
         N = x.shape[0]
 

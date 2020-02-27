@@ -24,6 +24,7 @@ def accuracy(model, loader, device):
     return correct_count / total_count
 
 def attack_test(model, attack, loader, p, remove_misclassified, device, generation_kwargs, attack_configuration, defended_model):
+    assert not attack.targeted
     model.to(device)
 
     total_count = 0
@@ -68,6 +69,8 @@ def attack_test(model, attack, loader, p, remove_misclassified, device, generati
     return adversarial_dataset.AdversarialDataset(all_images, all_labels, all_adversarials, p, total_count, attack_configuration, generation_kwargs)
 
 def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p, remove_misclassified, device, attack_configuration, generation_kwargs):
+    assert all(not attack.targeted for attack in attacks)
+
     model.to(device)
 
     for defended_model in defended_models:

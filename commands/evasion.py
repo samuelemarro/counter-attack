@@ -11,6 +11,10 @@ import utils
 
 logger = logging.getLogger(__name__)
 
+# Nota: Molto spesso, il threshold di rifiuto influenza la distanza ottenuta anche quando non influenza
+# il tasso di successo dell'evasion. Questo è perché cambiare il threshold cambia la loss, cambiando
+# quindi il comportamento dell'attacco
+
 # Supporto per metrica diversa?
 @click.command()
 @click.argument('domain', type=click.Choice(parsing.domains))

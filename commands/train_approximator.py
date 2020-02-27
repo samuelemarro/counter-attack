@@ -11,7 +11,6 @@ import torch_utils
 
 logger = logging.getLogger(__name__)
 
-# TODO: Dividere in più file?
 # TODO: Riorganizzare gli attacchi in più file?
 
 # Nota: keep_misclassified viene ignorato per gli adversarial examples, dato che per definizione vengono misclassificati
