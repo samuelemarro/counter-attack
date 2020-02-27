@@ -21,6 +21,36 @@ attacks = ['carlini', 'deepfool', 'fast_gradient', 'pgd']
 attacks_with_binary_search = ['fast_gradient', 'pgd']
 distances = ['l2', 'linf']
 
+training_options = [
+    click.option('--optimiser', type=click.Choice(['adam', 'sgd']), default='adam', show_default=True,
+        help='The optimiser that will be used for training.'),
+    click.option('--learning_rate', type=float, default=1e-3, show_default=True,
+        help='The learning rate for the optimiser.'),
+    click.option('--weight-decay', type=float, default=0, show_default=True,
+        help='The weight decay for the optimiser.'),
+    click.option('--adam-betas', nargs=2, type=click.Tuple([float, float]), default=(0.9, 0.999), show_default=True,
+        help='The two beta values. Ignored if the optimiser is not \'adam\''),
+    click.option('--adam-epsilon', type=float, default=1e-8, show_default=True,
+        help='The value of epsilon. Ignored if the optimiser is not \'adam\''),
+    click.option('--adam-amsgrad', is_flag=True,
+        help='Enables AMSGrad. Ignored if the optimiser is not \'adam\''),
+    click.option('--sgd-momentum', type=float, default=0, show_default=True,
+        help='The intensity of momentum. Ignored if the optimiser is not \'sgd\''),
+    click.option('--sgd-dampening', type=float, default=0, show_default=True,
+        help='The intensity of dampening. Ignored if the optimiser is not \'sgd\''),
+    click.option('--sgd-nesterov', is_flag=True,
+        help='Enables Nesterov Accelerated Gradient. Ignored if the optimiser is not \'adam\''),
+    click.option('--validation-dataset', default=None),
+    click.option('--shuffle', is_flag=True)
+]
+
+def add_options(options):
+    def _add_options(func):
+        for option in reversed(options):
+            func = option(func)
+        return func
+    return _add_options
+
 def get_model(domain, architecture, state_dict_path, apply_normalisation, load_weights=False, as_detector=False):
     if as_detector:
         num_classes = 1
