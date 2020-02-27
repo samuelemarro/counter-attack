@@ -4,11 +4,12 @@ import advertorch
 import advertorch.bpda
 import click
 import custom_attacks
+import evasion_attacks
 import numpy as np
 import torch
 import torchvision
 
-import additional_attacks
+import standard_attacks
 import cifar10_models
 import detectors
 import torch_utils
@@ -171,12 +172,12 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
             elif attack_type == 'evasion':
                 # TODO: è la scelta migliore?
                 attack = advertorch.attacks.CarliniWagnerL2Attack(defended_model, num_classes + 1, targeted=True, **kwargs)
-                attack = custom_attacks.TopKEvasionAttack(model, attack)
+                attack = evasion_attacks.TopKTargetEvasionAttack(model, attack)
             else:
                 raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, metric, attack_type))
         elif metric == 'linf':
             if attack_type == 'standard':
-                attack = additional_attacks.carlini_linf.CarliniWagnerLInfAttack(model, num_classes, **kwargs)
+                attack = standard_attacks.CarliniWagnerLInfAttack(model, num_classes, **kwargs)
             else:
                 raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, metric, attack_type))
         else:
@@ -184,12 +185,12 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
     elif attack_name == 'deepfool':
         if metric == 'l2':
             if attack_type == 'standard':
-                attack = additional_attacks.deepfool.L2DeepFoolAttack(model, **kwargs)
+                attack = standard_attacks.L2DeepFoolAttack(model, **kwargs)
             else:
                 raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, metric, attack_type))
         elif metric == 'linf':
             if attack_type == 'standard':
-                attack = additional_attacks.deepfool.LInfDeepFoolAttack(model, **kwargs)
+                attack = standard_attacks.LInfDeepFoolAttack(model, **kwargs)
             else:
                 raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, metric, attack_type))
         else:
