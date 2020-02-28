@@ -9,6 +9,7 @@ def main():
 main.add_command(commands.accuracy)
 main.add_command(commands.attack)
 main.add_command(commands.attack_matrix)
+main.add_command(commands.compare)
 main.add_command(commands.cross_validation)
 main.add_command(commands.distance_dataset)
 main.add_command(commands.evasion)

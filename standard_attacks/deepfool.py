@@ -9,6 +9,7 @@ def atleast_kd(x, k):
     return x.reshape(shape)
 
 # TODO: Usa check_success con has_detector=False
+# TODO: Controllare che l'implementazione sia corretta
 
 class DeepFoolAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     """A simple and fast gradient-based adversarial attack.
@@ -46,6 +47,8 @@ class DeepFoolAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
         self.clip_min = 0
         self.clip_max = 1
+
+        self.targeted = False # Always false
 
     def loss(self, x, classes, k):
         N = len(classes)

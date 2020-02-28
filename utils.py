@@ -1,5 +1,6 @@
 import gzip
 import json
+import itertools
 import logging
 import pathlib
 import pickle
@@ -84,14 +85,24 @@ def adversarial_distance(genuines, adversarials, p):
     if len(genuines) == 0:
         return torch.zeros([0])
     else:
-        genuines = genuines.reshape(len(genuines), -1)
-        adversarials = adversarials.reshape(len(adversarials), -1)
+        genuines = genuines.flatten(1)
+        adversarials = adversarials.flatten(1)
 
         distances = torch.nn.functional.pairwise_distance(genuines, adversarials, p)
 
         assert len(distances) == len(genuines)
 
         return distances
+
+def one_many_adversarial_distance(one, many, p):
+    assert one.shape == many.shape[1:]
+
+    # Add a batch dimension that matches many's batch size
+    one = one.unsqueeze(0).expand(len(many), -1, -1, -1)
+
+    assert one.shape == many.shape
+
+    return adversarial_distance(one, many, p)
 
 def remove_misclassified(model, images, labels):
     """Removes samples that are misclassified by the model.
@@ -219,3 +230,13 @@ def create_label_dataset(model, images, batch_size):
     labels = torch.stack(labels)
 
     return torch.utils.data.TensorDataset(images, labels)
+
+def powerset(iterable, allow_empty=False):
+    if allow_empty:
+        start = 0
+    else:
+        start = 1
+
+    s = list(iterable)
+
+    return list(itertools.chain.from_iterable(itertools.combinations(s, r) for r in range(start, len(s)+1)))

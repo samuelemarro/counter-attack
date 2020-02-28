@@ -52,10 +52,8 @@ class AttackPool(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
             if successful.any():
                 successful_adversarials = pool_result[successful]
-
-                # Bisogna prima appiattire affinché pairwise_distance calcoli correttamente
-                # (original è singolo, pool_result è una batch)
-                distances = torch.pairwise_distance(original.flatten(), pool_result.flatten(1), self.p)
+                
+                distances = utils.one_many_adversarial_distance(original, successful_adversarials, self.p)
 
                 assert distances.shape == (len(successful_adversarials),)
 
@@ -65,8 +63,6 @@ class AttackPool(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             else:
                 # All the attacks failed: Return the original
                 best_adversarials.append(original)
-
-            
 
         best_adversarials = torch.stack(best_adversarials)
 
@@ -163,5 +159,7 @@ class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.La
 
             # Failure: Try again with a higher eps
             eps_lower_bound[~replace] = eps[~replace]
+
+        assert best_adversarials.shape == x.shape
 
         return best_adversarials
