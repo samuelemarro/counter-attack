@@ -109,15 +109,7 @@ def cross_validation(**kwargs):
     for test_name in test_names:
         print('Test "{}":'.format(test_name))
         adversarial_dataset = evasion_dataset.to_adversarial_dataset(test_name)
-        distances = adversarial_dataset.distances.numpy()
-
-        success_rate = adversarial_dataset.attack_success_rate
-        median_distance = np.median(distances)
-        average_distance = np.average(distances)
-
-        print('Success Rate: {:.2f}%'.format(success_rate * 100.0))
-        print('Median Distance: {}'.format(median_distance))
-        print('Average Distance: {}'.format(average_distance))
+        adversarial_dataset.print_stats()
 
         if kwargs['show'] is not None:
             utils.show_images(adversarial_dataset.genuines, adversarial_dataset.adversarials, limit=kwargs['show'], model=model)

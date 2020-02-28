@@ -82,15 +82,7 @@ def evasion(**kwargs):
     evasion_pool = parsing.get_attack_pool(kwargs['evasion_attacks'], kwargs['domain'], kwargs['p'], 'evasion', model, attack_config, defended_model=defended_model)
 
     adversarial_dataset = tests.attack_test(model, evasion_pool, dataloader, p, not kwargs['keep_misclassified'], kwargs['device'], attack_config, kwargs, defended_model)
-    distances = adversarial_dataset.distances.numpy()
-
-    success_rate = adversarial_dataset.attack_success_rate
-    median_distance = np.median(distances)
-    average_distance = np.average(distances)
-
-    print('Success Rate: {:.2f}%'.format(success_rate * 100.0))
-    print('Median Distance: {}'.format(median_distance))
-    print('Average Distance: {}'.format(average_distance))
+    adversarial_dataset.print_stats()
 
     if kwargs['save_to'] is not None:
         utils.save_zip(adversarial_dataset, kwargs['save_to'])

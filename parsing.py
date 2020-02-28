@@ -19,8 +19,8 @@ logger = logging.getLogger(__name__)
 
 domains = ['cifar10']
 architectures = ['resnet50']
-attacks = ['carlini', 'deepfool', 'fast_gradient', 'pgd']
-attacks_with_binary_search = ['fast_gradient', 'pgd']
+attacks = ['bim', 'carlini', 'deepfool', 'fast_gradient', 'pgd']
+attacks_with_binary_search = ['bim', 'fast_gradient', 'pgd']
 distances = ['l2', 'linf']
 
 training_options = [
@@ -154,10 +154,13 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
     kwargs.pop('enable_binary_search', None)
 
     if binary_search:
+        logger.debug('Enabling binary search for {}'.format(attack_name))
         # Remove standard arguments
         kwargs.pop('eps', None)
         if attack_name not in attacks_with_binary_search:
-            raise NotImplementedError('Attack {} does not support binary search'.format(attack_name))
+            raise NotImplementedError('Attack {} does not support binary search.'.format(attack_name))
+    elif attack_name in attacks_with_binary_search:
+        logger.debug('Binary search is supported for {}, but not enabled.'.format(binary_search))
 
     # Pop binary search arguments
     min_eps = kwargs.pop('min_eps', None)
@@ -165,7 +168,20 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
     initial_search_steps = kwargs.pop('initial_search_steps', None)
     binary_search_steps = kwargs.pop('binary_search_steps', None)
 
-    if attack_name == 'carlini':
+    if attack_name == 'bim':
+        if metric == 'l2':
+            if attack_type == 'standard':
+                attack = advertorch.attacks.L2BasicIterativeAttack(model)
+            else:
+                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, metric, attack_type))
+        elif metric == 'linf':
+            if attack_type == 'standard':
+                attack = advertorch.attacks.LinfBasicIterativeAttack(model)
+            else:
+                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, metric, attack_type))
+        else:
+            raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, metric))
+    elif attack_name == 'carlini':
         if metric == 'l2':
             if attack_type == 'standard':
                 attack = advertorch.attacks.CarliniWagnerL2Attack(model, num_classes, **kwargs)
@@ -234,7 +250,7 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
 
     # If necessary, wrap the attack in a binary search wrapper
     if binary_search:
-        if attack_name == 'pgd':
+        if attack_name in ['bim', 'pgd']:
             unsqueeze = False
         elif attack_name == 'fast_gradient':
             unsqueeze = True

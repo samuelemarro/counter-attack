@@ -52,7 +52,7 @@ class AttackPool(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
             if successful.any():
                 successful_adversarials = pool_result[successful]
-                
+
                 distances = utils.one_many_adversarial_distance(original, successful_adversarials, self.p)
 
                 assert distances.shape == (len(successful_adversarials),)

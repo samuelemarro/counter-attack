@@ -81,8 +81,6 @@ class AdversarialDistanceDataset(data.Dataset):
     def __len__(self):
         return len(self.images)
 
-# TODO: Usare print_stats()?
-
 class EvasionResultDataset(data.Dataset):
     def __init__(self, genuines, original_labels, test_names, attack_results, p, attack_configuration, generation_kwargs):
         assert len(genuines) == len(original_labels)
