@@ -10,6 +10,13 @@ def atleast_kd(x, k):
 
 # TODO: Usa check_success con has_detector=False
 # TODO: Controllare che l'implementazione sia corretta
+# TODO: è normale che riceva direttamente y= ?
+
+
+# Per l'implementazione:
+# Success deve controllare che la label non sia rejected
+# Credo si possa fare che ignori completamente la label rejected
+# In alternativa, si può fitrare da classes, oppure si può scegliere un best diverso
 
 class DeepFoolAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     """A simple and fast gradient-based adversarial attack.
@@ -35,7 +42,7 @@ class DeepFoolAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         self,
         predict,
         steps = 50,
-        candidates = 10,
+        candidates = None,
         overshoot = 0.02,
         clip_min = 0,
         clip_max = 1
@@ -79,7 +86,7 @@ class DeepFoolAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                 raise ValueError(  # pragma: no cover
                     f"expected the model output to have atleast 2 classes, got {logits.shape[-1]}"
                 )
-            classes = classes[:, :candidates]
+            classes = classes[:, :candidates] # TODO: Qual è la sua shape? E i suoi valori?
 
         N = len(x)
         rows = range(N)

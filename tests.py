@@ -54,6 +54,11 @@ def attack_test(model, attack, loader, p, remove_misclassified, device, generati
         else:
             images, labels, adversarials = utils.remove_failed(defended_model, images, labels, adversarials, True)
 
+        # Move to CPU
+        images = images.cpu()
+        labels = labels.cpu()
+        adversarials = adversarials.cpu()
+
         all_images += list(images)
         all_labels += list(labels)
         all_adversarials += list(adversarials)
@@ -108,7 +113,11 @@ def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p
 
             for i in range(len(images)):
                 if successful[i]:
-                    attack_results[i][test_name] = adversarials[i]
+                    # Move to CPU and save
+                    attack_results[i][test_name] = adversarials[i].cpu()
+            
+            images = images.cpu()
+            labels = labels.cpu()
 
         all_images += list(images)
         all_labels += list(labels)
@@ -162,7 +171,11 @@ def multiple_attack_test(model, attack_names, attacks, loader, p, remove_misclas
 
             for i in range(len(images)):
                 if successful[i]:
-                    attack_results[i][test_name] = adversarials[i]
+                    # Move to CPU and save
+                    attack_results[i][test_name] = adversarials[i].cpu()
+
+            images = images.cpu()
+            labels = labels.cpu()
 
         all_images += list(images)
         all_labels += list(labels)

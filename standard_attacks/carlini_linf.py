@@ -20,8 +20,6 @@ CARLINI_COEFF_UPPER = 1e10
 TARGET_MULT = 10000.0
 EPS = 1e-6
 
-# TODO: Usa check_success con has_detector=False
-
 class CarliniWagnerLInfAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     def __init__(self, predict, num_classes, min_tau=1/256,
                  tau_multiplier=0.9, const_multiplier=2, halve_const=True, confidence=0,
@@ -52,11 +50,9 @@ class CarliniWagnerLInfAttack(advertorch.attacks.Attack, advertorch.attacks.Labe
         real = (y_onehot * output).sum(dim=1)
 
         other = ((1.0 - y_onehot) * output - (y_onehot * TARGET_MULT)
-                 ).max(1)[0]
+                 ).max(dim=1)[0]
         # - (y_onehot * TARGET_MULT) is for the true label not to be selected
 
-        #print(real.cpu().detach().numpy())
-        #print(other.cpu().detach().numpy())
         if self.targeted:
             loss1 = torch.clamp(other - real + self.confidence, min=0.)
         else:
@@ -64,8 +60,8 @@ class CarliniWagnerLInfAttack(advertorch.attacks.Attack, advertorch.attacks.Labe
 
         penalties = torch.clamp(torch.abs(delta) - tau, min=0)
 
-        loss1 = const * loss1#torch.sum(const * loss1)
-        loss2 = torch.sum(penalties, dim=(1, 2, 3))#torch.sum(penalties)
+        loss1 = const * loss1
+        loss2 = torch.sum(penalties, dim=(1, 2, 3))
 
         assert loss1.shape == loss2.shape
 
@@ -73,7 +69,14 @@ class CarliniWagnerLInfAttack(advertorch.attacks.Attack, advertorch.attacks.Labe
         return loss
 
     def successful(self, adversarials, y):
-        return utils.check_success(self.predict, adversarials, y, False)
+        if self.targeted:
+            adversarial_predictions = self.predict(adversarials)
+            adversarial_labels = torch.argmax(adversarial_predictions, axis=1)
+            assert adversarial_labels.shape == y.shape
+
+            return torch.eq(adversarial_labels, y)
+        else:
+            return utils.check_success(self.predict, adversarials, y, False)
 
     # Scales a 0-1 value to clip_min - clip_max range
     def scale_to_bounds(self, value):
