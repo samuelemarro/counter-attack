@@ -1,0 +1,55 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: File corrente",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        },
+        {
+            "name" : "Full Attack",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "attack",
+                "cifar10",
+                "resnet50",
+                "std:test",
+                "[bim, carlini, deepfool, fast_gradient, pgd]",
+                "linf",
+                "--max-samples",
+                "1000",
+                "--batch-size",
+                "10"
+            ]
+        },
+        {
+            "name" : "Full Fake Evasion",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "evasion",
+                "cifar10",
+                "resnet50",
+                "std:test",
+                "fast_gradient",
+                "[bim, carlini, deepfool, fast_gradient, pgd]",
+                "linf",
+                "50",
+                "resnet50",
+                "trained-models/approximator/carlini-l2-cifar-test-100.pth",
+                "--batch-size",
+                "5"
+            ]
+        }
+    ]
+}

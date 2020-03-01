@@ -2,19 +2,20 @@ import torch
 
 # TODO: Controllare
 
-# Importante: predict è il modello non difeso
+# Importante: undefended_model è il modello non difeso
 class RandomTargetEvasionAttack:
     """Chooses a random label that is not the
     original one.
     """
-    def __init__(self, predict, attack_on_detector_classifier):
-        self.predict = predict
+    def __init__(self, undefended_model, attack_on_detector_classifier):
+        self.undefended_model = undefended_model
         assert attack_on_detector_classifier.targeted
+        self.predict = attack_on_detector_classifier.predict
         self.attack_on_detector_classifier = attack_on_detector_classifier
         self.targeted = False # Always false
 
     def perturb(self, x, y=None, **kwargs):
-        predictions = self.predict(x)
+        predictions = self.undefended_model(x)
 
         assert len(predictions) == len(x)
 

@@ -21,6 +21,7 @@ domains = ['cifar10']
 architectures = ['resnet50']
 attacks = ['bim', 'carlini', 'deepfool', 'fast_gradient', 'pgd']
 attacks_with_binary_search = ['bim', 'fast_gradient', 'pgd']
+targeted_attacks = ['bim', 'carlini', 'fast_gradient', 'pgd']
 distances = ['l2', 'linf']
 
 training_options = [
@@ -149,6 +150,11 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
     else:
         raise NotImplementedError('Unsupported domain "{}".'.format(domain))
 
+    evade_detector = (attack_type == 'evasion')
+
+    if evade_detector:
+        num_classes += 1
+
     binary_search = 'enable_binary_search' in kwargs and kwargs['enable_binary_search']
         
     kwargs.pop('enable_binary_search', None)
@@ -168,85 +174,49 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
     initial_search_steps = kwargs.pop('initial_search_steps', None)
     binary_search_steps = kwargs.pop('binary_search_steps', None)
 
+    if evade_detector:
+        target_model = defended_model
+    else:
+        target_model = model
+
     if attack_name == 'bim':
         if metric == 'l2':
-            if attack_type == 'standard':
-                attack = advertorch.attacks.L2BasicIterativeAttack(model)
-            else:
-                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, metric, attack_type))
+            attack = standard_attacks.L2BasicIterativeAttack(target_model, targeted=evade_detector)
         elif metric == 'linf':
-            if attack_type == 'standard':
-                attack = advertorch.attacks.LinfBasicIterativeAttack(model)
-            else:
-                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, metric, attack_type))
+            attack = standard_attacks.LinfBasicIterativeAttack(target_model, targeted=evade_detector)
         else:
             raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, metric))
     elif attack_name == 'carlini':
         if metric == 'l2':
-            if attack_type == 'standard':
-                attack = advertorch.attacks.CarliniWagnerL2Attack(model, num_classes, **kwargs)
-            elif attack_type == 'evasion':
-                # TODO: è la scelta migliore?
-                attack = advertorch.attacks.CarliniWagnerL2Attack(defended_model, num_classes + 1, targeted=True, **kwargs)
-                attack = evasion_attacks.TopKTargetEvasionAttack(model, attack)
-            else:
-                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, metric, attack_type))
+            attack = advertorch.attacks.CarliniWagnerL2Attack(target_model, num_classes, targeted=evade_detector, **kwargs)
         elif metric == 'linf':
-            if attack_type == 'standard':
-                attack = standard_attacks.CarliniWagnerLInfAttack(model, num_classes, **kwargs)
-            else:
-                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, metric, attack_type))
+            attack = standard_attacks.CarliniWagnerLInfAttack(target_model, num_classes, targeted=evade_detector, **kwargs)
         else:
             raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, metric))
     elif attack_name == 'deepfool':
         if metric == 'l2':
-            if attack_type == 'standard':
-                attack = standard_attacks.L2DeepFoolAttack(model, **kwargs)
-            else:
-                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, metric, attack_type))
+            attack = standard_attacks.L2DeepFoolAttack(target_model, evade_detector, **kwargs)
         elif metric == 'linf':
-            if attack_type == 'standard':
-                attack = standard_attacks.LInfDeepFoolAttack(model, **kwargs)
-            else:
-                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, metric, attack_type))
+            attack = standard_attacks.LInfDeepFoolAttack(target_model, evade_detector, **kwargs)
         else:
             raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, metric))
     elif attack_name == 'fast_gradient':
         # FGM is the L2 variant, FGSM is the LInf variant
         if metric == 'l2':
-            if attack_type == 'standard':
-                attack = advertorch.attacks.FGM(model, **kwargs)
-            elif attack_type == 'evasion':
-                # TODO: è solo un placeholder
-                attack = advertorch.attacks.FGM(defended_model, **kwargs)
-            else:
-                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, metric, attack_type))
+            attack = advertorch.attacks.FGM(target_model, targeted=evade_detector, **kwargs)
         elif metric == 'linf':
-            if attack_type == 'standard':
-                attack = advertorch.attacks.FGSM(model, **kwargs)
-            elif attack_type == 'evasion':
-                # TODO: è solo un placeholder
-                attack = advertorch.attacks.FGSM(defended_model, **kwargs)
-            else:
-                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, metric, attack_type))
+            attack = advertorch.attacks.FGSM(target_model, targeted=evade_detector, **kwargs)
         else:
             raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, metric))
     elif attack_name == 'pgd':
         if metric == 'l2':
-            if attack_type == 'standard':
-                attack = advertorch.attacks.L2PGDAttack(model, **kwargs)
-            else:
-                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, metric, attack_type))
+            attack = advertorch.attacks.L2PGDAttack(target_model, targeted=evade_detector, **kwargs)
         elif metric == 'linf':
-            if attack_type == 'standard':
-                attack = advertorch.attacks.LinfPGDAttack(model, **kwargs)
-            else:
-                raise NotImplementedError('Unsupported attack "{}" for "{}" of type "{}".'.format(attack_name, metric, attack_type))
+            attack = advertorch.attacks.LinfPGDAttack(target_model, targeted=evade_detector, **kwargs)
         else:
             raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, metric))
     else:
         raise NotImplementedError('Unsupported attack "{}".'.format(attack_name))
-
 
     # If necessary, wrap the attack in a binary search wrapper
     if binary_search:
@@ -265,10 +235,11 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
         if binary_search_steps is not None:
             binary_search_kwargs['binary_search_steps'] = binary_search_steps
 
-        if attack_type == 'evasion':
-            binary_search_kwargs['defended_model'] = defended_model
+        attack = custom_attacks.EpsilonBinarySearchAttack(target_model, evade_detector, p, attack, unsqueeze, targeted=evade_detector, **binary_search_kwargs)
 
-        attack = custom_attacks.EpsilonBinarySearchAttack(model, p, attack, unsqueeze, **binary_search_kwargs)
+    # Convert targeted evasion attacks into untargeted ones
+    if evade_detector and (attack_name in targeted_attacks):
+        attack = evasion_attacks.TopKTargetEvasionAttack(model, attack)
 
     return attack
 
@@ -277,10 +248,16 @@ def get_attack_pool(attack_names, domain, p, attack_type, model, attack_config, 
     for attack_name in attack_names:
         attacks.append(get_attack(attack_name, domain, p, attack_type, model, attack_config, defended_model=defended_model))
 
+    evade_detector = (attack_type == 'evasion')
+    if evade_detector:
+        target_model = defended_model
+    else:
+        target_model = model
+
     if len(attacks) == 1:
         return attacks[0]
     else:
-        return custom_attacks.AttackPool(model, attacks, p)
+        return custom_attacks.AttackPool(target_model, evade_detector, attacks, p)
 
 def get_detector(attack_name, domain, p, attack_type, model, attack_config, device, substitute_architecture=None, substitute_state_dict_path=None):
     model.to(device)

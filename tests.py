@@ -75,6 +75,7 @@ def attack_test(model, attack, loader, p, remove_misclassified, device, generati
 
 def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p, remove_misclassified, device, attack_configuration, generation_kwargs):
     assert all(not attack.targeted for attack in attacks)
+    assert all(attack.predict == defended_model.predict for attack, defended_model in zip(attacks, defended_models))
 
     model.to(device)
 
@@ -116,8 +117,8 @@ def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p
                     # Move to CPU and save
                     attack_results[i][test_name] = adversarials[i].cpu()
             
-            images = images.cpu()
-            labels = labels.cpu()
+        images = images.cpu()
+        labels = labels.cpu()
 
         all_images += list(images)
         all_labels += list(labels)
@@ -174,8 +175,8 @@ def multiple_attack_test(model, attack_names, attacks, loader, p, remove_misclas
                     # Move to CPU and save
                     attack_results[i][test_name] = adversarials[i].cpu()
 
-            images = images.cpu()
-            labels = labels.cpu()
+        images = images.cpu()
+        labels = labels.cpu()
 
         all_images += list(images)
         all_labels += list(labels)

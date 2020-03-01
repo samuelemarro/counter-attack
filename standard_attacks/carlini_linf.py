@@ -21,7 +21,7 @@ TARGET_MULT = 10000.0
 EPS = 1e-6
 
 class CarliniWagnerLInfAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
-    def __init__(self, predict, num_classes, min_tau=1/256,
+    def __init__(self, predict, num_classes, min_tau=1/255,
                  tau_multiplier=0.9, const_multiplier=2, halve_const=True, confidence=0,
                  targeted=False, learning_rate=0.01,
                  max_iterations=10000,
@@ -70,10 +70,7 @@ class CarliniWagnerLInfAttack(advertorch.attacks.Attack, advertorch.attacks.Labe
 
     def successful(self, adversarials, y):
         if self.targeted:
-            adversarial_predictions = self.predict(adversarials)
-            adversarial_labels = torch.argmax(adversarial_predictions, axis=1)
-            assert adversarial_labels.shape == y.shape
-
+            adversarial_labels = utils.get_labels(self.predict, adversarials)
             return torch.eq(adversarial_labels, y)
         else:
             return utils.check_success(self.predict, adversarials, y, False)

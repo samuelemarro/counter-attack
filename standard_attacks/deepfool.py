@@ -8,8 +8,8 @@ def atleast_kd(x, k):
     shape = x.shape + (1,) * (k - x.ndim)
     return x.reshape(shape)
 
-# TODO: Usa check_success con has_detector=False
 # TODO: Controllare che l'implementazione sia corretta
+# TODO: Sistemare supporto detector
 # TODO: è normale che riceva direttamente y= ?
 
 
@@ -41,6 +41,7 @@ class DeepFoolAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     def __init__(
         self,
         predict,
+        evade_detector,
         steps = 50,
         candidates = None,
         overshoot = 0.02,
@@ -48,6 +49,7 @@ class DeepFoolAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         clip_max = 1
     ):
         self.predict = predict
+        self.evade_detector = evade_detector
         self.steps = steps
         self.candidates = candidates
         self.overshoot = overshoot
@@ -70,7 +72,13 @@ class DeepFoolAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         return loss
 
     def successful(self, adversarials, y):
-        return utils.check_success(self.predict, adversarials, y, False)
+        return utils.check_success(self.predict, adversarials, y, self.evade_detector)
+
+    # TODO: Che succede se la classe più alta di partenza è rejected?
+    # Che succede se si passa da originale a rejected?
+    # La tecnica di proiezione che ho scelto ha senso?
+    # DeepFool se si trova nella zona rejected può scegliere di proiettare verso
+    # la label originale! (Dunque best non può essere la label originale)
 
     def perturb(self, x, y=None):
         x = replicate_input(x)
@@ -86,7 +94,7 @@ class DeepFoolAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                 raise ValueError(  # pragma: no cover
                     f"expected the model output to have atleast 2 classes, got {logits.shape[-1]}"
                 )
-            classes = classes[:, :candidates] # TODO: Qual è la sua shape? E i suoi valori?
+            classes = classes[:, :candidates]
 
         N = len(x)
         rows = range(N)
@@ -115,7 +123,25 @@ class DeepFoolAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             assert distances.shape == (N, candidates - 1)
 
             # Determine the best directions
-            best = distances.argmin(axis=1)
+            if self.evade_detector:
+                rejected_label = logits.shape[1] - 1
+                sorted_labels = torch.argsort(dim=1)
+                
+                best = sorted_labels[:, 0]
+
+                # If the best label is "rejected" or is the original label, replace it with the 2nd-best
+                # TODO: What if best and 2nd-best are rejected/original?
+                rejected = torch.eq(best, rejected_label)
+                original = torch.eq(best, y)
+                replace = rejected | original
+                assert replace.shape == (len(best),)
+
+                second_best = sorted_labels[:, 1]
+                best[replace] = second_best[replace]
+            else:
+                best = distances.argmin(axis=1)
+
+            # TODO: rows -> : ?
             distances = distances[rows, best]
             losses = losses[rows, best]
             grads = grads[rows, best]
@@ -168,7 +194,7 @@ class L2DeepFoolAttack(DeepFoolAttack):
     def get_distances(self, losses, grads):
         return abs(losses) / (grads.flatten(start_dim=2).norm(p=2, dim=-1) + 1e-8)
 
-    def get_perturbations(self, distances, grads) -> torch.Tensor:
+    def get_perturbations(self, distances, grads):
         return (
             atleast_kd(
                 distances / (grads.flatten().norm(p=2, dim=-1) + 1e-8), grads.ndim,

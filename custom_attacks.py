@@ -16,19 +16,20 @@ MAX_DISTANCE = 1e10
 # TODO: Remember to always check the .targeted of what you're working with,
 # as well as if you're using the standard or defended model
 
-
 # Nota: In ogni attacco, per "predict" si intende il modello indifeso
 
 class AttackPool(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
-    def __init__(self, predict, attacks, p):
+    def __init__(self, predict, evade_detector, attacks, p):
         self.predict = predict
+        self.evade_detector = evade_detector
         assert all(not attack.targeted for attack in attacks)
+        assert all(attack.predict == predict for attack in attacks)
         self.attacks = attacks
         self.p = p
         self.targeted = False # Always false
 
     def successful(self, adversarials, y):
-        return utils.check_success(self.predict, adversarials, y, False)
+        return utils.check_success(self.predict, adversarials, y, self.evade_detector)
 
     def perturb(self, x, y=None):
         x, y = self._verify_and_process_inputs(x, y)
@@ -70,20 +71,19 @@ class AttackPool(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
         return best_adversarials
 
-# TODO: Usa check_success con has_detector=False
-
-# Nota: Aggiorna eps se ha una distanza più bassa
+# Nota: Aggiorna eps se ha una distanza più bassa (non solo se ha successo)
 
 class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
-    def __init__(self, predict, ord, attack, unsqueeze, targeted=False, defended_model=None, min_eps=0, max_eps=1, initial_search_steps=9, binary_search_steps=9):
+    def __init__(self, predict, evade_detector, ord, attack, unsqueeze, targeted=False, min_eps=0, max_eps=1, initial_search_steps=9, binary_search_steps=9):
         super().__init__(predict, None, None, None)
 
         self.predict = predict
+        self.evade_detector = evade_detector
         self.ord = ord
+        assert attack.targeted == targeted
         self.attack = attack
         self.unsqueeze = unsqueeze
         self.targeted = targeted
-        self.defended_model = defended_model
         self.min_eps = min_eps
         self.max_eps = max_eps
         self.initial_search_steps = initial_search_steps
@@ -104,11 +104,12 @@ class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.La
         return attack(x, y=y)
 
     def successful(self, adversarials, y):
-        if self.defended_model is None:
-            return utils.check_success(self.predict, adversarials, y, False)
+        # The adversarials must be misclassified and must not be rejected.
+        if self.targeted:
+            adversarial_labels = utils.get_labels(self.predict, adversarials)
+            return torch.eq(adversarial_labels, y)
         else:
-            # The adversarials must be misclassified and must not be rejected.
-            return utils.check_success(self.defended_model, adversarials, y, True)
+            return utils.check_success(self.predict, adversarials, y, self.evade_detector)
 
     def perturb(self, x, y=None):
         x, y = self._verify_and_process_inputs(x, y)
