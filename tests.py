@@ -46,7 +46,7 @@ def attack_test(model, attack, loader, p, remove_misclassified, device, generati
 
         total_count += len(images)
         
-        adversarials = attack.perturb(images, y=labels)
+        adversarials = attack.perturb(images, y=labels).detach()
         assert adversarials.shape == images.shape
 
         if defended_model is None:
@@ -106,7 +106,7 @@ def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p
 
         for test_name, attack, defended_model in zip(test_names, attacks, defended_models):
             # Nota y=labels
-            adversarials = attack.perturb(images, y=labels)
+            adversarials = attack.perturb(images, y=labels).detach()
 
             assert adversarials.shape == images.shape
             
@@ -134,7 +134,6 @@ def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p
     assert len(all_attack_results) == len(all_images)
 
     return adversarial_dataset.EvasionResultDataset(all_images, all_labels, test_names, attack_results, p, attack_configuration, generation_kwargs)
-
         
 def multiple_attack_test(model, attack_names, attacks, loader, p, remove_misclassified, device, attack_configuration, generation_kwargs):
     assert all(not attack.targeted for attack in attacks)
@@ -164,11 +163,14 @@ def multiple_attack_test(model, attack_names, attacks, loader, p, remove_misclas
 
         for test_name, attack in zip(attack_names, attacks):
             # Nota y=labels
-            adversarials = attack.perturb(images, y=labels)
+            adversarials = attack.perturb(images, y=labels).detach()
 
             assert adversarials.shape == images.shape
             
             successful = utils.check_success(model, adversarials, labels, False)
+
+            successful = successful.cpu()
+            adversarials = adversarials.cpu()
 
             for i in range(len(images)):
                 if successful[i]:
@@ -185,8 +187,8 @@ def multiple_attack_test(model, attack_names, attacks, loader, p, remove_misclas
     # torch.stack doesn't work with empty lists, so in such cases we
     # return a tensor with 0 as the first dimension
 
-    all_images = utils.maybe_stack(all_images, image_shape).to(device)
-    all_labels = utils.maybe_stack(all_labels, None, dtype=torch.long).to(device)
+    all_images = utils.maybe_stack(all_images, image_shape)
+    all_labels = utils.maybe_stack(all_labels, None, dtype=torch.long)
 
     assert len(all_labels) == len(all_images)
     assert len(all_attack_results) == len(all_images)

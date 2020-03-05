@@ -88,6 +88,8 @@ def get_model(domain, architecture, state_dict_path, apply_normalisation, load_w
 
     return model
 
+# TODO: Le prime immagini di un dataset sono tutte della stessa classe?
+
 def get_dataset(domain, dataset, allow_standard=True, max_samples=None):
     matched_dataset = None
     transform = torchvision.transforms.ToTensor()
@@ -123,6 +125,12 @@ def get_optimiser(optimiser_name, learnable_parameters, options):
         raise ValueError('Unsupported optimiser "{}".'.format(optimiser_name))
 
     return optimiser
+
+# Targeted FGSM is introduced in
+# http://bengio.abracadoudou.com/publications/pdf/kurakin_2017_iclr_physical.pdf
+
+# TODO: Carlini Wagner L2 ha binary_search_steps come parametro
+# TODO: Carlini Wagner LInf ha un triplo loop
 
 def get_attack(attack_name, domain, p, attack_type, model, attack_config, defended_model=None):
     # Convert the float value to its standard name

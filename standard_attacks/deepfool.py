@@ -12,7 +12,6 @@ def atleast_kd(x, k):
 # TODO: Sistemare supporto detector
 # TODO: è normale che riceva direttamente y= ?
 
-
 # Per l'implementazione:
 # Success deve controllare che la label non sia rejected
 # Credo si possa fare che ignori completamente la label rejected
@@ -99,7 +98,7 @@ class DeepFoolAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         N = len(x)
         rows = range(N)
 
-        adversarials = x.clone().detach()
+        adversarials = x
 
         p_total = torch.zeros_like(x)
         for _ in range(self.steps):
@@ -110,15 +109,24 @@ class DeepFoolAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             adv_copy = adversarials.detach().clone()
             adv_copy.requires_grad = True
 
-            losses = [self.loss(adv_copy, classes, k) for k in range(1, candidates)]
+            losses = []
+            grads = []
 
-            grads = torch.stack([torch.autograd.grad(loss, adv_copy, torch.ones_like(loss))[0] for loss in losses], axis=1)
+            for k in range(1, candidates):
+                k_loss = self.loss(adv_copy, classes, k)
+                k_grads = torch.autograd.grad(k_loss, adv_copy, torch.ones_like(k_loss))[0].detach()
+                k_loss = k_loss.detach()
+
+                losses.append(k_loss)
+                grads.append(k_grads)
+
             losses = torch.stack(losses, axis=1)
+            grads = torch.stack(grads, axis=1)
             
             assert losses.shape == (N, candidates - 1)
             assert grads.shape == (N, candidates - 1) + x.shape[1:]
 
-            # Calculate the distances
+            # Compute the distances
             distances = self.get_distances(losses, grads)
             assert distances.shape == (N, candidates - 1)
 

@@ -23,7 +23,7 @@ class CounterAttackDetector(Detector):
         x = x.detach().clone() # Importante, altrimenti rischia di portare i gradienti dell'attacco fuori dal suo contesto
         with torch.enable_grad():
             # Nota l'assenza di y=
-            adversarials = self.attack.perturb(x)
+            adversarials = self.attack.perturb(x).detach()
         adversarials = adversarials.detach()
 
         assert len(adversarials) == len(x)

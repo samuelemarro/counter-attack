@@ -23,4 +23,4 @@ class TopKTargetEvasionAttack:
 
         assert torch.all(torch.logical_not(torch.eq(torch.argmax(predictions, axis=-1), target_labels)))
 
-        return self.attack_on_detector_classifier.perturb(x, y=target_labels, **kwargs)
+        return self.attack_on_detector_classifier.perturb(x, y=target_labels, **kwargs).detach()

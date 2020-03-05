@@ -1,18 +1,15 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: File corrente",
+            "name": "Current File",
             "type": "python",
             "request": "launch",
             "program": "${file}",
             "console": "integratedTerminal"
         },
         {
-            "name" : "Full Attack",
+            "name" : "Full Attack LInf",
             "type" : "python",
             "request": "launch",
             "program": "${workspaceFolder}/cli.py",
@@ -31,7 +28,102 @@
             ]
         },
         {
-            "name" : "Full Fake Evasion",
+            "name" : "DeepFool LInf",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "attack",
+                "cifar10",
+                "resnet50",
+                "std:test",
+                "deepfool",
+                "linf",
+                "--max-samples",
+                "1000",
+                "--batch-size",
+                "250"
+            ]
+        },
+        {
+            "name" : "Fast_Gradient_Sign LInf",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "attack",
+                "cifar10",
+                "resnet50",
+                "std:test",
+                "fast_gradient",
+                "linf",
+                "--max-samples",
+                "1000",
+                "--batch-size",
+                "10"
+            ]
+        },
+        {
+            "name" : "DeepFool & PGD LInf",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "attack",
+                "cifar10",
+                "resnet50",
+                "std:test",
+                "deepfool, pgd",
+                "linf",
+                "--max-samples",
+                "1000",
+                "--batch-size",
+                "10"
+            ]
+        },
+        {
+            "name" : "Full Comparison L2",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "compare",
+                "cifar10",
+                "resnet50",
+                "std:test",
+                "[bim, carlini, deepfool, fast_gradient, pgd]",
+                "l2",
+                "--max-samples",
+                "1000",
+                "--batch-size",
+                "10"
+            ]
+        },
+        {
+            "name" : "Comparison, No DeepFool L2",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "compare",
+                "cifar10",
+                "resnet50",
+                "std:test",
+                "[bim, carlini, fast_gradient, pgd]",
+                "l2",
+                "--max-samples",
+                "1000",
+                "--batch-size",
+                "500"
+            ]
+        },
+        {
+            "name" : "Full Fake Evasion LInf",
             "type" : "python",
             "request": "launch",
             "program": "${workspaceFolder}/cli.py",

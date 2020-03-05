@@ -37,4 +37,4 @@ class RandomTargetEvasionAttack:
 
         assert torch.all(torch.logical_not(torch.eq(original_labels, target_labels)))
 
-        return self.attack_on_detector_classifier.perturb(x, y=target_labels, **kwargs)
+        return self.attack_on_detector_classifier.perturb(x, y=target_labels, **kwargs).detach()

@@ -20,6 +20,9 @@ CARLINI_COEFF_UPPER = 1e10
 TARGET_MULT = 10000.0
 EPS = 1e-6
 
+# TODO: Non deve salvare il migliore?
+# Nota: Il valore consigliato di tau_multiplier è 0.9
+
 class CarliniWagnerLInfAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     def __init__(self, predict, num_classes, min_tau=1/255,
                  tau_multiplier=0.9, const_multiplier=2, halve_const=True, confidence=0,
@@ -121,7 +124,7 @@ class CarliniWagnerLInfAttack(advertorch.attacks.Attack, advertorch.attacks.Labe
 
 
             const *= self.const_multiplier
-            print('Const: {}'.format(const))
+            #print('Const: {}'.format(const))
 
         return best_adversarials
 

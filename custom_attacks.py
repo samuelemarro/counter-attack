@@ -16,6 +16,8 @@ MAX_DISTANCE = 1e10
 # TODO: Remember to always check the .targeted of what you're working with,
 # as well as if you're using the standard or defended model
 
+# TODO: Aggiungere un nuovo tipo di attacco, "evasion target" (o "victim", "defense")
+
 # Nota: In ogni attacco, per "predict" si intende il modello indifeso
 
 class AttackPool(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
@@ -38,7 +40,7 @@ class AttackPool(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         if y is None:
             y = self._get_predicted_label(x)
         
-        pool_results = torch.stack([attack.perturb(x, y=y) for attack in self.attacks], 1)
+        pool_results = torch.stack([attack.perturb(x, y=y).detach() for attack in self.attacks], 1)
 
         assert pool_results.shape[1] == len(self.attacks)
         assert len(pool_results) == len(x)
@@ -127,7 +129,7 @@ class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.La
 
         initial_search_eps = eps_upper_bound.clone()
         for _ in range(self.initial_search_steps):
-            adversarials = self.perturb_standard(x, y, initial_search_eps)
+            adversarials = self.perturb_standard(x, y, initial_search_eps).detach()
             successful = self.successful(adversarials, y)
 
             distances = utils.adversarial_distance(x, adversarials, self.ord)
@@ -145,7 +147,7 @@ class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.La
 
         for _ in range(self.binary_search_steps):
             eps = (eps_lower_bound + eps_upper_bound) / 2
-            adversarials = self.perturb_standard(x, y, eps)
+            adversarials = self.perturb_standard(x, y, eps).detach()
             successful = self.successful(adversarials, y)
 
             distances = utils.adversarial_distance(x, adversarials, self.ord)
