@@ -82,7 +82,7 @@ class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.La
             replace_active(distances, last_distances, active, replace)
 
             # Success: Reduce the upper bound
-            replace_active(initial_search_eps, eps_upper_bound, active, replace)
+            replace_active(initial_search_eps[active], eps_upper_bound, active, replace)
 
             # Halve eps, regardless of the success
             initial_search_eps = initial_search_eps / 2

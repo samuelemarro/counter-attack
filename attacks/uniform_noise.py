@@ -2,11 +2,13 @@ import advertorch
 import numpy as np
 import torch
 
-class RandomNoiseAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
-    def __init__(self, predict, targeted, evade_detector, eps, count=100, early_rejection_threshold=None, clip_min=0, clip_max=1):
+import utils
+
+class UniformNoiseAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
+    def __init__(self, predict, p, targeted, eps=0.3, count=100, early_rejection_threshold=None, clip_min=0, clip_max=1):
         super().__init__(predict, None, clip_min, clip_max)
+        self.p = p
         self.targeted = targeted
-        self.evade_detector = evade_detector
         self.eps = eps
         self.count = count
         self.early_rejection_threshold = early_rejection_threshold
@@ -33,20 +35,26 @@ class RandomNoiseAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin
         active = torch.ones((batch_size,), dtype=bool, device=x.device)
 
         for _ in range(self.count):
-            noise = torch.random.uniform(x.shape, device=x.device) * self.eps
-            adversarials = torch.clamp(x + noise, min=self.clip_min, max=self.clip_max)
+            a = torch.rand(x.shape, device=x.device) * 2 - 1
+            noise = (torch.rand(x.shape, device=x.device) * 2 - 1) * self.eps
+            adversarials = torch.clamp(x + noise, min=self.clip_min, max=self.clip_max)[active]
             
             outputs = self.predict(adversarials)
 
             successful = self.successful(outputs, y[active])
 
-            distances = torch.max(torch.abs(x[active] - adversarials), dim=1)[0]
+            distances = utils.adversarial_distance(x[active], adversarials, self.p)
             better_distance = distances < best_distances[active]
 
-            advertorch.utils.replace_active(...)#TODO: Completare
+            advertorch.utils.replace_active(adversarials.detach(), best_adversarials, active, successful & better_distance)
+            advertorch.utils.replace_active(distances.detach(), best_distances, active, successful & better_distance)
 
             if self.early_rejection_threshold is not None:
-                reject = utils.early_rejection(x[active], adversarials, y[active], ...) # TODO
+                reject = utils.early_rejection(x[active], adversarials, y[active], outputs, self.p, self.early_rejection_threshold, self.targeted)
 
-                # TODO: Altrove, ho anche filtrato con successful?
                 active[active] = ~reject
+
+            if not active.any():
+                break
+
+        return best_adversarials

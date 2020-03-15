@@ -19,10 +19,10 @@ logger = logging.getLogger(__name__)
 
 domains = ['cifar10']
 architectures = ['resnet50']
-supported_attacks = ['bim', 'carlini', 'deepfool', 'fast_gradient', 'pgd']
-attacks_with_binary_search = ['bim', 'fast_gradient', 'pgd']
+supported_attacks = ['bim', 'carlini', 'deepfool', 'fast_gradient', 'pgd', 'uniform']
+attacks_with_binary_search = ['bim', 'fast_gradient', 'pgd', 'uniform']
 targeted_attacks = ['bim', 'carlini', 'fast_gradient', 'pgd']
-er_attacks = ['bim', 'carlini', 'pgd']
+er_attacks = ['bim', 'carlini', 'pgd', 'uniform']
 distances = ['l2', 'linf']
 log_levels = ['debug', 'info', 'warning', 'error', 'critical']
 _log_level_to_number = {'debug' : logging.DEBUG,
@@ -141,8 +141,6 @@ def get_optimiser(optimiser_name, learnable_parameters, options):
 # Targeted FGSM is introduced in
 # http://bengio.abracadoudou.com/publications/pdf/kurakin_2017_iclr_physical.pdf
 
-# TODO: Carlini Wagner L2 ha eps_binary_search_steps come parametro
-
 def get_attack(attack_name, domain, p, attack_type, model, attack_config, defended_model=None, early_rejection_threshold=None):
     # Convert the float value to its standard name
     if p == 2:
@@ -186,7 +184,7 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
         if attack_name in er_attacks:
             kwargs['early_rejection_threshold'] = early_rejection_threshold
     elif attack_type == 'defense' and attack_name in er_attacks and early_rejection_threshold is not None:
-        logger.warning('Early rejection for attack "{}" is disabled in the configuration file, despite being allowed.'.format(attack_name))
+        logger.warning('Early rejection for attack "{}" is disabled in the configuration file, despite being supported.'.format(attack_name))
 
 
     if (attack_type == 'standard' or attack_type == 'defense') and defended_model is not None:
@@ -211,7 +209,7 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
         if attack_name not in attacks_with_binary_search:
             raise NotImplementedError('Attack {} does not support binary search.'.format(attack_name))
     elif attack_name in attacks_with_binary_search:
-        logger.debug('Binary search is supported for {}, but not enabled.'.format(binary_search))
+        logger.warning('Binary search for attack "{}" is disabled in the configuration file, despite being supported.'.format(attack_name))
 
     # Pop binary search arguments
     min_eps = kwargs.pop('min_eps', None)
@@ -260,6 +258,8 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
             attack = attacks.LinfERPGDAttack(target_model, targeted=evade_detector, **kwargs)
         else:
             raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, metric))
+    elif attack_name == 'uniform':
+         attack = attacks.UniformNoiseAttack(target_model, p, targeted=evade_detector, **kwargs)
     else:
         raise NotImplementedError('Unsupported attack "{}".'.format(attack_name))
 
@@ -267,8 +267,10 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
     if binary_search:
         if attack_name in ['bim', 'pgd']:
             unsqueeze = False
-        elif attack_name == 'fast_gradient':
+        elif attack_name in ['fast_gradient', 'uniform']:
             unsqueeze = True
+        else:
+            raise ValueError('Unsupported binary search attack "{}"'.format(attack_name))
 
         binary_search_kwargs = dict()
         if min_eps is not None:
