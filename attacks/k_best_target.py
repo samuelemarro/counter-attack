@@ -1,7 +1,7 @@
 import torch
 
 # Importante: undefended_model è il modello non difeso
-class TopKTargetEvasionAttack:
+class KBestTargetEvasionAttack:
     """Chooses the kth top predicted label (by default the 2nd).
     """
     def __init__(self, undefended_model, attack_on_detector_classifier, k=2):

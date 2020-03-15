@@ -289,7 +289,7 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
 
     # Convert targeted evasion attacks into untargeted ones
     if evade_detector and (attack_name in targeted_attacks):
-        attack = attacks.TopKTargetEvasionAttack(model, attack)
+        attack = attacks.KBestTargetEvasionAttack(model, attack)
 
     return attack
 
