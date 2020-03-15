@@ -1,2 +1,0 @@
-from evasion_attacks.random_target import RandomTargetEvasionAttack
-from evasion_attacks.top_k_target import TopKTargetEvasionAttack

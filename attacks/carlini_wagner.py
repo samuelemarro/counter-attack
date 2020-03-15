@@ -7,7 +7,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-import standard_attacks
 import utils
 
 CARLINI_L2DIST_UPPER = 1e10
