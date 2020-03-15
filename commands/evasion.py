@@ -34,9 +34,9 @@ logger = logging.getLogger(__name__)
 @click.option('--max-samples', type=click.IntRange(1, None), default=None)
 @click.option('--save-to', type=click.Path(exists=False, file_okay=True, dir_okay=False))
 @click.option('--show', type=click.IntRange(1, None), default=None)
+@click.option('--log-level', type=click.Choice(parsing.log_levels), default='info', show_default=True)
 def evasion(**kwargs):
-    if kwargs['state_dict_path'] is None:
-        logger.info('No state dict path provided. Using pretrained model.')
+    parsing.set_log_level(kwargs['log_level'])
 
     model = parsing.get_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'], True, load_weights=True)
     model.eval()

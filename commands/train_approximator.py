@@ -25,7 +25,10 @@ logger = logging.getLogger(__name__)
 @click.option('--from-adversarial-dataset', is_flag=True, help='Use an adversarial dataset to compute the adversarial distance.')
 @click.option('--val-from-adversarial-dataset', is_flag=True)
 @parsing.add_options(parsing.training_options)
+@click.option('--log-level', type=click.Choice(parsing.log_levels), default='info', show_default=True)
 def train_approximator(**kwargs):
+    parsing.set_log_level(kwargs['log_level'])
+    
     model = parsing.get_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'], True, load_weights=False, as_detector=True)
     model.train()
 

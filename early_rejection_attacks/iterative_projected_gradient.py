@@ -111,7 +111,6 @@ def er_perturb_iterative(xvar, yvar, predict, nb_iter, eps, eps_iter, loss_fn, t
     best_adversarials = xvar.clone()
     best_distances = torch.ones((len(xvar),), device=xvar.device) * np.inf
 
-    # TODO: Controllare
     for ii in range(nb_iter):
         active_deltas = delta[active].clone()
         active_deltas.requires_grad_()
@@ -121,7 +120,6 @@ def er_perturb_iterative(xvar, yvar, predict, nb_iter, eps, eps_iter, loss_fn, t
         outputs = predict(adversarials)
 
         if return_best:
-            # TODO: Controllare
             adversarial_labels = torch.argmax(outputs, dim=1)
             if targeted:
                 successful = torch.eq(adversarial_labels, yvar[active])

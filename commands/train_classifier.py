@@ -21,7 +21,10 @@ logger = logging.getLogger(__name__)
 @click.option('--batch-size', type=click.IntRange(1), default=50, show_default=True)
 @click.option('--device', default='cuda', show_default=True)
 @parsing.add_options(parsing.training_options)
+@click.option('--log-level', type=click.Choice(parsing.log_levels), default='info', show_default=True)
 def train_classifier(**kwargs):
+    parsing.set_log_level(kwargs['log_level'])
+    
     model = parsing.get_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'], True, load_weights=False)
     model.train()
 

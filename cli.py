@@ -1,3 +1,5 @@
+import logging
+
 import click
 
 import commands
@@ -19,4 +21,5 @@ main.add_command(commands.train_approximator)
 main.add_command(commands.train_classifier)
 
 if __name__  == '__main__':
+    logging.basicConfig(level=logging.INFO, format='%(name)s:%(levelname)s: %(message)s')
     main()

@@ -75,8 +75,6 @@ class AttackPool(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
 # Nota: Aggiorna eps se ha una distanza più bassa (non solo se ha successo)
 
-# TODO: Supporto clip_min e clip_max?
-
 class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     def __init__(self, predict, evade_detector, ord, attack, unsqueeze, targeted=False, min_eps=0, max_eps=1, initial_search_steps=9, binary_search_steps=9,
                 early_rejection_threshold=None):

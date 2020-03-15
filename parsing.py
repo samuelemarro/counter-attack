@@ -25,6 +25,13 @@ attacks_with_binary_search = ['bim', 'fast_gradient', 'pgd']
 targeted_attacks = ['bim', 'carlini', 'fast_gradient', 'pgd']
 er_attacks = ['bim', 'carlini', 'pgd']
 distances = ['l2', 'linf']
+log_levels = ['debug', 'info', 'warning', 'error', 'critical']
+_log_level_to_number = {'debug' : logging.DEBUG,
+                        'info' : logging.INFO,
+                        'warning' : logging.WARNING,
+                        'error' : logging.ERROR,
+                        'critical' : logging.CRITICAL}
+_distance_to_p = {'l2': 2, 'linf' : np.inf}
 
 training_options = [
     click.option('--optimiser', type=click.Choice(['adam', 'sgd']), default='adam', show_default=True,
@@ -56,11 +63,17 @@ def add_options(options):
         return func
     return _add_options
 
+def set_log_level(log_level):
+    logging.getLogger().setLevel(_log_level_to_number[log_level])
+
 def get_model(domain, architecture, state_dict_path, apply_normalisation, load_weights=False, as_detector=False):
     if as_detector:
         num_classes = 1
     
     pretrained = load_weights and state_dict_path is None
+
+    if pretrained:
+        logger.info('No state dict path provided. Using pretrained model.')
 
     if domain == 'cifar10':
         if not as_detector:
@@ -142,7 +155,7 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
 
     kwargs = attack_config.get_arguments(attack_name, domain, metric, attack_type)
 
-    logger.debug('Preparing attack {}, domain {}, distance metric {}, type {} with kwargs: {}'.format(
+    logger.debug('Preparing attack "{}", domain "{}", distance metric "{}", type "{}" with kwargs: {}'.format(
         attack_name, domain, metric, attack_type, kwargs 
     ))
 
@@ -169,7 +182,7 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
                             'basically disabled.'.format(attack_name))
 
         if attack_type != 'defense':
-            logger.warning('Attack "{}" is using early rejection despite being of type "{}". Is it intentional?'.format(attack_name, attack_type))
+            logger.warning('Attack "{}" is using early rejection despite being of type "{}". Is this intentional?'.format(attack_name, attack_type))
 
         if attack_name in er_attacks:
             kwargs['early_rejection_threshold'] = early_rejection_threshold
@@ -190,11 +203,10 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
     if evade_detector:
         num_classes += 1
 
-        
     kwargs.pop('enable_binary_search', None)
 
     if binary_search:
-        logger.debug('Enabling binary search for {}'.format(attack_name))
+        logger.debug('Enabling binary search for "{}".'.format(attack_name))
         # Remove standard arguments
         kwargs.pop('eps', None)
         if attack_name not in attacks_with_binary_search:
@@ -282,15 +294,19 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
 
 # TODO: Più controlli/logging/assertions
 def get_attack_pool(attack_names, domain, p, attack_type, model, attack_config, defended_model=None, early_rejection_threshold=None):
-    attacks = []
-    for attack_name in attack_names:
-        attacks.append(get_attack(attack_name, domain, p, attack_type, model, attack_config, defended_model=defended_model, early_rejection_threshold=early_rejection_threshold))
-
     evade_detector = (attack_type == 'evasion')
+
     if evade_detector:
         target_model = defended_model
     else:
         target_model = model
+
+    logger.debug('Preparing attack pool for "{}" of type "{}" containing {} (with defended model: {}) '
+    'and early rejection threshold {}.'.format(p, attack_type, attack_names, defended_model is not None, early_rejection_threshold))
+
+    attacks = []
+    for attack_name in attack_names:
+        attacks.append(get_attack(attack_name, domain, p, attack_type, model, attack_config, defended_model=defended_model, early_rejection_threshold=early_rejection_threshold))
 
     if len(attacks) == 1:
         return attacks[0]
@@ -299,6 +315,9 @@ def get_attack_pool(attack_names, domain, p, attack_type, model, attack_config, 
 
 def get_detector(attack_name, domain, p, attack_type, model, attack_config, device, substitute_architecture=None, substitute_state_dict_path=None,
                 early_rejection_threshold=None):
+    logger.debug('Preparing detector for "{}" of type "{}" with attack "{}" '
+    'and early rejection threshold {}.'.format(p, attack_type, attack_name, early_rejection_threshold))
+
     model.to(device)
 
     if substitute_architecture is not None:
@@ -308,6 +327,7 @@ def get_detector(attack_name, domain, p, attack_type, model, attack_config, devi
         logger.warning('You are using an attack of type "{}" for a detector. Is this intentional?'.format(attack_type))
 
     attack = get_attack(attack_name, domain, p, attack_type, model, attack_config, defended_model=None, early_rejection_threshold=early_rejection_threshold)
+    assert attack.predict == model
     detector = detectors.CounterAttackDetector(attack, model, p)
 
     if substitute_architecture is not None:
@@ -326,6 +346,9 @@ def get_detector_pool(attack_names, domain, p, attack_type, model, attack_config
     if substitute_architectures is not None:
         assert len(substitute_architectures) == len(attack_names)
         assert len(substitute_state_dict_paths) == len(attack_names)
+
+    logger.debug('Preparing detector pool for "{}" of type "{}" containing {} '
+    'and early rejection threshold {}.'.format(p, attack_type, attack_names, early_rejection_threshold))
     
     detector_pool = []
 
@@ -344,8 +367,6 @@ def get_detector_pool(attack_names, domain, p, attack_type, model, attack_config
         return detector_pool[0]
     else:
         return detectors.DetectorPool(detector_pool, p)
-
-_distance_to_p = {'l2': 2, 'linf' : np.inf}
 
 def validate_lp_distance(ctx, param, value):
     if value == 'l2':

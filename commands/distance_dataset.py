@@ -25,7 +25,10 @@ logger = logging.getLogger(__name__)
 @click.option('--keep-misclassified', is_flag=True)
 @click.option('--device', default='cuda', show_default=True)
 @click.option('--max-samples', type=click.IntRange(1, None), default=None)
+@click.option('--log-level', type=click.Choice(parsing.log_levels), default='info', show_default=True)
 def distance_dataset(**kwargs):
+    parsing.set_log_level(kwargs['log_level'])
+    
     model = parsing.get_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'], True, load_weights=True)
     model.eval()
     model.to(kwargs['device'])
