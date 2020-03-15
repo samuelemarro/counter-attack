@@ -9,7 +9,7 @@ import utils
 # Nota: Aggiorna eps se ha una distanza più bassa (non solo se ha successo)
 
 class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
-    def __init__(self, predict, evade_detector, ord, attack, unsqueeze, targeted=False, min_eps=0, max_eps=1, initial_search_steps=9, binary_search_steps=9,
+    def __init__(self, predict, evade_detector, ord, attack, unsqueeze, targeted=False, min_eps=0, max_eps=1, eps_initial_search_steps=9, eps_binary_search_steps=9,
                 early_rejection_threshold=None):
         super().__init__(predict, None, None, None)
 
@@ -22,8 +22,8 @@ class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.La
         self.targeted = targeted
         self.min_eps = min_eps
         self.max_eps = max_eps
-        self.initial_search_steps = initial_search_steps
-        self.binary_search_steps = binary_search_steps
+        self.eps_initial_search_steps = eps_initial_search_steps
+        self.eps_binary_search_steps = eps_binary_search_steps
         self.early_rejection_threshold = early_rejection_threshold
 
     def perturb_standard(self, x, y, eps):
@@ -65,7 +65,7 @@ class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.La
         last_distances = torch.ones((N), device=x.device) * np.inf
 
         initial_search_eps = eps_upper_bound.clone()
-        for _ in range(self.initial_search_steps):
+        for _ in range(self.eps_initial_search_steps):
             if not active.any():
                 break
 
@@ -93,7 +93,7 @@ class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.La
 
                 active[active] = ~reject
 
-        for _ in range(self.binary_search_steps):
+        for _ in range(self.eps_binary_search_steps):
             if not active.any():
                 break
 

@@ -141,7 +141,7 @@ def get_optimiser(optimiser_name, learnable_parameters, options):
 # Targeted FGSM is introduced in
 # http://bengio.abracadoudou.com/publications/pdf/kurakin_2017_iclr_physical.pdf
 
-# TODO: Carlini Wagner L2 ha binary_search_steps come parametro
+# TODO: Carlini Wagner L2 ha eps_binary_search_steps come parametro
 
 def get_attack(attack_name, domain, p, attack_type, model, attack_config, defended_model=None, early_rejection_threshold=None):
     # Convert the float value to its standard name
@@ -216,8 +216,8 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
     # Pop binary search arguments
     min_eps = kwargs.pop('min_eps', None)
     max_eps = kwargs.pop('max_eps', None)
-    initial_search_steps = kwargs.pop('initial_search_steps', None)
-    binary_search_steps = kwargs.pop('binary_search_steps', None)
+    eps_initial_search_steps = kwargs.pop('eps_initial_search_steps', None)
+    eps_binary_search_steps = kwargs.pop('eps_binary_search_steps', None)
 
     if evade_detector:
         target_model = defended_model
@@ -275,10 +275,10 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
             binary_search_kwargs['min_eps'] = min_eps
         if max_eps is not None:
             binary_search_kwargs['max_eps'] = max_eps
-        if initial_search_steps is not None:
-            binary_search_kwargs['initial_search_steps'] = initial_search_steps
-        if binary_search_steps is not None:
-            binary_search_kwargs['binary_search_steps'] = binary_search_steps
+        if eps_initial_search_steps is not None:
+            binary_search_kwargs['eps_initial_search_steps'] = eps_initial_search_steps
+        if eps_binary_search_steps is not None:
+            binary_search_kwargs['eps_binary_search_steps'] = eps_binary_search_steps
 
         if early_rejection:
             binary_search_kwargs['early_rejection_threshold'] = early_rejection_threshold
