@@ -21,6 +21,8 @@ logger = logging.getLogger(__name__)
 @click.option('--device', default='cuda', show_default=True)
 @click.option('--attack-config-file', type=click.Path(exists=True, file_okay=True, dir_okay=False), default='default_attack_configuration.cfg', show_default=True)
 @click.option('--keep-misclassified', is_flag=True)
+@click.option('--as-defense', is_flag=True)
+@click.option('--early-rejection', type=float, default=None)
 @click.option('--max-samples', type=click.IntRange(1, None), default=None)
 @click.option('--save-to', type=click.Path(exists=False, file_okay=True, dir_okay=False))
 @click.option('--show', type=click.IntRange(1, None), default=None)
@@ -36,7 +38,9 @@ def attack(**kwargs):
 
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
 
-    attack_pool = parsing.get_attack_pool(kwargs['attacks'], kwargs['domain'], kwargs['p'], 'standard', model, attack_config)
+    attack_type = 'defense' if kwargs['as_defense'] else 'standard'
+
+    attack_pool = parsing.get_attack_pool(kwargs['attacks'], kwargs['domain'], kwargs['p'], attack_type, model, attack_config, early_rejection_threshold=kwargs['early_rejection'])
 
     p = kwargs['p']
     

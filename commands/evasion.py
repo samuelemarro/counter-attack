@@ -54,7 +54,7 @@ def evasion(**kwargs):
     substitute_state_dict_paths = kwargs['substitute_state_dict_paths']
 
     if kwargs['rejection_threshold'] >= 0:
-        logger.warn('You are using a positive rejection rejection_threshold. Since Counter-Attack only outputs nonpositive values, '
+        logger.warn('You are using a positive rejection threshold. Since Counter-Attack only outputs nonpositive values, '
         'the detector will never reject an example.')
 
     if len(substitute_architectures) == 1:
@@ -69,12 +69,13 @@ def evasion(**kwargs):
     detector = parsing.get_detector_pool(counter_attack_names,
                                         kwargs['domain'],
                                         kwargs['p'],
-                                        'standard',
+                                        'defense',
                                         model,
                                         attack_config,
                                         kwargs['device'],
                                         substitute_architectures=substitute_architectures,
-                                        substitute_state_dict_paths=substitute_state_dict_paths)
+                                        substitute_state_dict_paths=substitute_state_dict_paths,
+                                        early_rejection_threshold=-kwargs['rejection_threshold'])
 
     
     defended_model = detectors.NormalisedDetectorModel(model, detector, kwargs['rejection_threshold'])

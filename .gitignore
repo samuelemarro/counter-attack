@@ -3,3 +3,4 @@ cifar10_models
 data
 trained-models
 *.zip
+settings.json

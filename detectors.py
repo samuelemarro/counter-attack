@@ -33,7 +33,7 @@ class CounterAttackDetector(Detector):
         assert len(distances) == len(x)
 
         labels = utils.get_labels(self.model, x)
-        successful = utils.check_success(self.model, adversarials, labels, False)
+        successful = utils.misclassified(self.model, adversarials, labels, False)
 
         # TODO: Testare
         # Comportamento attuale: Accetta quando fallisci (dà problemi)

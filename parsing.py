@@ -9,6 +9,7 @@ import numpy as np
 import torch
 import torchvision
 
+import early_rejection_attacks
 import standard_attacks
 import cifar10_models
 import detectors
@@ -22,6 +23,7 @@ architectures = ['resnet50']
 attacks = ['bim', 'carlini', 'deepfool', 'fast_gradient', 'pgd']
 attacks_with_binary_search = ['bim', 'fast_gradient', 'pgd']
 targeted_attacks = ['bim', 'carlini', 'fast_gradient', 'pgd']
+er_attacks = ['bim', 'carlini', 'pgd']
 distances = ['l2', 'linf']
 
 training_options = [
@@ -88,8 +90,6 @@ def get_model(domain, architecture, state_dict_path, apply_normalisation, load_w
 
     return model
 
-# TODO: Le prime immagini di un dataset sono tutte della stessa classe?
-
 def get_dataset(domain, dataset, allow_standard=True, max_samples=None):
     matched_dataset = None
     transform = torchvision.transforms.ToTensor()
@@ -130,9 +130,8 @@ def get_optimiser(optimiser_name, learnable_parameters, options):
 # http://bengio.abracadoudou.com/publications/pdf/kurakin_2017_iclr_physical.pdf
 
 # TODO: Carlini Wagner L2 ha binary_search_steps come parametro
-# TODO: Carlini Wagner LInf ha un triplo loop
 
-def get_attack(attack_name, domain, p, attack_type, model, attack_config, defended_model=None):
+def get_attack(attack_name, domain, p, attack_type, model, attack_config, defended_model=None, early_rejection_threshold=None):
     # Convert the float value to its standard name
     if p == 2:
         metric = 'l2'
@@ -150,8 +149,36 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
     if attack_type == 'evasion' and defended_model is None:
         raise ValueError('Evasion attacks require a defended model.')
 
-    if attack_type == 'standard' and defended_model is not None:
-        raise ValueError('Passed a defended_model for a standard attack.')
+    early_rejection = kwargs.pop('early_rejection', None)
+    binary_search = 'enable_binary_search' in kwargs and kwargs['enable_binary_search']
+
+    if early_rejection:
+        logger.debug('Enabled arly rejection for "{}" ({}).'.format(attack_name, early_rejection_threshold))
+        if attack_name not in er_attacks:
+            if binary_search:
+                logger.warning('Attack "{}" does not support early rejection, but binary search is enabled. '
+                'Early rejection will be only applied to binary search.'.format(attack_name))
+            else:
+                raise ValueError('Attack "{}" does not support early rejection.'.format(attack_name))
+
+        if early_rejection_threshold is None:
+            raise ValueError('Passed None early_rejection_threshold for an attack with early_rejection enabled.')
+
+        if early_rejection_threshold <= 0:
+            logger.warning('Attack "{}" is using a nonpositive early_rejection_threshold. This means that early rejection is '
+                            'basically disabled.'.format(attack_name))
+
+        if attack_type != 'defense':
+            logger.warning('Attack "{}" is using early rejection despite being of type "{}". Is it intentional?'.format(attack_name, attack_type))
+
+        if attack_name in er_attacks:
+            kwargs['early_rejection_threshold'] = early_rejection_threshold
+    elif attack_type == 'defense' and attack_name in er_attacks and early_rejection_threshold is not None:
+        logger.warning('Early rejection for attack "{}" is disabled in the configuration file, despite being allowed.'.format(attack_name))
+
+
+    if (attack_type == 'standard' or attack_type == 'defense') and defended_model is not None:
+        raise ValueError('Passed a defended_model for a standard/defense attack.')
 
     if domain == 'cifar10':
         num_classes = 10
@@ -163,7 +190,6 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
     if evade_detector:
         num_classes += 1
 
-    binary_search = 'enable_binary_search' in kwargs and kwargs['enable_binary_search']
         
     kwargs.pop('enable_binary_search', None)
 
@@ -189,16 +215,16 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
 
     if attack_name == 'bim':
         if metric == 'l2':
-            attack = standard_attacks.L2BasicIterativeAttack(target_model, targeted=evade_detector)
+            attack = early_rejection_attacks.L2ERBasicIterativeAttack(target_model, targeted=evade_detector, **kwargs)
         elif metric == 'linf':
-            attack = standard_attacks.LinfBasicIterativeAttack(target_model, targeted=evade_detector)
+            attack = early_rejection_attacks.LinfERBasicIterativeAttack(target_model, targeted=evade_detector, **kwargs)
         else:
             raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, metric))
     elif attack_name == 'carlini':
         if metric == 'l2':
-            attack = advertorch.attacks.CarliniWagnerL2Attack(target_model, num_classes, targeted=evade_detector, **kwargs)
+            attack = early_rejection_attacks.ERCarliniWagnerL2Attack(target_model, num_classes, targeted=evade_detector, **kwargs)
         elif metric == 'linf':
-            attack = standard_attacks.CarliniWagnerLInfAttack(target_model, num_classes, targeted=evade_detector, **kwargs)
+            attack = early_rejection_attacks.ERCarliniWagnerLinfAttack(target_model, num_classes, targeted=evade_detector, **kwargs)
         else:
             raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, metric))
     elif attack_name == 'deepfool':
@@ -218,9 +244,9 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
             raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, metric))
     elif attack_name == 'pgd':
         if metric == 'l2':
-            attack = advertorch.attacks.L2PGDAttack(target_model, targeted=evade_detector, **kwargs)
+            attack = early_rejection_attacks.L2ERPGDAttack(target_model, targeted=evade_detector, **kwargs)
         elif metric == 'linf':
-            attack = advertorch.attacks.LinfPGDAttack(target_model, targeted=evade_detector, **kwargs)
+            attack = early_rejection_attacks.LinfERPGDAttack(target_model, targeted=evade_detector, **kwargs)
         else:
             raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, metric))
     else:
@@ -243,6 +269,9 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
         if binary_search_steps is not None:
             binary_search_kwargs['binary_search_steps'] = binary_search_steps
 
+        if early_rejection:
+            binary_search_kwargs['early_rejection_threshold'] = early_rejection_threshold
+
         attack = custom_attacks.EpsilonBinarySearchAttack(target_model, evade_detector, p, attack, unsqueeze, targeted=evade_detector, **binary_search_kwargs)
 
     # Convert targeted evasion attacks into untargeted ones
@@ -251,10 +280,11 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
 
     return attack
 
-def get_attack_pool(attack_names, domain, p, attack_type, model, attack_config, defended_model=None):
+# TODO: Più controlli/logging/assertions
+def get_attack_pool(attack_names, domain, p, attack_type, model, attack_config, defended_model=None, early_rejection_threshold=None):
     attacks = []
     for attack_name in attack_names:
-        attacks.append(get_attack(attack_name, domain, p, attack_type, model, attack_config, defended_model=defended_model))
+        attacks.append(get_attack(attack_name, domain, p, attack_type, model, attack_config, defended_model=defended_model, early_rejection_threshold=early_rejection_threshold))
 
     evade_detector = (attack_type == 'evasion')
     if evade_detector:
@@ -267,13 +297,17 @@ def get_attack_pool(attack_names, domain, p, attack_type, model, attack_config, 
     else:
         return custom_attacks.AttackPool(target_model, evade_detector, attacks, p)
 
-def get_detector(attack_name, domain, p, attack_type, model, attack_config, device, substitute_architecture=None, substitute_state_dict_path=None):
+def get_detector(attack_name, domain, p, attack_type, model, attack_config, device, substitute_architecture=None, substitute_state_dict_path=None,
+                early_rejection_threshold=None):
     model.to(device)
 
     if substitute_architecture is not None:
         assert substitute_state_dict_path is not None
 
-    attack = get_attack(attack_name, domain, p, attack_type, model, attack_config, defended_model=None)
+    if attack_type != 'defense':
+        logger.warning('You are using an attack of type "{}" for a detector. Is this intentional?'.format(attack_type))
+
+    attack = get_attack(attack_name, domain, p, attack_type, model, attack_config, defended_model=None, early_rejection_threshold=early_rejection_threshold)
     detector = detectors.CounterAttackDetector(attack, model, p)
 
     if substitute_architecture is not None:
@@ -288,7 +322,7 @@ def get_detector(attack_name, domain, p, attack_type, model, attack_config, devi
 
     return detector
 
-def get_detector_pool(attack_names, domain, p, attack_type, model, attack_config, device, substitute_architectures=None, substitute_state_dict_paths=None):
+def get_detector_pool(attack_names, domain, p, attack_type, model, attack_config, device, substitute_architectures=None, substitute_state_dict_paths=None, early_rejection_threshold=None):
     if substitute_architectures is not None:
         assert len(substitute_architectures) == len(attack_names)
         assert len(substitute_state_dict_paths) == len(attack_names)
@@ -302,7 +336,8 @@ def get_detector_pool(attack_names, domain, p, attack_type, model, attack_config
             substitute_architecture = substitute_architectures[i]
             substitute_state_dict_path = substitute_state_dict_paths[i]
 
-        detector = get_detector(attack_names[i], domain, p, attack_type, model, attack_config, device, substitute_architecture=substitute_architecture, substitute_state_dict_path=substitute_state_dict_path)
+        detector = get_detector(attack_names[i], domain, p, attack_type, model, attack_config, device, substitute_architecture=substitute_architecture, substitute_state_dict_path=substitute_state_dict_path,
+        early_rejection_threshold=early_rejection_threshold)
         detector_pool.append(detector)
 
     if len(detector_pool) == 1:

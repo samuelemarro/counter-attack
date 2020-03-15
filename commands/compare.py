@@ -35,8 +35,6 @@ def compare(**kwargs):
 
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
 
-    ##attack_pool = parsing.get_attack_pool(kwargs['attacks'], kwargs['domain'], kwargs['p'], 'standard', model, attack_config)
-
     p = kwargs['p']
 
     attack_names = kwargs['attacks']

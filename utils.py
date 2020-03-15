@@ -83,7 +83,7 @@ def adversarial_distance(genuines, adversarials, p):
     assert genuines.shape == adversarials.shape
 
     if len(genuines) == 0:
-        return torch.zeros([0])
+        return torch.zeros([0], device=genuines.device)
     else:
         genuines = genuines.flatten(1)
         adversarials = adversarials.flatten(1)
@@ -130,18 +130,24 @@ def remove_misclassified(model, images, labels):
 
     return images[correct_label], labels[correct_label]
 
-def check_success(model, adversarials, labels, has_detector):
+def misclassified(model, adversarials, labels, has_detector):
     assert len(adversarials) == len(labels)
 
     adversarial_predictions = model(adversarials)
-    adversarial_labels = torch.argmax(adversarial_predictions, axis=1)
+    
+    return misclassified_outputs(adversarial_predictions, labels, has_detector)
+
+def misclassified_outputs(outputs, labels, has_detector):
+    assert len(outputs) == len(labels)
+
+    adversarial_labels = torch.argmax(outputs, axis=1)
     
     assert adversarial_labels.shape == labels.shape
 
     successful = torch.logical_not(torch.eq(adversarial_labels, labels))
 
     if has_detector:
-        num_classes = adversarial_predictions.shape[1]
+        num_classes = outputs.shape[1]
         rejected = torch.eq(adversarial_labels, num_classes - 1)
         accepted = torch.logical_not(rejected)
 
@@ -149,12 +155,25 @@ def check_success(model, adversarials, labels, has_detector):
 
     return successful
 
+def early_rejection(x, adversarials, labels, adversarial_output, p, threshold, targeted):
+    predicted_labels = torch.argmax(adversarial_output, dim=1)
+
+    if targeted:
+        successful = torch.eq(labels, predicted_labels)
+    else:
+        successful = ~torch.eq(labels, predicted_labels)
+    
+    distances = adversarial_distance(x, adversarials, p)
+    valid_distance = distances < threshold
+
+    return successful & valid_distance
+
 # AdverTorch come considera i failed?
 # Nota: Se l'originale viene rifiutato ma l'adversarial no, l'adversarial conta
 # come successo anche se ha mantenuto la stessa label di partenza
 # Testare!
 def remove_failed(model, images, labels, adversarials, has_detector):
-    successful = check_success(model, adversarials, labels, has_detector)
+    successful = misclassified(model, adversarials, labels, has_detector)
     
     return images[successful], labels[successful], adversarials[successful]
 

@@ -6,6 +6,8 @@ import commands
 def main():
     pass
 
+# TODO: Integrare tutte le implementazioni degli attacchi in una sola categoria?
+
 main.add_command(commands.accuracy)
 main.add_command(commands.attack)
 main.add_command(commands.attack_matrix)

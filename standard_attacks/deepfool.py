@@ -40,7 +40,6 @@ class DeepFoolAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     def __init__(
         self,
         predict,
-        evade_detector,
         steps = 50,
         candidates = None,
         overshoot = 0.02,
@@ -48,7 +47,6 @@ class DeepFoolAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         clip_max = 1
     ):
         self.predict = predict
-        self.evade_detector = evade_detector
         self.steps = steps
         self.candidates = candidates
         self.overshoot = overshoot
@@ -70,8 +68,13 @@ class DeepFoolAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         loss = lk - l0
         return loss
 
-    def successful(self, adversarials, y):
-        return utils.check_success(self.predict, adversarials, y, self.evade_detector)
+    def _successful(self, outputs, y):
+        adversarial_labels = torch.argmax(outputs, dim=1)
+
+        if self.targeted:
+            return torch.eq(adversarial_labels, y)
+        else:
+            return ~torch.eq(adversarial_labels, y)
 
     # TODO: Che succede se la classe più alta di partenza è rejected?
     # Che succede se si passa da originale a rejected?
@@ -102,7 +105,8 @@ class DeepFoolAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
         p_total = torch.zeros_like(x)
         for _ in range(self.steps):
-            is_adv = self.successful(adversarials, y)
+            adversarial_outputs = self.predict(adversarials)
+            is_adv = self.successful(adversarial_outputs, y)
             if is_adv.all():
                 break
 
@@ -131,23 +135,7 @@ class DeepFoolAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             assert distances.shape == (N, candidates - 1)
 
             # Determine the best directions
-            if self.evade_detector:
-                rejected_label = logits.shape[1] - 1
-                sorted_labels = torch.argsort(dim=1)
-                
-                best = sorted_labels[:, 0]
-
-                # If the best label is "rejected" or is the original label, replace it with the 2nd-best
-                # TODO: What if best and 2nd-best are rejected/original?
-                rejected = torch.eq(best, rejected_label)
-                original = torch.eq(best, y)
-                replace = rejected | original
-                assert replace.shape == (len(best),)
-
-                second_best = sorted_labels[:, 1]
-                best[replace] = second_best[replace]
-            else:
-                best = distances.argmin(axis=1)
+            best = distances.argmin(axis=1)
 
             # TODO: rows -> : ?
             distances = distances[rows, best]

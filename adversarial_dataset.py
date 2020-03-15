@@ -270,19 +270,20 @@ class AttackComparisonDataset(data.Dataset):
                 for unsuccessful_attack in unsuccessful_attacks:
                     victory_matrix[successful_attack][unsuccessful_attack] += 1
 
-            adversarials = torch.stack(list(attack_result.values()))
-            distances = utils.one_many_adversarial_distance(genuine, adversarials, self.p)
+            if len(attack_result.values()) > 0:
+                adversarials = torch.stack(list(attack_result.values()))
+                distances = utils.one_many_adversarial_distance(genuine, adversarials, self.p)
 
-            assert len(attack_result) == len(distances)
+                assert len(attack_result) == len(distances)
 
-            attack_distance_pairs = list(zip(attack_result.keys(), distances))
+                attack_distance_pairs = list(zip(attack_result.keys(), distances))
 
-            for winner_attack, winner_distance in attack_distance_pairs:
-                for loser_attack, loser_distance in attack_distance_pairs:
-                    # An attack beats another if it finds a strictly smaller
-                    # distance
-                    if winner_distance < loser_distance:
-                        victory_matrix[winner_attack][loser_attack] += 1
+                for winner_attack, winner_distance in attack_distance_pairs:
+                    for loser_attack, loser_distance in attack_distance_pairs:
+                        # An attack beats another if it finds a strictly smaller
+                        # distance
+                        if winner_distance < loser_distance:
+                            victory_matrix[winner_attack][loser_attack] += 1
 
         # Convert absolute numbers to relative
         for loser_dict in victory_matrix.values():

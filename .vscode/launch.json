@@ -47,6 +47,198 @@
             ]
         },
         {
+            "name" : "Carlini LInf",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "attack",
+                "cifar10",
+                "resnet50",
+                "std:test",
+                "carlini",
+                "linf",
+                "--max-samples",
+                "5",
+                "--show",
+                "5"
+            ]
+        },
+        {
+            "name" : "Carlini L2 Fake ER",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "attack",
+                "cifar10",
+                "resnet50",
+                "std:test",
+                "carlini",
+                "l2",
+                "--as-defense",
+                "--early-rejection",
+                "0",
+                "--max-samples",
+                "5",
+                "--show",
+                "5"
+            ]
+        },
+        {
+            "name" : "Carlini LInf Fake ER",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "attack",
+                "cifar10",
+                "resnet50",
+                "std:test",
+                "carlini",
+                "linf",
+                "--as-defense",
+                "--early-rejection",
+                "0",
+                "--max-samples",
+                "5",
+                "--show",
+                "5"
+            ]
+        },
+        {
+            "name" : "Carlini LInf 0.1 ER",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "attack",
+                "cifar10",
+                "resnet50",
+                "std:test",
+                "carlini",
+                "linf",
+                "--as-defense",
+                "--early-rejection",
+                "0.1",
+                "--max-samples",
+                "5",
+                "--show",
+                "5"
+            ]
+        },
+        {
+            "name" : "Carlini LInf Max ER",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "attack",
+                "cifar10",
+                "resnet50",
+                "std:test",
+                "carlini",
+                "linf",
+                "--as-defense",
+                "--early-rejection",
+                "inf",
+                "--max-samples",
+                "5",
+                "--show",
+                "5"
+            ]
+        },
+        {
+            "name" : "PGD LInf",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "attack",
+                "cifar10",
+                "resnet50",
+                "std:test",
+                "pgd",
+                "linf",
+                "--max-samples",
+                "5",
+                "--show",
+                "5"
+            ]
+        },
+        {
+            "name" : "PGD LInf Fake ER",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "attack",
+                "cifar10",
+                "resnet50",
+                "std:test",
+                "pgd",
+                "linf",
+                "--as-defense",
+                "--early-rejection",
+                "0",
+                "--max-samples",
+                "5",
+                "--show",
+                "5"
+            ]
+        },
+        {
+            "name" : "PGD LInf 0.1 ER",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "attack",
+                "cifar10",
+                "resnet50",
+                "std:test",
+                "pgd",
+                "linf",
+                "--as-defense",
+                "--early-rejection",
+                "0.1",
+                "--max-samples",
+                "5",
+                "--show",
+                "5"
+            ]
+        },
+        {
+            "name" : "PGD LInf Max ER",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "attack",
+                "cifar10",
+                "resnet50",
+                "std:test",
+                "pgd",
+                "linf",
+                "--as-defense",
+                "--early-rejection",
+                "inf",
+                "--max-samples",
+                "5",
+                "--show",
+                "5"
+            ]
+        },
+        {
             "name" : "Fast_Gradient_Sign LInf",
             "type" : "python",
             "request": "launch",
@@ -62,6 +254,93 @@
                 "--max-samples",
                 "1000",
                 "--batch-size",
+                "10"
+            ]
+        },
+        {
+            "name" : "FGSM LInf Fake ER",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "attack",
+                "cifar10",
+                "resnet50",
+                "std:test",
+                "fast_gradient",
+                "linf",
+                "--as-defense",
+                "--early-rejection",
+                "0",
+                "--max-samples",
+                "5",
+                "--show",
+                "5"
+            ]
+        },
+        {
+            "name" : "FGSM LInf 0.1 ER",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "attack",
+                "cifar10",
+                "resnet50",
+                "std:test",
+                "fast_gradient",
+                "linf",
+                "--as-defense",
+                "--early-rejection",
+                "0.1",
+                "--max-samples",
+                "5",
+                "--show",
+                "5"
+            ]
+        },
+        {
+            "name" : "FGSM LInf Max ER",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "attack",
+                "cifar10",
+                "resnet50",
+                "std:test",
+                "fast_gradient",
+                "linf",
+                "--as-defense",
+                "--early-rejection",
+                "inf",
+                "--max-samples",
+                "5",
+                "--show",
+                "5"
+            ]
+        },
+        {
+            "name" : "BIM L2",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "attack",
+                "cifar10",
+                "resnet50",
+                "std:test",
+                "fast_gradient",
+                "l2",
+                "--max-samples",
+                "10",
+                "--batch-size",
+                "10",
+                "--show",
                 "10"
             ]
         },
@@ -104,6 +383,25 @@
             ]
         },
         {
+            "name" : "BIM & Fast Gradient L2",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "compare",
+                "cifar10",
+                "resnet50",
+                "std:test",
+                "[bim, fast_gradient]",
+                "l2",
+                "--max-samples",
+                "1000",
+                "--batch-size",
+                "100"
+            ]
+        },
+        {
             "name" : "Comparison, No DeepFool L2",
             "type" : "python",
             "request": "launch",
@@ -123,7 +421,7 @@
             ]
         },
         {
-            "name" : "Full Fake Evasion LInf",
+            "name" : "Full Fake Evasion LInf (no DeepFool)",
             "type" : "python",
             "request": "launch",
             "program": "${workspaceFolder}/cli.py",
@@ -134,7 +432,7 @@
                 "resnet50",
                 "std:test",
                 "fast_gradient",
-                "[bim, carlini, deepfool, fast_gradient, pgd]",
+                "[bim, carlini, fast_gradient, pgd]",
                 "linf",
                 "50",
                 "resnet50",

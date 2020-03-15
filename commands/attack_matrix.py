@@ -75,7 +75,7 @@ def attack_matrix(**kwargs):
     for evasion_attack_name in attack_names:
         for counter_attack_name, ca_substitute_architecture, ca_substitute_state_dict_path, rejection_threshold in zip(attack_names, substitute_architectures, substitute_state_dict_paths, rejection_thresholds):
             detector = parsing.get_detector(counter_attack_name, kwargs['domain'], kwargs['p'], 'standard', model, attack_config, kwargs['device'],
-            substitute_architecture=ca_substitute_architecture, substitute_state_dict_path=ca_substitute_state_dict_path)
+            substitute_architecture=ca_substitute_architecture, substitute_state_dict_path=ca_substitute_state_dict_path, early_rejection_threshold=-rejection_threshold)
 
             defended_model = detectors.NormalisedDetectorModel(model, detector, rejection_threshold)
 

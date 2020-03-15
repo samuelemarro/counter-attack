@@ -110,7 +110,7 @@ def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p
 
             assert adversarials.shape == images.shape
             
-            successful = utils.check_success(defended_model, adversarials, labels, True)
+            successful = utils.misclassified(defended_model, adversarials, labels, True)
 
             for i in range(len(images)):
                 if successful[i]:
@@ -167,7 +167,7 @@ def multiple_attack_test(model, attack_names, attacks, loader, p, remove_misclas
 
             assert adversarials.shape == images.shape
             
-            successful = utils.check_success(model, adversarials, labels, False)
+            successful = utils.misclassified(model, adversarials, labels, False)
 
             successful = successful.cpu()
             adversarials = adversarials.cpu()
