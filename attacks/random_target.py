@@ -9,6 +9,7 @@ class RandomTargetEvasionAttack:
     """
     def __init__(self, undefended_model, attack_on_detector_classifier):
         self.undefended_model = undefended_model
+        
         assert attack_on_detector_classifier.targeted
         self.predict = attack_on_detector_classifier.predict
         self.attack_on_detector_classifier = attack_on_detector_classifier

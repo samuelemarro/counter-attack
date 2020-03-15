@@ -4,8 +4,6 @@ import torch
 # TODO: Remember to always check the .targeted of what you're working with,
 # as well as if you're using the standard or defended model
 
-# TODO: Generalizzare successful?
-
 # Nota: In ogni attacco, per "predict" si intende il modello indifeso
 
 class AttackPool(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):

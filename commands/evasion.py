@@ -26,15 +26,26 @@ logger = logging.getLogger(__name__)
 @click.argument('rejection_threshold', type=float)
 @click.argument('substitute_architectures', callback=parsing.ParameterList(parsing.architectures))
 @click.argument('substitute_state_dict_paths', callback=parsing.ParameterList())
-@click.option('--state-dict-path', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None)
-@click.option('--batch-size', type=click.IntRange(1), default=50, show_default=True)
-@click.option('--device', default='cuda', show_default=True)
-@click.option('--attack-config-file', type=click.Path(exists=True, file_okay=True, dir_okay=False), default='default_attack_configuration.cfg', show_default=True)
-@click.option('--keep-misclassified', is_flag=True)
-@click.option('--max-samples', type=click.IntRange(1, None), default=None)
-@click.option('--save-to', type=click.Path(exists=False, file_okay=True, dir_okay=False))
-@click.option('--show', type=click.IntRange(1, None), default=None)
-@click.option('--log-level', type=click.Choice(parsing.log_levels), default='info', show_default=True)
+@click.option('--state-dict-path', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None,
+    help='The path to the state-dict file of the model. If None, a pretrained model will be used (if available).')
+@click.option('--batch-size', type=click.IntRange(1), default=50, show_default=True,
+    help='The batch size of the dataset.')
+@click.option('--device', default='cuda', show_default=True, help='The device where the model will be executed.')
+@click.option('--attack-config-file', type=click.Path(exists=True, file_okay=True, dir_okay=False),
+    default='default_attack_configuration.cfg', show_default=True, help='The path to the file containing the '
+    'attack configuration.')
+@click.option('--keep-misclassified', is_flag=True,
+    help='If passed, the attack is also run on the images that were misclassified by the base model.')
+@click.option('--max-samples', type=click.IntRange(1, None), default=None,
+    help='The maximum number of images that are loaded from the dataset. '
+         'If unspecified, all images are loaded.')
+@click.option('--save-to', type=click.Path(exists=False, file_okay=True, dir_okay=False),
+    help='The path to the file where the test results will be saved (as a dataset). If unspecified, '
+         'no dataset is saved.')
+@click.option('--show', type=click.IntRange(1, None), default=None,
+    help='The number of adversarials to be shown. If unspecified, no adversarials are shown.')
+@click.option('--log-level', type=click.Choice(parsing.log_levels), default='info', show_default=True,
+    help='The minimum logging level.')
 def evasion(**kwargs):
     parsing.set_log_level(kwargs['log_level'])
 

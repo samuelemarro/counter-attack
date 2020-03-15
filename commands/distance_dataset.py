@@ -17,15 +17,25 @@ logger = logging.getLogger(__name__)
 @click.argument('attacks', callback=parsing.ParameterList(parsing.supported_attacks))
 @click.argument('p', type=click.Choice(parsing.distances), callback=parsing.validate_lp_distance)
 @click.argument('save_to', type=click.Path(exists=False, file_okay=True, dir_okay=False))
-@click.option('--state-dict-path', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None)
-@click.option('--from-genuine', default=None)
-@click.option('--from-adversarial', default=None)
-@click.option('--batch-size', type=click.IntRange(1), default=50, show_default=True)
-@click.option('--attack-config-file', type=click.Path(exists=True, file_okay=True, dir_okay=False), default='default_attack_configuration.cfg', show_default=True)
-@click.option('--keep-misclassified', is_flag=True)
-@click.option('--device', default='cuda', show_default=True)
-@click.option('--max-samples', type=click.IntRange(1, None), default=None)
-@click.option('--log-level', type=click.Choice(parsing.log_levels), default='info', show_default=True)
+@click.option('--state-dict-path', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None,
+    help='The path to the state-dict file of the model. If None, a pretrained model will be used (if available).')
+@click.option('--from-genuine', default=None,
+    help='The source of the genuine dataset. If unspecified, no genuine dataset is used.')
+@click.option('--from-adversarial', default=None,
+    help='The source of the adversarial dataset. If unspecified, no adversarial dataset is used.')
+@click.option('--batch-size', type=click.IntRange(1), default=50, show_default=True,
+    help='The batch size of the dataset.')
+@click.option('--attack-config-file', type=click.Path(exists=True, file_okay=True, dir_okay=False),
+    default='default_attack_configuration.cfg', show_default=True, help='The path to the file containing the '
+    'attack configuration.')
+@click.option('--keep-misclassified', is_flag=True,
+    help='If passed, the attack is also run on the images that were misclassified by the base model.')
+@click.option('--device', default='cuda', show_default=True, help='The device where the model will be executed.')
+@click.option('--max-samples', type=click.IntRange(1, None), default=None,
+    help='The maximum number of images that are loaded from the dataset. '
+         'If unspecified, all images are loaded.')
+@click.option('--log-level', type=click.Choice(parsing.log_levels), default='info', show_default=True,
+    help='The minimum logging level.')
 def distance_dataset(**kwargs):
     parsing.set_log_level(kwargs['log_level'])
     

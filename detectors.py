@@ -1,7 +1,11 @@
+import logging
+
 import numpy as np
 import torch
 
 import utils
+
+logger = logging.getLogger(__name__)
 
 class Detector(torch.nn.Module):
     def __init__(self):
@@ -89,6 +93,7 @@ class NormalisedDetectorModel(torch.nn.Module):
             rejected.
         """
         super().__init__()
+        logger.debug('Creating detector with threshold {}.'.format(threshold))
         self.model = model
         self.detector = detector
         self.threshold = threshold
@@ -99,7 +104,8 @@ class NormalisedDetectorModel(torch.nn.Module):
 
         assert scores.shape == (len(x),)
 
-        # Accetta (positivo) se sono maggiori del threshold
+        # Accept (positive score) if the detector score
+        # is bigger than the threshold
         scores = scores - self.threshold
 
         # Scale the output

@@ -17,11 +17,14 @@ logger = logging.getLogger(__name__)
 @click.argument('dataset')
 @click.argument('epochs', type=click.IntRange(1, None))
 @click.argument('save_to', type=click.Path(exists=False, file_okay=True, dir_okay=False))
-@click.option('--state-dict-path', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None)
-@click.option('--batch-size', type=click.IntRange(1), default=50, show_default=True)
-@click.option('--device', default='cuda', show_default=True)
+@click.option('--state-dict-path', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None,
+    help='The path to the state-dict file of the model. If None, a pretrained model will be used (if available).')
+@click.option('--batch-size', type=click.IntRange(1), default=50, show_default=True,
+    help='The batch size of the dataset.')
+@click.option('--device', default='cuda', show_default=True, help='The device where the model will be executed.')
 @parsing.add_options(parsing.training_options)
-@click.option('--log-level', type=click.Choice(parsing.log_levels), default='info', show_default=True)
+@click.option('--log-level', type=click.Choice(parsing.log_levels), default='info', show_default=True,
+    help='The minimum logging level.')
 def train_classifier(**kwargs):
     parsing.set_log_level(kwargs['log_level'])
     

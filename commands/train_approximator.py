@@ -12,20 +12,22 @@ import torch_utils
 logger = logging.getLogger(__name__)
 
 # Nota: keep_misclassified viene ignorato per gli adversarial examples, dato che per definizione vengono misclassificati
-
 @click.command()
 @click.argument('domain', type=click.Choice(parsing.domains))
 @click.argument('architecture', type=click.Choice(parsing.architectures))
 @click.argument('dataset', type=click.Path(exists=True, file_okay=True, dir_okay=False))
 @click.argument('epochs', type=click.IntRange(1, None))
 @click.argument('save_to', type=click.Path(exists=False, file_okay=True, dir_okay=False))
-@click.option('--state-dict-path', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None)
-@click.option('--batch-size', type=click.IntRange(1), default=50, show_default=True)
-@click.option('--device', default='cuda', show_default=True)
+@click.option('--state-dict-path', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None,
+    help='The path to the state-dict file of the model. If None, a pretrained model will be used (if available).')
+@click.option('--batch-size', type=click.IntRange(1), default=50, show_default=True,
+    help='The batch size of the dataset.')
+@click.option('--device', default='cuda', show_default=True, help='The device where the model will be executed.')
 @click.option('--from-adversarial-dataset', is_flag=True, help='Use an adversarial dataset to compute the adversarial distance.')
 @click.option('--val-from-adversarial-dataset', is_flag=True)
+@click.option('--log-level', type=click.Choice(parsing.log_levels), default='info', show_default=True,
+    help='The minimum logging level.')
 @parsing.add_options(parsing.training_options)
-@click.option('--log-level', type=click.Choice(parsing.log_levels), default='info', show_default=True)
 def train_approximator(**kwargs):
     parsing.set_log_level(kwargs['log_level'])
     
