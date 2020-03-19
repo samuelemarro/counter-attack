@@ -25,11 +25,16 @@ logger = logging.getLogger(__name__)
 @click.option('--device', default='cuda', show_default=True, help='The device where the model will be executed.')
 @click.option('--from-adversarial-dataset', is_flag=True, help='Use an adversarial dataset to compute the adversarial distance.')
 @click.option('--val-from-adversarial-dataset', is_flag=True)
+@click.option('--seed', type=int, default=None,
+    help='The seed for random generation. If unspecified, the current time is used as seed.')
 @click.option('--log-level', type=click.Choice(parsing.log_levels), default='info', show_default=True,
     help='The minimum logging level.')
 @parsing.add_options(parsing.training_options)
 def train_approximator(**kwargs):
     parsing.set_log_level(kwargs['log_level'])
+
+    if kwargs['seed'] is not None:
+        torch.manual_seed(kwargs['seed'])
     
     model = parsing.get_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'], True, load_weights=False, as_detector=True)
     model.train()

@@ -38,12 +38,17 @@ logger = logging.getLogger(__name__)
 @click.option('--save-to', type=click.Path(exists=False, file_okay=True, dir_okay=False),
     help='The path to the file where the test results will be saved (as a dataset). If unspecified, '
          'no dataset is saved.')
+@click.option('--seed', type=int, default=None,
+    help='The seed for random generation. If unspecified, the current time is used as seed.')
 @click.option('--show', type=click.IntRange(1, None), default=None,
     help='The number of adversarials to be shown. If unspecified, no adversarials are shown.')
 @click.option('--log-level', type=click.Choice(parsing.log_levels), default='info', show_default=True,
     help='The minimum logging level.')
 def attack_matrix(**kwargs):
     parsing.set_log_level(kwargs['log_level'])
+
+    if kwargs['seed'] is not None:
+        torch.manual_seed(kwargs['seed'])
 
     model = parsing.get_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'], True, load_weights=True)
     model.eval()

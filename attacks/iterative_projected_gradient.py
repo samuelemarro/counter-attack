@@ -162,8 +162,6 @@ def er_perturb_iterative(xvar, yvar, predict, nb_iter, eps, eps_iter, loss_fn, t
 
         delta[active] = new_delta
 
-        
-
     if return_best:
         return best_adversarials
     else:
@@ -188,14 +186,17 @@ class ERPGDAttack(Attack, LabelMixin):
     :param ord: (optional) the order of maximum distortion (inf or 2).
     :param targeted: if the attack is targeted.
     :param early_rejection_threshold: the threshold for early rejecting samples
-    :param return_best: if True, return the best adversarials, else return the last
+    :param return_best: if True, return the best adversarials, else return the last.
+    :param stochastic_consistency: if True, the same image will always use the same random
+        values.
     """
 
     def __init__(
             self, predict, loss_fn=None, eps=0.3, nb_iter=40,
             eps_iter=0.01, rand_init=True, clip_min=0., clip_max=1.,
             ord=np.inf, l1_sparsity=None, targeted=False,
-            early_rejection_threshold=None, return_best=True):
+            early_rejection_threshold=None, return_best=True,
+            stochastic_consistency=False):
         """
         Create an instance of the ERPGDAttack.
 
@@ -214,6 +215,8 @@ class ERPGDAttack(Attack, LabelMixin):
 
         self.early_rejection_threshold = early_rejection_threshold
         self.return_best = return_best
+        self.stochastic_consistency = stochastic_consistency
+
         assert is_float_or_torch_tensor(self.eps_iter)
         assert is_float_or_torch_tensor(self.eps)
 
@@ -233,8 +236,11 @@ class ERPGDAttack(Attack, LabelMixin):
 
         delta = torch.zeros_like(x)
         if self.rand_init:
-            rand_init_delta(
-                delta, x, self.ord, self.eps, self.clip_min, self.clip_max)
+            if self.stochastic_consistency:
+                utils.consistent_rand_init_delta(delta, x, self.ord, self.eps, self.clip_min, self.clip_max)
+            else:
+                rand_init_delta(
+                    delta, x, self.ord, self.eps, self.clip_min, self.clip_max)
             delta.data = clamp(
                 x + delta.data, min=self.clip_min, max=self.clip_max) - x
 
@@ -266,20 +272,23 @@ class LinfERPGDAttack(ERPGDAttack):
     :param clip_max: maximum value per input dimension.
     :param targeted: if the attack is targeted.
     :param early_rejection_threshold: the threshold for early rejecting samples
-    :param return_best: if True, return the best adversarials, else return the last
+    :param return_best: if True, return the best adversarials, else return the last.
+    :param stochastic_consistency: if True, the same image will always use the same random
+        values.
     """
 
     def __init__(
             self, predict, loss_fn=None, eps=0.3, nb_iter=40,
             eps_iter=0.01, rand_init=True, clip_min=0., clip_max=1.,
-            targeted=False, early_rejection_threshold=None, return_best=True):
+            targeted=False, early_rejection_threshold=None, return_best=True,
+            stochastic_consistency=False):
         ord = np.inf
         super(LinfERPGDAttack, self).__init__(
             predict=predict, loss_fn=loss_fn, eps=eps, nb_iter=nb_iter,
             eps_iter=eps_iter, rand_init=rand_init, clip_min=clip_min,
             clip_max=clip_max, targeted=targeted, ord=ord,
             early_rejection_threshold=early_rejection_threshold,
-            return_best=return_best)
+            return_best=return_best, stochastic_consistency=stochastic_consistency)
 
 
 class L2ERPGDAttack(ERPGDAttack):
@@ -295,21 +304,24 @@ class L2ERPGDAttack(ERPGDAttack):
     :param clip_min: mininum value per input dimension.
     :param clip_max: maximum value per input dimension.
     :param targeted: if the attack is targeted.
-    :param early_rejection_threshold: the threshold for early rejecting samples
-    :param return_best: if True, return the best adversarials, else return the last
+    :param early_rejection_threshold: the threshold for early rejecting samples.
+    :param return_best: if True, return the best adversarials, else return the last.
+    :param stochastic_consistency: if True, the same image will always use the same random
+        values.
     """
 
     def __init__(
             self, predict, loss_fn=None, eps=0.3, nb_iter=40,
             eps_iter=0.01, rand_init=True, clip_min=0., clip_max=1.,
-            targeted=False, early_rejection_threshold=None, return_best=True):
+            targeted=False, early_rejection_threshold=None, return_best=True,
+            stochastic_consistency=False):
         ord = 2
         super(L2ERPGDAttack, self).__init__(
             predict=predict, loss_fn=loss_fn, eps=eps, nb_iter=nb_iter,
             eps_iter=eps_iter, rand_init=rand_init, clip_min=clip_min,
             clip_max=clip_max, targeted=targeted,
             ord=ord, early_rejection_threshold=early_rejection_threshold,
-            return_best=return_best)
+            return_best=return_best, stochastic_consistency=stochastic_consistency)
 
 class L2ERBasicIterativeAttack(ERPGDAttack):
     """Like GradientAttack but with several steps for each epsilon.
@@ -332,10 +344,11 @@ class L2ERBasicIterativeAttack(ERPGDAttack):
         ord = 2
         rand_init = False
         l1_sparsity = None
+        stochastic_consistency = False
         super(L2ERBasicIterativeAttack, self).__init__(
             predict, loss_fn, eps, nb_iter, eps_iter, rand_init,
             clip_min, clip_max, ord, l1_sparsity, targeted, early_rejection_threshold,
-            return_best)
+            return_best, stochastic_consistency)
 
 
 class LinfERBasicIterativeAttack(ERPGDAttack):
@@ -362,7 +375,8 @@ class LinfERBasicIterativeAttack(ERPGDAttack):
         ord = np.inf
         rand_init = False
         l1_sparsity = None
+        stochastic_consistency = False
         super(LinfERBasicIterativeAttack, self).__init__(
             predict, loss_fn, eps, nb_iter, eps_iter, rand_init,
             clip_min, clip_max, ord, l1_sparsity, targeted,
-            early_rejection_threshold, return_best)
+            early_rejection_threshold, return_best, stochastic_consistency)

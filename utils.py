@@ -1,11 +1,12 @@
 import gzip
 import json
+import hashlib
 import itertools
 import logging
 import pathlib
 import pickle
 
-
+import advertorch
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -223,7 +224,8 @@ def show_images(images, adversarials, limit=None, model=None):
 
         plt.show()
 
-def maybe_stack(tensors, fallback_shape, dtype=torch.float):
+# TODO: Includere uso di device=
+def maybe_stack(tensors, fallback_shape, dtype=torch.float, device='cpu'):
     if len(tensors) > 0:
         return torch.stack(tensors)
     else:
@@ -231,7 +233,88 @@ def maybe_stack(tensors, fallback_shape, dtype=torch.float):
             shape = (0, )
         else:
             shape = (0, ) + fallback_shape
-        return torch.zeros(shape, dtype=dtype)
+        return torch.zeros(shape, dtype=dtype, device=device)
+
+def tensor_md5(tensor):
+    tensor = tensor.detach().cpu().numpy()
+    tensor_content = tensor.tostring()
+
+    return int(hashlib.md5(tensor).hexdigest(), 16)
+
+# TODO: Metterle in un file diverso?
+
+def consistent_wrapper(linked_tensor, wrapped_function):
+    # Save the current RNG state
+    rng_state = torch.get_rng_state()
+
+    # Get a consistent seed
+    seed = tensor_md5(linked_tensor) % (2**63)
+
+    torch.manual_seed(seed) 
+
+    random_tensor = wrapped_function()
+
+    # Restore the RNG state
+    torch.set_rng_state(rng_state)
+
+    return random_tensor
+
+def consistent_randint(linked_tensor, min, max, shape, device):
+    return consistent_wrapper(linked_tensor,
+    lambda: torch.randint(min, max, shape, device=device))
+
+def consistent_rand_init_delta(deltas, x, ord, eps, clip_min, clip_max):
+    assert len(x) == len(deltas)
+    assert len(x) == len(eps)
+
+    for i, (image, delta, image_eps) in enumerate(zip(x, deltas, eps)):
+        delta = delta.unsqueeze(0)
+        unsqueezed_image = image.unsqueeze(0)
+        unsqueezed_eps = eps.unsqueeze(0)
+        consistent_wrapper(image,
+            lambda: advertorch.attacks.utils.rand_init_delta(delta, unsqueezed_image, ord, unsqueezed_eps, clip_min, clip_max)[0]
+        )
+    
+    return deltas
+
+class ConsistentGenerator:
+    def __init__(self, wrapped_function):
+        self.rng_state_dict = {}
+        self.wrapped_function = wrapped_function
+
+    def generate(self, tensor_id, linked_tensor):
+        if torch.is_tensor(tensor_id):
+            tensor_id = tensor_id.cpu().numpy()
+
+        if isinstance(tensor_id, np.ndarray):
+            tensor_id = tensor_id.item()
+
+        # Save the current RNG state
+        current_rng_state = torch.get_rng_state()
+
+        if tensor_id in self.rng_state_dict:
+            # Load an existing RNG state
+            torch.set_rng_state(self.rng_state_dict[tensor_id])
+        else:
+            # Use the md5 hash as seed
+            torch.manual_seed(tensor_md5(linked_tensor) % (2**63))
+
+        return_value = self.wrapped_function()
+
+        # Save the new RNG state for future use
+        self.rng_state_dict[tensor_id] = torch.get_rng_state()
+
+        # Restore the RNG state
+        torch.set_rng_state(current_rng_state)
+
+        return return_value
+
+    def batch_generate(self, tensor_ids, linked_tensors):
+        return_values = []
+        for tensor_id, linked_tensor in zip(tensor_ids, linked_tensors):
+            return_values.append(self.generate(tensor_id, linked_tensor))
+
+        return torch.stack(return_values)
 
 def create_label_dataset(model, images, batch_size):
     image_dataset = torch.utils.data.TensorDataset(images)

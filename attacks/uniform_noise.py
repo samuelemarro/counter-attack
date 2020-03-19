@@ -4,14 +4,17 @@ import torch
 
 import utils
 
+# TODO: Manual seed globale da console?
+
 class UniformNoiseAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
-    def __init__(self, predict, p, targeted, eps=0.3, count=100, early_rejection_threshold=None, clip_min=0, clip_max=1):
+    def __init__(self, predict, p, targeted, eps=0.3, count=100, early_rejection_threshold=None, clip_min=0, clip_max=1, stochastic_consistency=False):
         super().__init__(predict, None, clip_min, clip_max)
         self.p = p
         self.targeted = targeted
         self.eps = eps
         self.count = count
         self.early_rejection_threshold = early_rejection_threshold
+        self.stochastic_consistency = stochastic_consistency
 
     def successful(self, adversarial_outputs, y):
         adversarial_labels = torch.argmax(adversarial_outputs, dim=1)
@@ -34,10 +37,21 @@ class UniformNoiseAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixi
         best_distances = torch.ones((batch_size,), device=x.device) * np.inf
         active = torch.ones((batch_size,), dtype=bool, device=x.device)
 
+        if self.stochastic_consistency:
+            tensor_ids = torch.arange(len(x), device=x.device)
+            generator = utils.ConsistentGenerator(
+                lambda:
+                torch.rand(x.shape[1:], device=x.device)
+            )
+
         for _ in range(self.count):
-            a = torch.rand(x.shape, device=x.device) * 2 - 1
-            noise = (torch.rand(x.shape, device=x.device) * 2 - 1) * self.eps
-            adversarials = torch.clamp(x + noise, min=self.clip_min, max=self.clip_max)[active]
+            if self.stochastic_consistency:
+                noise = generator.batch_generate(tensor_ids[active].cpu(), x[active])
+            else:
+                noise = torch.rand(x.shape, device=x.device)
+
+            scaled_noise = (noise * 2 - 1) * self.eps
+            adversarials = torch.clamp(x + scaled_noise, min=self.clip_min, max=self.clip_max)[active]
             
             outputs = self.predict(adversarials)
 

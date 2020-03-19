@@ -23,10 +23,15 @@ logger = logging.getLogger(__name__)
     help='The batch size of the dataset.')
 @click.option('--device', default='cuda', show_default=True, help='The device where the model will be executed.')
 @parsing.add_options(parsing.training_options)
+@click.option('--seed', type=int, default=None,
+    help='The seed for random generation. If unspecified, the current time is used as seed.')
 @click.option('--log-level', type=click.Choice(parsing.log_levels), default='info', show_default=True,
     help='The minimum logging level.')
 def train_classifier(**kwargs):
     parsing.set_log_level(kwargs['log_level'])
+
+    if kwargs['seed'] is not None:
+        torch.manual_seed(kwargs['seed'])
     
     model = parsing.get_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'], True, load_weights=False)
     model.train()

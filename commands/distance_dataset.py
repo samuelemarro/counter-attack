@@ -34,10 +34,15 @@ logger = logging.getLogger(__name__)
 @click.option('--max-samples', type=click.IntRange(1, None), default=None,
     help='The maximum number of images that are loaded from the dataset. '
          'If unspecified, all images are loaded.')
+@click.option('--seed', type=int, default=None,
+    help='The seed for random generation. If unspecified, the current time is used as seed.')
 @click.option('--log-level', type=click.Choice(parsing.log_levels), default='info', show_default=True,
     help='The minimum logging level.')
 def distance_dataset(**kwargs):
     parsing.set_log_level(kwargs['log_level'])
+
+    if kwargs['seed'] is not None:
+        torch.manual_seed(kwargs['seed'])
     
     model = parsing.get_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'], True, load_weights=True)
     model.eval()
