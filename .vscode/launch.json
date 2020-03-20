@@ -173,6 +173,25 @@
             ]
         },
         {
+            "name" : "MNIST PGD LInf",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "attack",
+                "mnist",
+                "resnet50",
+                "std:test",
+                "carlini",
+                "linf",
+                "--max-samples",
+                "5",
+                "--show",
+                "5"
+            ]
+        },
+        {
             "name" : "PGD LInf Fake ER",
             "type" : "python",
             "request": "launch",

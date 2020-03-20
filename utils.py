@@ -207,17 +207,22 @@ def show_images(images, adversarials, limit=None, model=None):
             image_title += ' (label: {})'.format(label)
             adversarial_title += ' (label: {})'.format(adversarial_label)
 
-        image = np.moveaxis(image.cpu().numpy(), 0, 2)
-        adversarial = np.moveaxis(adversarial.cpu().numpy(), 0, 2)
+        if image.shape[0] == 1:
+            plt.style.use('grayscale')
+
+        normalisation = plt.Normalize(vmin=0, vmax=1)
+
+        image = np.moveaxis(image.cpu().numpy(), 0, 2).squeeze()
+        adversarial = np.moveaxis(adversarial.cpu().numpy(), 0, 2).squeeze()
         difference = np.abs(image - adversarial)
 
         _, axes = plt.subplots(1, 3, squeeze=False)
         axes[0, 0].title.set_text(image_title)
-        axes[0, 0].imshow(image)
+        axes[0, 0].imshow(image, norm=normalisation)
         axes[0, 1].title.set_text(adversarial_title)
-        axes[0, 1].imshow(adversarial)
+        axes[0, 1].imshow(adversarial, norm=normalisation)
         axes[0, 2].title.set_text('Difference')
-        axes[0, 2].imshow(difference)
+        axes[0, 2].imshow(difference, norm=normalisation)
 
         print('L2 norm: {}'.format(np.linalg.norm(difference)))
         print('LInf norm: {}'.format(np.max(difference)))

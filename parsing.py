@@ -12,12 +12,13 @@ import torchvision
 import attacks
 import cifar10_models
 import detectors
+import models
 import torch_utils
 import utils
 
 logger = logging.getLogger(__name__)
 
-domains = ['cifar10']
+domains = ['cifar10', 'mnist', 'svhn']
 architectures = ['resnet50']
 supported_attacks = ['bim', 'carlini', 'deepfool', 'fast_gradient', 'pgd', 'uniform']
 attacks_with_binary_search = ['bim', 'fast_gradient', 'pgd', 'uniform']
@@ -68,6 +69,8 @@ def set_log_level(log_level):
 def get_model(domain, architecture, state_dict_path, apply_normalisation, load_weights=False, as_detector=False):
     if as_detector:
         num_classes = 1
+    else:
+        num_classes = 10
     
     pretrained = load_weights and state_dict_path is None
 
@@ -79,20 +82,44 @@ def get_model(domain, architecture, state_dict_path, apply_normalisation, load_w
             num_classes = 10
         
         if architecture == 'resnet50':
-            model = cifar10_models.resnet50(pretrained=pretrained, num_classes=num_classes)
+            #model = cifar10_models.resnet50(pretrained=pretrained, num_classes=num_classes)
+            model = models.cifar10(pretrained=pretrained, num_classes=num_classes)
         else:
             raise NotImplementedError('Unsupported architecture {} for domain {}.'.format(architecture, domain))
+    elif domain == 'svhn':
+
+        if architecture == 'resnet50':
+            # SVHN is similar in structure to CIFAR10
+            model = models.svhn(pretrained=pretrained, num_classes=num_classes)
+        else:
+            raise NotImplementedError('Unsupported architecture {} for domain {}.'.format(architecture, domain))
+    elif domain == 'mnist':
+        model = models.mnist(pretrained=pretrained, num_classes=num_classes)
     else:
         raise NotImplementedError('Unsupported domain {}.'.format(domain))
 
     if apply_normalisation:
-        if domain == 'cifar10':
-            mean = np.array([0.4914, 0.4822, 0.4465])
-            std = np.array([0.2023, 0.1994, 0.2010])
+        # CIFAR10:
+        # mean = np.array([0.4914, 0.4822, 0.4465])
+        # std = np.array([0.2023, 0.1994, 0.2010])
+        # SVHN
+        # mean = np.array([0.4377, 0.4438, 0.4728])
+        # std = np.array([0.1201, 0.1231, 0.1052])
+
+        # The pretrained CIFAR10 and SVHN models
+        # use the standard 0.5 normalisations
+        if domain in ['cifar10', 'svhn']:
+            mean = np.array([0.5, 0.5, 0.5])
+            std = np.array([0.5, 0.5, 0.5])
+            num_channels = 3
+        elif domain == 'mnist':
+            mean = np.array([0.1307])
+            std = np.array([0.3081])
+            num_channels = 1
         else:
             raise NotImplementedError('Unsupported normalisation for domain {}.'.format(domain))
 
-        normalisation = torch_utils.Normalisation(mean, std)
+        normalisation = torch_utils.Normalisation(mean, std, num_channels=num_channels)
         model = torch.nn.Sequential(normalisation, model)
 
     # Nota: Questo fa sì che i modelli vengano salvati come modello con normalisation
@@ -107,11 +134,24 @@ def get_dataset(domain, dataset, allow_standard=True, max_samples=None):
     transform = torchvision.transforms.ToTensor()
     
     if allow_standard:
+        # TODO: Simplify?
         if domain == 'cifar10':
             if dataset == 'std:train':
                 matched_dataset = torchvision.datasets.CIFAR10('./data/cifar10', train=True, download=True, transform=transform)
             elif dataset == 'std:test':
                 matched_dataset = torchvision.datasets.CIFAR10('./data/cifar10', train=False, download=True, transform=transform)
+        elif domain == 'svhn':
+            if dataset == 'std:train':
+                matched_dataset = torchvision.datasets.SVHN('./data/svhn', split='train', download=True, transform=transform)
+            elif dataset == 'std:extra':
+                matched_dataset = torchvision.datasets.SVHN('./data/svhn', split='extra', download=True, transform=transform)
+            elif dataset == 'std:test':
+                matched_dataset = torchvision.datasets.SVHN('./data/svhn', split='test', download=True, transform=transform)
+        elif domain == 'mnist':
+            if dataset == 'std:train':
+                matched_dataset = torchvision.datasets.MNIST('./data/mnist', train=True, download=True, transform=transform)
+            elif dataset == 'std:test':
+                matched_dataset = torchvision.datasets.MNIST('./data/mnist', train=False, download=True, transform=transform)
     
     if matched_dataset is None:
         # No matches found, try to read it as a file path
@@ -190,7 +230,7 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
     if (attack_type == 'standard' or attack_type == 'defense') and defended_model is not None:
         raise ValueError('Passed a defended_model for a standard/defense attack.')
 
-    if domain == 'cifar10':
+    if domain in ['cifar10', 'mnist', 'svhn']:
         num_classes = 10
     else:
         raise NotImplementedError('Unsupported domain "{}".'.format(domain))

@@ -106,6 +106,10 @@ def er_perturb_iterative(xvar, yvar, predict, nb_iter, eps, eps_iter, loss_fn, t
     else:
         delta = torch.zeros_like(xvar)
 
+    if isinstance(eps, float):
+        eps = torch.ones((len(xvar),), dtype=float, device=xvar.device) * eps
+        eps = eps.float()
+
     active = torch.ones((len(xvar),), dtype=bool, device=xvar.device)
 
     best_adversarials = xvar.clone()

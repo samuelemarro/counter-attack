@@ -1,6 +1,8 @@
 import advertorch
 import torch
 
+import utils
+
 # TODO: Remember to always check the .targeted of what you're working with,
 # as well as if you're using the standard or defended model
 

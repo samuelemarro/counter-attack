@@ -30,10 +30,10 @@ class BatchLimitedModel(torch.nn.Module):
         return outputs
 
 class Normalisation(torch.nn.Module):
-    def __init__(self, mean, std):
+    def __init__(self, mean, std, num_channels=3):
         super().__init__()
-        self.mean = torch.from_numpy(np.array(mean).reshape((3, 1, 1)))
-        self.std = torch.from_numpy(np.array(std).reshape((3, 1, 1)))
+        self.mean = torch.from_numpy(np.array(mean).reshape((num_channels, 1, 1)))
+        self.std = torch.from_numpy(np.array(std).reshape((num_channels, 1, 1)))
 
     def forward(self, input):
         mean = self.mean.to(input)

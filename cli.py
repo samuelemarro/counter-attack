@@ -8,6 +8,8 @@ import commands
 def main():
     pass
 
+# TODO: Scaricare da un server con un nome porta a una violazione dell'anonimato?
+
 main.add_command(commands.accuracy)
 main.add_command(commands.attack)
 main.add_command(commands.attack_matrix)
