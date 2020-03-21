@@ -17,7 +17,6 @@
             "args": [
                 "attack",
                 "cifar10",
-                "resnet50",
                 "std:test",
                 "[bim, carlini, deepfool, fast_gradient, pgd]",
                 "linf",
@@ -36,7 +35,6 @@
             "args": [
                 "attack",
                 "cifar10",
-                "resnet50",
                 "std:test",
                 "deepfool",
                 "linf",
@@ -55,7 +53,6 @@
             "args": [
                 "attack",
                 "cifar10",
-                "resnet50",
                 "std:test",
                 "carlini",
                 "linf",
@@ -74,7 +71,6 @@
             "args": [
                 "attack",
                 "cifar10",
-                "resnet50",
                 "std:test",
                 "carlini",
                 "l2",
@@ -96,7 +92,6 @@
             "args": [
                 "attack",
                 "cifar10",
-                "resnet50",
                 "std:test",
                 "carlini",
                 "linf",
@@ -118,7 +113,6 @@
             "args": [
                 "attack",
                 "cifar10",
-                "resnet50",
                 "std:test",
                 "carlini",
                 "linf",
@@ -140,7 +134,6 @@
             "args": [
                 "attack",
                 "cifar10",
-                "resnet50",
                 "std:test",
                 "carlini",
                 "linf",
@@ -162,7 +155,6 @@
             "args": [
                 "attack",
                 "cifar10",
-                "resnet50",
                 "std:test",
                 "pgd",
                 "linf",
@@ -181,7 +173,6 @@
             "args": [
                 "attack",
                 "mnist",
-                "resnet50",
                 "std:test",
                 "carlini",
                 "linf",
@@ -200,7 +191,6 @@
             "args": [
                 "attack",
                 "cifar10",
-                "resnet50",
                 "std:test",
                 "pgd",
                 "linf",
@@ -222,7 +212,6 @@
             "args": [
                 "attack",
                 "cifar10",
-                "resnet50",
                 "std:test",
                 "pgd",
                 "linf",
@@ -244,7 +233,6 @@
             "args": [
                 "attack",
                 "cifar10",
-                "resnet50",
                 "std:test",
                 "pgd",
                 "linf",
@@ -266,7 +254,6 @@
             "args": [
                 "attack",
                 "cifar10",
-                "resnet50",
                 "std:test",
                 "fast_gradient",
                 "linf",
@@ -285,7 +272,6 @@
             "args": [
                 "attack",
                 "cifar10",
-                "resnet50",
                 "std:test",
                 "fast_gradient",
                 "linf",
@@ -307,7 +293,6 @@
             "args": [
                 "attack",
                 "cifar10",
-                "resnet50",
                 "std:test",
                 "fast_gradient",
                 "linf",
@@ -329,7 +314,6 @@
             "args": [
                 "attack",
                 "cifar10",
-                "resnet50",
                 "std:test",
                 "fast_gradient",
                 "linf",
@@ -351,7 +335,6 @@
             "args": [
                 "attack",
                 "cifar10",
-                "resnet50",
                 "std:test",
                 "fast_gradient",
                 "l2",
@@ -372,7 +355,6 @@
             "args": [
                 "attack",
                 "cifar10",
-                "resnet50",
                 "std:test",
                 "uniform",
                 "l2",
@@ -393,7 +375,6 @@
             "args": [
                 "attack",
                 "cifar10",
-                "resnet50",
                 "std:test",
                 "uniform",
                 "linf",
@@ -414,7 +395,6 @@
             "args": [
                 "attack",
                 "cifar10",
-                "resnet50",
                 "std:test",
                 "uniform",
                 "linf",
@@ -438,7 +418,6 @@
             "args": [
                 "attack",
                 "cifar10",
-                "resnet50",
                 "std:test",
                 "uniform",
                 "linf",
@@ -462,7 +441,6 @@
             "args": [
                 "attack",
                 "cifar10",
-                "resnet50",
                 "std:test",
                 "uniform",
                 "linf",
@@ -486,7 +464,6 @@
             "args": [
                 "attack",
                 "cifar10",
-                "resnet50",
                 "std:test",
                 "deepfool, pgd",
                 "linf",
@@ -505,7 +482,6 @@
             "args": [
                 "compare",
                 "cifar10",
-                "resnet50",
                 "std:test",
                 "[bim, carlini, deepfool, fast_gradient, pgd]",
                 "l2",
@@ -524,7 +500,6 @@
             "args": [
                 "compare",
                 "cifar10",
-                "resnet50",
                 "std:test",
                 "[bim, fast_gradient]",
                 "l2",
@@ -543,7 +518,6 @@
             "args": [
                 "compare",
                 "cifar10",
-                "resnet50",
                 "std:test",
                 "[bim, carlini, fast_gradient, pgd]",
                 "l2",
@@ -562,13 +536,11 @@
             "args": [
                 "evasion",
                 "cifar10",
-                "resnet50",
                 "std:test",
                 "fast_gradient",
                 "[bim, carlini, fast_gradient, pgd]",
                 "linf",
                 "50",
-                "resnet50",
                 "trained-models/approximator/carlini-l2-cifar-test-100.pth",
                 "--batch-size",
                 "5"

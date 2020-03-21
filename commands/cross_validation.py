@@ -17,12 +17,10 @@ logger = logging.getLogger(__name__)
 
 @click.command()
 @click.argument('domain', type=click.Choice(parsing.domains))
-@click.argument('architecture', type=click.Choice(parsing.architectures))
 @click.argument('dataset')
 @click.argument('attacks', callback=parsing.ParameterList(parsing.supported_attacks))
 @click.argument('p', type=click.Choice(parsing.distances), callback=parsing.validate_lp_distance)
 @click.argument('rejection_thresholds', callback=parsing.ParameterList(cast_to=float))
-@click.argument('substitute_architectures', callback=parsing.ParameterList(parsing.architectures))
 @click.argument('substitute_state_dict_paths', callback=parsing.ParameterList())
 @click.option('--state-dict-path', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None,
     help='The path to the state-dict file of the model. If None, a pretrained model will be used (if available).')
@@ -52,7 +50,7 @@ def cross_validation(**kwargs):
     if kwargs['seed'] is not None:
         torch.manual_seed(kwargs['seed'])
 
-    model = parsing.get_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'], True, load_weights=True)
+    model = parsing.get_model(kwargs['domain'], kwargs['state_dict_path'], True, load_weights=True)
     model.eval()
     model.to(kwargs['device'])
 
@@ -64,7 +62,6 @@ def cross_validation(**kwargs):
 
     attack_names = kwargs['attacks']
     rejection_thresholds = kwargs['rejection_thresholds']
-    substitute_architectures = kwargs['substitute_architectures']
     substitute_state_dict_paths = kwargs['substitute_state_dict_paths']
 
     if len(attack_names) < 2:
@@ -73,14 +70,8 @@ def cross_validation(**kwargs):
     if len(rejection_thresholds) == 1:
         rejection_thresholds = len(attack_names) * [rejection_thresholds[0]]
 
-    if len(substitute_architectures) == 1:
-        substitute_architectures = len(attack_names) * [substitute_architectures[0]]
-
     if len(rejection_thresholds) != len(attack_names):
         raise click.BadArgumentUsage('rejection_thresholds must be either one value or as many values as the number of attacks.')
-
-    if len(substitute_architectures) != len(attack_names):
-        raise click.BadArgumentUsage('substitute_architectures must be either one value or as many values as the number of attacks.')
 
     if len(substitute_state_dict_paths) != len(attack_names):
         raise click.BadArgumentUsage('substitute_state_dict_paths must be as many values as the number of attacks.')
@@ -99,13 +90,12 @@ def cross_validation(**kwargs):
         evasion_attack_name = attack_names[i]
         counter_attack_names = [x for j, x in enumerate(attack_names) if j != i]
 
-        ca_substitute_architectures = [x for j, x in enumerate(substitute_architectures) if j != i]
         ca_substitute_state_dict_paths = [x for j, x in enumerate(substitute_state_dict_paths) if j != i]
 
         rejection_threshold = rejection_thresholds[i]
         
         detector = parsing.get_detector_pool(counter_attack_names, kwargs['domain'], kwargs['p'], 'standard', model, attack_config, kwargs['device'],
-        substitute_architectures=ca_substitute_architectures, substitute_state_dict_paths=ca_substitute_state_dict_paths, early_rejection_threshold=-rejection_threshold)
+        use_substitute=True, substitute_state_dict_paths=ca_substitute_state_dict_paths, early_rejection_threshold=-rejection_threshold)
 
         defended_model = detectors.NormalisedDetectorModel(model, detector, rejection_threshold)
 

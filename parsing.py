@@ -19,7 +19,6 @@ import utils
 logger = logging.getLogger(__name__)
 
 domains = ['cifar10', 'mnist', 'svhn']
-architectures = ['resnet50']
 supported_attacks = ['bim', 'carlini', 'deepfool', 'fast_gradient', 'pgd', 'uniform']
 attacks_with_binary_search = ['bim', 'fast_gradient', 'pgd', 'uniform']
 targeted_attacks = ['bim', 'carlini', 'fast_gradient', 'pgd']
@@ -66,7 +65,7 @@ def add_options(options):
 def set_log_level(log_level):
     logging.getLogger().setLevel(_log_level_to_number[log_level])
 
-def get_model(domain, architecture, state_dict_path, apply_normalisation, load_weights=False, as_detector=False):
+def get_model(domain, state_dict_path, apply_normalisation, load_weights=False, as_detector=False):
     if as_detector:
         num_classes = 1
     else:
@@ -78,21 +77,9 @@ def get_model(domain, architecture, state_dict_path, apply_normalisation, load_w
         logger.info('No state dict path provided. Using pretrained model.')
 
     if domain == 'cifar10':
-        if not as_detector:
-            num_classes = 10
-        
-        if architecture == 'resnet50':
-            #model = cifar10_models.resnet50(pretrained=pretrained, num_classes=num_classes)
-            model = models.cifar10(pretrained=pretrained, num_classes=num_classes)
-        else:
-            raise NotImplementedError('Unsupported architecture {} for domain {}.'.format(architecture, domain))
+        model = models.cifar10(pretrained=pretrained, num_classes=num_classes)
     elif domain == 'svhn':
-
-        if architecture == 'resnet50':
-            # SVHN is similar in structure to CIFAR10
-            model = models.svhn(pretrained=pretrained, num_classes=num_classes)
-        else:
-            raise NotImplementedError('Unsupported architecture {} for domain {}.'.format(architecture, domain))
+        model = models.svhn(pretrained=pretrained, num_classes=num_classes)
     elif domain == 'mnist':
         model = models.mnist(pretrained=pretrained, num_classes=num_classes)
     else:
@@ -352,14 +339,14 @@ def get_attack_pool(attack_names, domain, p, attack_type, model, attack_config, 
     else:
         return attacks.AttackPool(target_model, evade_detector, attack_pool, p)
 
-def get_detector(attack_name, domain, p, attack_type, model, attack_config, device, substitute_architecture=None, substitute_state_dict_path=None,
+def get_detector(attack_name, domain, p, attack_type, model, attack_config, device, use_substitute=False, substitute_state_dict_path=None,
                 early_rejection_threshold=None):
     logger.debug('Preparing detector for "{}" of type "{}" with attack "{}" '
     'and early rejection threshold {}.'.format(p, attack_type, attack_name, early_rejection_threshold))
 
     model.to(device)
 
-    if substitute_architecture is not None:
+    if use_substitute:
         assert substitute_state_dict_path is not None
 
     if attack_type != 'defense':
@@ -369,8 +356,8 @@ def get_detector(attack_name, domain, p, attack_type, model, attack_config, devi
     assert attack.predict == model
     detector = detectors.CounterAttackDetector(attack, model, p)
 
-    if substitute_architecture is not None:
-        substitute_detector = get_model(domain, substitute_architecture, substitute_state_dict_path, True, load_weights=True, as_detector=True)
+    if use_substitute:
+        substitute_detector = get_model(domain, substitute_state_dict_path, True, load_weights=True, as_detector=True)
 
         # The substitute model returns a [batch_size, 1] matrix, while we need a [batch_size] vector
         substitute_detector = torch.nn.Sequential(substitute_detector, torch_utils.Squeeze(1))
@@ -381,9 +368,8 @@ def get_detector(attack_name, domain, p, attack_type, model, attack_config, devi
 
     return detector
 
-def get_detector_pool(attack_names, domain, p, attack_type, model, attack_config, device, substitute_architectures=None, substitute_state_dict_paths=None, early_rejection_threshold=None):
-    if substitute_architectures is not None:
-        assert len(substitute_architectures) == len(attack_names)
+def get_detector_pool(attack_names, domain, p, attack_type, model, attack_config, device, use_substitute=False, substitute_state_dict_paths=None, early_rejection_threshold=None):
+    if use_substitute:
         assert len(substitute_state_dict_paths) == len(attack_names)
 
     logger.debug('Preparing detector pool for "{}" of type "{}" containing {} '
@@ -392,13 +378,11 @@ def get_detector_pool(attack_names, domain, p, attack_type, model, attack_config
     detector_pool = []
 
     for i in range(len(attack_names)):
-        substitute_architecture = None
         substitute_state_dict_path = None
-        if substitute_architectures is not None:
-            substitute_architecture = substitute_architectures[i]
+        if use_substitute:
             substitute_state_dict_path = substitute_state_dict_paths[i]
 
-        detector = get_detector(attack_names[i], domain, p, attack_type, model, attack_config, device, substitute_architecture=substitute_architecture, substitute_state_dict_path=substitute_state_dict_path,
+        detector = get_detector(attack_names[i], domain, p, attack_type, model, attack_config, device, use_substitute=use_substitute, substitute_state_dict_path=substitute_state_dict_path,
         early_rejection_threshold=early_rejection_threshold)
         detector_pool.append(detector)
 

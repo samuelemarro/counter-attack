@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 @click.command()
 @click.argument('domain', type=click.Choice(parsing.domains))
-@click.argument('architecture', type=click.Choice(parsing.architectures))
 @click.argument('attacks', callback=parsing.ParameterList(parsing.supported_attacks))
 @click.argument('p', type=click.Choice(parsing.distances), callback=parsing.validate_lp_distance)
 @click.argument('save_to', type=click.Path(exists=False, file_okay=True, dir_okay=False))
@@ -44,7 +43,7 @@ def distance_dataset(**kwargs):
     if kwargs['seed'] is not None:
         torch.manual_seed(kwargs['seed'])
     
-    model = parsing.get_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'], True, load_weights=True)
+    model = parsing.get_model(kwargs['domain'], kwargs['state_dict_path'], True, load_weights=True)
     model.eval()
     model.to(kwargs['device'])
 

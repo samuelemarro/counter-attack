@@ -15,12 +15,10 @@ logger = logging.getLogger(__name__)
 
 @click.command()
 @click.argument('domain', type=click.Choice(parsing.domains))
-@click.argument('architecture', type=click.Choice(parsing.architectures))
 @click.argument('dataset')
 @click.argument('attacks', callback=parsing.ParameterList(parsing.supported_attacks))
 @click.argument('p', type=click.Choice(parsing.distances), callback=parsing.validate_lp_distance)
 @click.argument('rejection_thresholds', callback=parsing.ParameterList(cast_to=float))
-@click.argument('substitute_architectures', callback=parsing.ParameterList(parsing.architectures))
 @click.argument('substitute_state_dict_paths', callback=parsing.ParameterList())
 @click.option('--state-dict-path', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None,
     help='The path to the state-dict file of the model. If None, a pretrained model will be used (if available).')
@@ -50,7 +48,7 @@ def attack_matrix(**kwargs):
     if kwargs['seed'] is not None:
         torch.manual_seed(kwargs['seed'])
 
-    model = parsing.get_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'], True, load_weights=True)
+    model = parsing.get_model(kwargs['domain'], kwargs['state_dict_path'], True, load_weights=True)
     model.eval()
     model.to(kwargs['device'])
 
@@ -62,20 +60,13 @@ def attack_matrix(**kwargs):
 
     attack_names = kwargs['attacks']
     rejection_thresholds = kwargs['rejection_thresholds']
-    substitute_architectures = kwargs['substitute_architectures']
     substitute_state_dict_paths = kwargs['substitute_state_dict_paths']
 
     if len(rejection_thresholds) == 1:
         rejection_thresholds = len(attack_names) * [rejection_thresholds[0]]
 
-    if len(substitute_architectures) == 1:
-        substitute_architectures = len(attack_names) * [substitute_architectures[0]]
-
     if len(rejection_thresholds) != len(attack_names):
         raise click.BadArgumentUsage('rejection_thresholds must be either one value or as many values as the number of attacks.')
-
-    if len(substitute_architectures) != len(attack_names):
-        raise click.BadArgumentUsage('substitute_architectures must be either one value or as many values as the number of attacks.')
 
     if len(substitute_state_dict_paths) != len(attack_names):
         raise click.BadArgumentUsage('substitute_state_dict_paths must be as many values as the number of attacks.')
@@ -89,9 +80,9 @@ def attack_matrix(**kwargs):
     defended_models = []
 
     for evasion_attack_name in attack_names:
-        for counter_attack_name, ca_substitute_architecture, ca_substitute_state_dict_path, rejection_threshold in zip(attack_names, substitute_architectures, substitute_state_dict_paths, rejection_thresholds):
+        for counter_attack_name, ca_substitute_state_dict_path, rejection_threshold in zip(attack_names, substitute_state_dict_paths, rejection_thresholds):
             detector = parsing.get_detector(counter_attack_name, kwargs['domain'], kwargs['p'], 'standard', model, attack_config, kwargs['device'],
-            substitute_architecture=ca_substitute_architecture, substitute_state_dict_path=ca_substitute_state_dict_path, early_rejection_threshold=-rejection_threshold)
+            use_substitute=True, substitute_state_dict_path=ca_substitute_state_dict_path, early_rejection_threshold=-rejection_threshold)
 
             defended_model = detectors.NormalisedDetectorModel(model, detector, rejection_threshold)
 

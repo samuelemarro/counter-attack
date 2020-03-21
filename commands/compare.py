@@ -12,7 +12,6 @@ logger = logging.getLogger(__name__)
 
 @click.command()
 @click.argument('domain', type=click.Choice(parsing.domains))
-@click.argument('architecture', type=click.Choice(parsing.architectures))
 @click.argument('dataset')
 @click.argument('attacks', callback=parsing.ParameterList(parsing.supported_attacks))
 @click.argument('p', type=click.Choice(parsing.distances), callback=parsing.validate_lp_distance)
@@ -42,7 +41,7 @@ def compare(**kwargs):
     if kwargs['seed'] is not None:
         torch.manual_seed(kwargs['seed'])
 
-    model = parsing.get_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'], True, load_weights=True)
+    model = parsing.get_model(kwargs['domain'], kwargs['state_dict_path'], True, load_weights=True)
     model.eval()
 
     dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], max_samples=kwargs['max_samples'])

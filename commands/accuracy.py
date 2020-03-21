@@ -10,7 +10,6 @@ logger = logging.getLogger(__name__)
 
 @click.command()
 @click.argument('domain', type=click.Choice(parsing.domains))
-@click.argument('architecture', type=click.Choice(parsing.architectures))
 @click.argument('dataset')
 @click.option('--state-dict-path', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None,
     help='The path to the state-dict file of the model. If None, a pretrained model will be used (if available).')
@@ -27,7 +26,7 @@ logger = logging.getLogger(__name__)
 def accuracy(**kwargs):
     parsing.set_log_level(kwargs['log_level'])
 
-    model = parsing.get_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'], True, load_weights=True)
+    model = parsing.get_model(kwargs['domain'], kwargs['state_dict_path'], True, load_weights=True)
     model.eval()
 
     dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], max_samples=kwargs['max_samples'])

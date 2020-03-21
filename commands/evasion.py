@@ -18,13 +18,11 @@ logger = logging.getLogger(__name__)
 # Supporto per metrica diversa?
 @click.command()
 @click.argument('domain', type=click.Choice(parsing.domains))
-@click.argument('architecture', type=click.Choice(parsing.architectures))
 @click.argument('dataset')
 @click.argument('counter_attacks', callback=parsing.ParameterList(parsing.supported_attacks))
 @click.argument('evasion_attacks', callback=parsing.ParameterList(parsing.supported_attacks))
 @click.argument('p', type=click.Choice(parsing.distances), callback=parsing.validate_lp_distance)
 @click.argument('rejection_threshold', type=float)
-@click.argument('substitute_architectures', callback=parsing.ParameterList(parsing.architectures))
 @click.argument('substitute_state_dict_paths', callback=parsing.ParameterList())
 @click.option('--state-dict-path', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None,
     help='The path to the state-dict file of the model. If None, a pretrained model will be used (if available).')
@@ -54,7 +52,7 @@ def evasion(**kwargs):
     if kwargs['seed'] is not None:
         torch.manual_seed(kwargs['seed'])
 
-    model = parsing.get_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'], True, load_weights=True)
+    model = parsing.get_model(kwargs['domain'], kwargs['state_dict_path'], True, load_weights=True)
     model.eval()
     model.to(kwargs['device'])
 
@@ -66,18 +64,11 @@ def evasion(**kwargs):
     p = kwargs['p']
 
     counter_attack_names = kwargs['counter_attacks']
-    substitute_architectures = kwargs['substitute_architectures']
     substitute_state_dict_paths = kwargs['substitute_state_dict_paths']
 
     if kwargs['rejection_threshold'] >= 0:
         logger.warn('You are using a positive rejection threshold. Since Counter-Attack only outputs nonpositive values, '
         'the detector will never reject an example.')
-
-    if len(substitute_architectures) == 1:
-        substitute_architectures = len(counter_attack_names) * [substitute_architectures[0]]
-
-    if len(substitute_architectures) != len(counter_attack_names):
-        raise click.BadArgumentUsage('substitute_architectures must be either one value or as many values as the number of counter attacks.')
 
     if len(substitute_state_dict_paths) != len(counter_attack_names):
         raise click.BadArgumentUsage('substitute_state_dict_paths must be as many values as the number of counter attacks.')
@@ -89,7 +80,7 @@ def evasion(**kwargs):
                                         model,
                                         attack_config,
                                         kwargs['device'],
-                                        substitute_architectures=substitute_architectures,
+                                        use_substitute=True,
                                         substitute_state_dict_paths=substitute_state_dict_paths,
                                         early_rejection_threshold=-kwargs['rejection_threshold'])
 

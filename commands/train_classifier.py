@@ -13,7 +13,6 @@ logger = logging.getLogger(__name__)
 
 @click.command()
 @click.argument('domain', type=click.Choice(parsing.domains))
-@click.argument('architecture', type=click.Choice(parsing.architectures))
 @click.argument('dataset')
 @click.argument('epochs', type=click.IntRange(1, None))
 @click.argument('save_to', type=click.Path(exists=False, file_okay=True, dir_okay=False))
@@ -33,7 +32,7 @@ def train_classifier(**kwargs):
     if kwargs['seed'] is not None:
         torch.manual_seed(kwargs['seed'])
     
-    model = parsing.get_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'], True, load_weights=False)
+    model = parsing.get_model(kwargs['domain'], kwargs['state_dict_path'], True, load_weights=False)
     model.train()
 
     train_dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'])

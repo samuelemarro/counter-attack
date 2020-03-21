@@ -14,7 +14,6 @@ logger = logging.getLogger(__name__)
 # Nota: keep_misclassified viene ignorato per gli adversarial examples, dato che per definizione vengono misclassificati
 @click.command()
 @click.argument('domain', type=click.Choice(parsing.domains))
-@click.argument('architecture', type=click.Choice(parsing.architectures))
 @click.argument('dataset', type=click.Path(exists=True, file_okay=True, dir_okay=False))
 @click.argument('epochs', type=click.IntRange(1, None))
 @click.argument('save_to', type=click.Path(exists=False, file_okay=True, dir_okay=False))
@@ -36,7 +35,7 @@ def train_approximator(**kwargs):
     if kwargs['seed'] is not None:
         torch.manual_seed(kwargs['seed'])
     
-    model = parsing.get_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'], True, load_weights=False, as_detector=True)
+    model = parsing.get_model(kwargs['domain'], kwargs['state_dict_path'], True, load_weights=False, as_detector=True)
     model.train()
 
     train_dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], allow_standard=False)
