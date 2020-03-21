@@ -123,9 +123,9 @@ class EvasionResultDataset(data.Dataset):
         # torch.stack doesn't work with empty lists, so in such cases we
         # return a tensor with 0 as the first dimension
 
-        genuines = utils.maybe_stack(genuines, self.genuines.shape[1:])
-        original_labels = utils.maybe_stack(original_labels, None, torch.long)
-        adversarials = utils.maybe_stack(adversarials, self.genuines.shape[1:])
+        genuines = utils.maybe_stack(genuines, self.genuines.shape[1:], device=self.genuines.device)
+        original_labels = utils.maybe_stack(original_labels, None, torch.long, device=self.genuines.device)
+        adversarials = utils.maybe_stack(adversarials, self.genuines.shape[1:], device=self.genuines.device)
         
         return AdversarialDataset(genuines, original_labels, adversarials, self.p, len(self.genuines), self.attack_configuration, self.generation_kwargs)
 
@@ -171,9 +171,9 @@ class AttackComparisonDataset(data.Dataset):
         # torch.stack doesn't work with empty lists, so in such cases we
         # return a tensor with 0 as the first dimension
 
-        genuines = utils.maybe_stack(genuines, self.genuines.shape[1:])
-        original_labels = utils.maybe_stack(original_labels, None, torch.long)
-        adversarials = utils.maybe_stack(adversarials, self.genuines.shape[1:])
+        genuines = utils.maybe_stack(genuines, self.genuines.shape[1:], device=self.genuines.device)
+        original_labels = utils.maybe_stack(original_labels, None, torch.long, device=self.genuines.device)
+        adversarials = utils.maybe_stack(adversarials, self.genuines.shape[1:], device=self.genuines.device)
         
         return AdversarialDataset(genuines, original_labels, adversarials, self.p, len(self.genuines), self.attack_configuration, self.generation_kwargs)
 
@@ -206,9 +206,9 @@ class AttackComparisonDataset(data.Dataset):
         # torch.stack doesn't work with empty lists, so in such cases we
         # return a tensor with 0 as the first dimension
 
-        genuines = utils.maybe_stack(genuines, self.genuines.shape[1:])
-        original_labels = utils.maybe_stack(original_labels, None, torch.long)
-        best_adversarials = utils.maybe_stack(best_adversarials, self.genuines.shape[1:])
+        genuines = utils.maybe_stack(genuines, self.genuines.shape[1:], device=self.genuines.device)
+        original_labels = utils.maybe_stack(original_labels, None, torch.long, device=self.genuines.device)
+        best_adversarials = utils.maybe_stack(best_adversarials, self.genuines.shape[1:], device=self.genuines.device)
 
         return AdversarialDataset(genuines, original_labels, best_adversarials, self.p, len(self.genuines), self.attack_configuration, self.generation_kwargs)
 

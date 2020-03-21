@@ -4,8 +4,6 @@ import torch
 
 import utils
 
-# TODO: Manual seed globale da console?
-
 class UniformNoiseAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     def __init__(self, predict, p, targeted, eps=0.3, count=100, early_rejection_threshold=None, clip_min=0, clip_max=1, stochastic_consistency=False):
         super().__init__(predict, None, clip_min, clip_max)

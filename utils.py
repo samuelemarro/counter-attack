@@ -229,7 +229,6 @@ def show_images(images, adversarials, limit=None, model=None):
 
         plt.show()
 
-# TODO: Includere uso di device=
 def maybe_stack(tensors, fallback_shape, dtype=torch.float, device='cpu'):
     if len(tensors) > 0:
         return torch.stack(tensors)
@@ -245,8 +244,6 @@ def tensor_md5(tensor):
     tensor_content = tensor.tostring()
 
     return int(hashlib.md5(tensor).hexdigest(), 16)
-
-# TODO: Metterle in un file diverso?
 
 def consistent_wrapper(linked_tensor, wrapped_function):
     # Save the current RNG state

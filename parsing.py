@@ -134,7 +134,6 @@ def get_dataset(domain, dataset, allow_standard=True, max_samples=None):
     transform = torchvision.transforms.ToTensor()
     
     if allow_standard:
-        # TODO: Simplify?
         if domain == 'cifar10':
             if dataset == 'std:train':
                 matched_dataset = torchvision.datasets.CIFAR10('./data/cifar10', train=True, download=True, transform=transform)
@@ -333,7 +332,6 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
 
     return attack
 
-# TODO: Più controlli/logging/assertions
 def get_attack_pool(attack_names, domain, p, attack_type, model, attack_config, defended_model=None, early_rejection_threshold=None):
     evade_detector = (attack_type == 'evasion')
 
