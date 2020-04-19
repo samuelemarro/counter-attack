@@ -63,6 +63,26 @@
             ]
         },
         {
+            "name" : "MIP MNIST LInf",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "attack",
+                "mnist",
+                "std:test",
+                "mip",
+                "linf",
+                "--state-dict-path",
+                "test.zip",
+                "--max-samples",
+                "2",
+                "--show",
+                "2"
+            ]
+        },
+        {
             "name" : "Carlini L2 Fake ER",
             "type" : "python",
             "request": "launch",

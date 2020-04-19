@@ -6,3 +6,4 @@ from attacks.iterative_projected_gradient import L2ERBasicIterativeAttack, LinfE
 from attacks.uniform_noise import UniformNoiseAttack
 from attacks.random_target import RandomTargetEvasionAttack
 from attacks.k_best_target import KBestTargetEvasionAttack
+from attacks.mip import MIPAttack

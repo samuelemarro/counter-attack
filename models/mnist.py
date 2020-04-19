@@ -46,3 +46,17 @@ def mnist(input_dims=784, n_hiddens=[256, 256], num_classes=10, pretrained=None)
         model.load_state_dict(state_dict)
     return model
 
+# TODO: Fornirlo come MNIST-mini?
+def mnist(input_dims=784, n_hiddens=[24,24], num_classes=10, pretrained=None):
+    if pretrained:
+        raise NotImplementedError
+    
+    layers = [nn.Flatten(), nn.Linear(input_dims, n_hiddens[0]), nn.ReLU()]
+
+    for i in range(len(n_hiddens) - 1):
+        layers.append(nn.Linear(n_hiddens[i], n_hiddens[i+1]))
+        layers.append(nn.ReLU())
+
+    layers.append(nn.Linear(n_hiddens[-1], num_classes))
+
+    return nn.Sequential(*layers)

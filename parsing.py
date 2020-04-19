@@ -19,9 +19,9 @@ import utils
 logger = logging.getLogger(__name__)
 
 domains = ['cifar10', 'mnist', 'svhn']
-supported_attacks = ['bim', 'carlini', 'deepfool', 'fast_gradient', 'pgd', 'uniform']
+supported_attacks = ['bim', 'carlini', 'deepfool', 'fast_gradient', 'mip', 'pgd', 'uniform']
 attacks_with_binary_search = ['bim', 'fast_gradient', 'pgd', 'uniform']
-targeted_attacks = ['bim', 'carlini', 'fast_gradient', 'pgd']
+targeted_attacks = ['bim', 'carlini', 'fast_gradient', 'mip', 'pgd']
 er_attacks = ['bim', 'carlini', 'pgd', 'uniform']
 distances = ['l2', 'linf']
 log_levels = ['debug', 'info', 'warning', 'error', 'critical']
@@ -277,6 +277,10 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
             attack = advertorch.attacks.FGSM(target_model, targeted=evade_detector, **kwargs)
         else:
             raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, metric))
+    elif attack_name == 'mip':
+        # TODO: MIP non supporta evasione
+        # TODO: MIP non supporta tutti i domain
+        attack = attacks.MIPAttack(target_model, p, num_classes, targeted=evade_detector, **kwargs)
     elif attack_name == 'pgd':
         if metric == 'l2':
             attack = attacks.L2ERPGDAttack(target_model, targeted=evade_detector, **kwargs)
