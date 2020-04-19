@@ -10,6 +10,9 @@ def main():
 
 # TODO: Scaricare da un server con un nome porta a una violazione dell'anonimato?
 
+# TODO: consistent_random deve anche prendere in considerazione il seed impostato
+# TODO: Usare modelli pretrained o abbandonarli in favore di custom-trained per CIFAR10 e SVHN?
+
 main.add_command(commands.accuracy)
 main.add_command(commands.attack)
 main.add_command(commands.attack_matrix)

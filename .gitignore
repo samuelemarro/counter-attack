@@ -4,3 +4,5 @@ data
 trained-models
 *.zip
 settings.json
+.vscode/c_cpp_properties.json
+tmp
