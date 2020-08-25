@@ -278,9 +278,9 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
         else:
             raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, metric))
     elif attack_name == 'mip':
-        # TODO: MIP non supporta evasione
-        # TODO: MIP non supporta tutti i domain
-        attack = attacks.MIPAttack(target_model, p, num_classes, targeted=evade_detector, **kwargs)
+        if attack_type == 'evasion':
+            raise NotImplementedError('MIP does not support evasion.')
+        attack = attacks.MIPAttack(target_model, p, targeted=evade_detector, **kwargs)
     elif attack_name == 'pgd':
         if metric == 'l2':
             attack = attacks.L2ERPGDAttack(target_model, targeted=evade_detector, **kwargs)

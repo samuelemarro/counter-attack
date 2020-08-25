@@ -83,6 +83,24 @@
             ]
         },
         {
+            "name" : "MIP CIFAR10 LInf",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "attack",
+                "cifar10",
+                "std:test",
+                "mip",
+                "linf",
+                "--max-samples",
+                "2",
+                "--show",
+                "2"
+            ]
+        },
+        {
             "name" : "Carlini L2 Fake ER",
             "type" : "python",
             "request": "launch",

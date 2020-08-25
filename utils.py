@@ -345,8 +345,7 @@ def powerset(iterable, allow_empty=False):
 
     s = list(iterable)
 
-    return list(itertools.chain.from_iterable(itertools.combinations(s, r) for r in range(start, len(s)+1)))
-
+    return list(itertools.chain.from_iterable(itertools.combinations(s, r) for r in range(start, len(s)+1)))  
 
 class HiddenPrint:
     def __enter__(self):

@@ -6,3 +6,4 @@ trained-models
 settings.json
 .vscode/c_cpp_properties.json
 tmp
+*.pth

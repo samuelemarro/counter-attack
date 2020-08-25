@@ -37,14 +37,14 @@ class MLP(nn.Module):
         assert input.size(1) == self.input_dims
         return self.model.forward(input)
 
-def mnist(input_dims=784, n_hiddens=[256, 256], num_classes=10, pretrained=None):
+"""def mnist(input_dims=784, n_hiddens=[256, 256], num_classes=10, pretrained=None):
     model = MLP(input_dims, n_hiddens, num_classes)
     if pretrained is not None:
         m = model_zoo.load_url(model_urls['mnist'])
         state_dict = m.state_dict() if isinstance(m, nn.Module) else m
         assert isinstance(state_dict, (dict, OrderedDict)), type(state_dict)
         model.load_state_dict(state_dict)
-    return model
+    return model"""
 
 # TODO: Fornirlo come MNIST-mini?
 def mnist(input_dims=784, n_hiddens=[24,24], num_classes=10, pretrained=None):
