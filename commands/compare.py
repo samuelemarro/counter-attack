@@ -101,8 +101,8 @@ def compare(**kwargs):
         n_size_pools = [result_dataset.simulate_pooling(subset) for subset in n_size_sets]
 
         attack_success_rates = np.array([x.attack_success_rate for x in n_size_pools])
-        median_distances = np.array([np.median(x.distances) for x in n_size_pools])
-        average_distances = np.array([np.average(x.distances) for x in n_size_pools])
+        median_distances = np.array([np.median(x.successful_distances) for x in n_size_pools])
+        average_distances = np.array([np.average(x.successful_distances) for x in n_size_pools])
 
         best_by_success_rate = np.argmax(attack_success_rates)
 
@@ -112,12 +112,12 @@ def compare(**kwargs):
 
         best_by_median_distance = np.argmin(median_distances)
 
-        print('Best pool of size {} by median distance: {}'.format(n, n_size_sets[best_by_median_distance]))
+        print('Best pool of size {} by successful median distance: {}'.format(n, n_size_sets[best_by_median_distance]))
         n_size_pools[best_by_median_distance].print_stats()
         print()
 
         best_by_average_distance = np.argmin(average_distances)
-        print('Best pool of size {} by average distance: {}'.format(n, n_size_sets[best_by_average_distance]))
+        print('Best pool of size {} by successful average distance: {}'.format(n, n_size_sets[best_by_average_distance]))
         n_size_pools[best_by_average_distance].print_stats()
         print()
 

@@ -7,35 +7,51 @@ import torch.utils.data as data
 import utils
 
 class AdversarialDataset(data.Dataset):
-    def __init__(self, genuines, original_labels, adversarials, p, total_count, attack_configuration, generation_kwargs):
+    def __init__(self, genuines, original_labels, adversarials, p, attack_configuration, generation_kwargs):
         assert len(genuines) == len(original_labels)
         assert len(genuines) == len(adversarials)
-        assert len(genuines) <= total_count
 
-        self.genuines = genuines.detach().cpu()
-        self.original_labels = original_labels.detach().cpu()
-        self.adversarials = adversarials.detach().cpu()
+        self.genuines = [genuine.detach().cpu() for genuine in genuines]
+        self.original_labels = [original_label.detach().cpu() for original_label in original_labels]
+        self.adversarials = []
+        for adversarial in adversarials:
+            if adversarial is None:
+                self.adversarials.append(None)
+            else:
+                self.adversarials.append(adversarial.detach().cpu())
         self.p = p
-        self.total_count = total_count
         self.attack_configuration = attack_configuration
         self.generation_kwargs = generation_kwargs
 
     @property
     def successful_count(self):
-        return len(self.adversarials)
+        return len([x for x in self.adversarials if x is not None])
 
     @property
-    def distances(self):
-        return utils.adversarial_distance(self.genuines, self.adversarials, self.p)
+    def successful_distances(self):
+        successful_genuines = []
+        successful_adversarials = []
+
+        for genuine, adversarial in zip(self.genuines, self.adversarials):
+            if adversarial is not None:
+                successful_genuines.append(genuine)
+                successful_adversarials.append(adversarial)
+
+        successful_genuines = torch.stack(successful_genuines)
+        successful_adversarials = torch.stack(successful_adversarials)
+
+        return utils.adversarial_distance(successful_genuines, successful_adversarials, self.p)
 
     @property
     def attack_success_rate(self):
-        return self.successful_count / self.total_count
+        return self.successful_count / len(self.genuines)
 
     def to_distance_dataset(self):
+        raise NotImplementedError
         return AdversarialDistanceDataset(self.genuines, self.distances)
 
     def to_adversarial_training_dataset(self):
+        raise NotImplementedError
         return AdversarialTrainingDataset(self.adversarials, self.original_labels)
 
     def __getitem__(self, idx):
@@ -45,15 +61,15 @@ class AdversarialDataset(data.Dataset):
         return len(self.genuines)
 
     def print_stats(self):
-        distances = self.distances.numpy()
+        distances = self.successful_distances.numpy()
 
         success_rate = self.attack_success_rate
         median_distance = np.median(distances)
         average_distance = np.average(distances)
 
         print('Success Rate: {:.2f}%'.format(success_rate * 100.0))
-        print('Median Distance: {}'.format(median_distance))
-        print('Average Distance: {}'.format(average_distance))
+        print('Median Successful Distance: {}'.format(median_distance))
+        print('Average Successful Distance: {}'.format(average_distance))
 
 class AdversarialTrainingDataset(data.Dataset):
     def __init__(self, adversarials, original_labels):
@@ -81,68 +97,23 @@ class AdversarialDistanceDataset(data.Dataset):
     def __len__(self):
         return len(self.images)
 
-class EvasionResultDataset(data.Dataset):
-    def __init__(self, genuines, original_labels, test_names, attack_results, p, attack_configuration, generation_kwargs):
-        assert len(genuines) == len(original_labels)
-        assert len(genuines) == len(attack_results)
-
-        self.genuines = genuines.detach().cpu()
-        self.original_labels = original_labels.detach().cpu()
-        self.test_names = test_names
-        self.attack_results = attack_results
-
-        # Detach and convert to CPU each adversarial example
-        for attack_result in self.attack_results:
-            for key, value in attack_result.items():
-                attack_result[key] = value.detach().cpu()
-
-        self.p = p
-        self.attack_configuration = attack_configuration
-        self.generation_kwargs = generation_kwargs
-
-    def __getitem__(self, idx):
-        return (self.genuines[idx], self.original_labels[idx], self.attack_results[idx])
-
-    def __len__(self):
-        return len(self.genuines)
-
-    def to_adversarial_dataset(self, test_name):
-        genuines = []
-        original_labels = []
-        adversarials = []
-
-        for genuine, original_label, attack_result in zip(self.genuines, self.original_labels, self.attack_results):
-            if test_name in attack_result.keys():
-                genuines.append(genuine)
-                original_labels.append(original_label)
-                adversarials.append(attack_result[test_name])
-
-        assert len(genuines) == len(original_labels)
-        assert len(genuines) == len(adversarials)
-
-        # torch.stack doesn't work with empty lists, so in such cases we
-        # return a tensor with 0 as the first dimension
-
-        genuines = utils.maybe_stack(genuines, self.genuines.shape[1:], device=self.genuines.device)
-        original_labels = utils.maybe_stack(original_labels, None, torch.long, device=self.genuines.device)
-        adversarials = utils.maybe_stack(adversarials, self.genuines.shape[1:], device=self.genuines.device)
-        
-        return AdversarialDataset(genuines, original_labels, adversarials, self.p, len(self.genuines), self.attack_configuration, self.generation_kwargs)
+# TODO: attack_names è troppo specifico, serve un nome più generale
 
 class AttackComparisonDataset(data.Dataset):
     def __init__(self, genuines, original_labels, attack_names, attack_results, p, attack_configuration, generation_kwargs):
         assert len(genuines) == len(original_labels)
         assert len(genuines) == len(attack_results)
 
-        self.genuines = genuines.detach().cpu()
-        self.original_labels = original_labels.detach().cpu()
+        self.genuines = [genuine.detach().cpu() for genuine in genuines]
+        self.original_labels = [original_label.detach().cpu() for original_label in original_labels]
         self.attack_names = attack_names
         self.attack_results = attack_results
 
         # Detach and convert to CPU each adversarial example
         for attack_result in self.attack_results:
             for key, value in attack_result.items():
-                attack_result[key] = value.detach().cpu()
+                if value is not None:
+                    attack_result[key] = value.detach().cpu()
 
         self.p = p
         self.attack_configuration = attack_configuration
@@ -154,63 +125,36 @@ class AttackComparisonDataset(data.Dataset):
     def __len__(self):
         return len(self.genuines)
 
-    def to_adversarial_dataset(self, attack_names):
+    def to_adversarial_dataset(self, attack_name):
         genuines = []
         original_labels = []
-        adversarials = []
-
-        for genuine, original_label, attack_result in zip(self.genuines, self.original_labels, self.attack_results):
-            if attack_names in attack_result.keys():
-                genuines.append(genuine)
-                original_labels.append(original_label)
-                adversarials.append(attack_result[attack_names])
-
-        assert len(genuines) == len(original_labels)
-        assert len(genuines) == len(adversarials)
-
-        # torch.stack doesn't work with empty lists, so in such cases we
-        # return a tensor with 0 as the first dimension
-
-        genuines = utils.maybe_stack(genuines, self.genuines.shape[1:], device=self.genuines.device)
-        original_labels = utils.maybe_stack(original_labels, None, torch.long, device=self.genuines.device)
-        adversarials = utils.maybe_stack(adversarials, self.genuines.shape[1:], device=self.genuines.device)
+        adversarials = [attack_result[attack_name] for attack_result in self.attack_results]
         
-        return AdversarialDataset(genuines, original_labels, adversarials, self.p, len(self.genuines), self.attack_configuration, self.generation_kwargs)
+        return AdversarialDataset(self.genuines, self.original_labels, adversarials, self.p, len(self.genuines), self.attack_configuration, self.generation_kwargs)
 
     def simulate_pooling(self, selected_attacks):
-        genuines = []
-        original_labels = []
         best_adversarials = []
 
         for genuine, original_label, attack_result in zip(self.genuines, self.original_labels, self.attack_results):
             # Take the adversarials generated by attacks that were successful and
             # were selected by the user
-            chosen_adversarials = [attack_result[attack_names] for attack_names in selected_attacks if attack_names in attack_result]
+            successful_adversarials = [attack_result[attack_name] for attack_name in selected_attacks if attack_result[attack_name] is not None]
 
-            if len(chosen_adversarials) > 0:
-                genuines.append(genuine)
-                original_labels.append(original_label)
+            if len(successful_adversarials) > 0:
+                successful_adversarials = torch.stack(successful_adversarials)
+                distances = utils.one_many_adversarial_distance(genuine, successful_adversarials, self.p)
 
-                chosen_adversarials = torch.stack(chosen_adversarials)
-                distances = utils.one_many_adversarial_distance(genuine, chosen_adversarials, self.p)
-
-                assert distances.shape == (len(chosen_adversarials),)
+                assert distances.shape == (len(successful_adversarials),)
 
                 best_distance_index = torch.argmin(distances)
             
-                best_adversarials.append(chosen_adversarials[best_distance_index])
+                best_adversarials.append(successful_adversarials[best_distance_index])
+            else:
+                best_adversarials.append(None)
 
-        assert len(genuines) == len(original_labels)
-        assert len(genuines) == len(best_adversarials)
+        assert len(self.genuines) == len(best_adversarials)
 
-        # torch.stack doesn't work with empty lists, so in such cases we
-        # return a tensor with 0 as the first dimension
-
-        genuines = utils.maybe_stack(genuines, self.genuines.shape[1:], device=self.genuines.device)
-        original_labels = utils.maybe_stack(original_labels, None, torch.long, device=self.genuines.device)
-        best_adversarials = utils.maybe_stack(best_adversarials, self.genuines.shape[1:], device=self.genuines.device)
-
-        return AdversarialDataset(genuines, original_labels, best_adversarials, self.p, len(self.genuines), self.attack_configuration, self.generation_kwargs)
+        return AdversarialDataset(self.genuines, self.original_labels, best_adversarials, self.p, self.attack_configuration, self.generation_kwargs)
 
     def attack_ranking_stats(self, attack_name):
         attack_positions = dict()
@@ -220,7 +164,9 @@ class AttackComparisonDataset(data.Dataset):
         attack_positions['failure'] = 0
 
         for genuine, original_label, attack_result in zip(self.genuines, self.original_labels, self.attack_results):
-            if attack_name in attack_result:
+            if attack_result[attack_name] is None:
+                attack_positions['failure'] += 1
+            else:
                 # Note: dictionaries don't preserve order, so we convert to OrderedDict
                 attack_result = collections.OrderedDict(attack_result)
                 
@@ -238,8 +184,6 @@ class AttackComparisonDataset(data.Dataset):
                 attack_ranking = sorted_test_names.index(attack_name)
 
                 attack_positions[attack_ranking] += 1
-            else:
-                attack_positions['failure'] += 1
 
         assert sum(count for count in attack_positions.values()) == len(self.genuines)
 
@@ -262,8 +206,8 @@ class AttackComparisonDataset(data.Dataset):
             # Note: dictionaries don't preserve order, so we convert to OrderedDict
             attack_result = collections.OrderedDict(attack_result)
 
-            successful_attacks = attack_result.keys()
-            unsuccessful_attacks = [x for x in self.attack_names if x not in successful_attacks]
+            successful_attacks = [name for name in self.attack_names if attack_result[name] is not None]
+            unsuccessful_attacks = [name for name in self.attack_names if attack_result[name] is None]
 
             # Successful attacks always beat unsuccessful attacks
             for successful_attack in successful_attacks:

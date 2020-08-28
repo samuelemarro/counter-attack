@@ -296,9 +296,11 @@
                 "fast_gradient",
                 "linf",
                 "--max-samples",
-                "1000",
+                "500",
                 "--batch-size",
-                "10"
+                "10",
+                "--show",
+                "2"
             ]
         },
         {
@@ -543,6 +545,24 @@
                 "l2",
                 "--max-samples",
                 "1000",
+                "--batch-size",
+                "100"
+            ]
+        },
+        {
+            "name" : "Uniform & Fast Gradient LInf",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "compare",
+                "cifar10",
+                "std:test",
+                "[uniform, fast_gradient]",
+                "linf",
+                "--max-samples",
+                "100",
                 "--batch-size",
                 "100"
             ]

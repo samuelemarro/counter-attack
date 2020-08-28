@@ -293,6 +293,9 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
     else:
         raise NotImplementedError('Unsupported attack "{}".'.format(attack_name))
 
+    if 'stochastic_consistency' in kwargs and kwargs['stochastic_consistency']:
+        logger.warn('Stochastic consistency is deprecated.')
+
     # If necessary, wrap the attack in a binary search wrapper
     if binary_search:
         if attack_name in ['bim', 'pgd']:

@@ -11,52 +11,16 @@ import utils
 logger = logging.getLogger(__name__)
 
 # Required libraries:
-# PyCall (installed from the Python package julia) (alternatively, I can add it as its own library)
+# PyCall (installed from the Python package "julia") (alternatively, I can add it as its own library)
 # JuMP
 # MIPVerify
 
 
-# TODO: Rimuovere
-mipverify_path = 'C:/Users/Samuele/source/MIPVerify.jl/src/MIPVerify.jl'
-from julia import Main
-Main.include(mipverify_path)
-
-# TODO: Integrarli nella classe?
-def unravel_sequential(sequential):
-    layers = []
-
-    def recursive_unravel(module):
-        if isinstance(module, nn.Sequential):
-            for submodule in module:
-                recursive_unravel(submodule)
-        else:
-            layers.append(module_to_mip(module))
-
-    recursive_unravel(sequential)
-
-    return layers
-
-def convert_sequential(sequential, reference_image):
-    from julia import MIPVerify
-
-    layers = unravel_sequential(sequential)
-    converted_layers = []
-
-    x = reference_image
-    for layer in layers:
-        pre_shape = x.shape
-        x = layer(x)
-        post_shape = x.shape
-
-        converted_layers.append(convert_module(layer, pre_shape, post_shape))
-
-    return MIPVerify.Sequential(converted_layers)
-
 def module_to_mip(module):
     # TODO: Nella versione finale, MIPVerify esiste
-    #from julia import MIPVerify
-    from julia import Main
-    MIPVerify = Main.MIPVerify
+    from julia import MIPVerify
+    #from julia import Main
+    #MIPVerify = Main.MIPVerify
 
     def to_numpy(tensor):
         return tensor.detach().cpu().numpy()
@@ -73,7 +37,6 @@ def module_to_mip(module):
         # [k-1, k-2, ..., 0] (inverte gli assi) e poi un flatten verso un vettore 1D
         # Perché fa la trasposizione? Forse perché Julia è column-major?
 
-        #### converted = MIPVerify.Flatten(2) # TODO: Con che parametri?
         # TODO: Riportare all'originale
         # Per CIFAR: [1, 2, 3, 4]
         # Per MNIST: [1, 2]? O [2, 1]?
@@ -202,10 +165,7 @@ def module_to_mip(module):
     return converted
 
 def sequential_to_mip(sequential):
-    # TODO: Nella versione finale, MIPVerify esiste
-    #from julia import MIPVerify
-    from julia import Main
-    MIPVerify = Main.MIPVerify
+    from julia import MIPVerify
 
     converted_layers = []
 
@@ -253,27 +213,17 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             raise NotImplementedError('Unsupported solver "{}".'.format(solver))
 
     def mip_attack(self, image, label):
-        # TODO: Nella versione finale, MIPVerify esiste
-        #from julia import MIPVerify
-        from julia import Main
-        MIPVerify = Main.MIPVerify
+        from julia import MIPVerify
 
         from julia import JuMP
         # TODO: Install jump?
 
         # Julia is 1-indexed
         target_label = label + 1
-
-        # TODO: è necessario eseguire modifiche quando si lavora in CIFAR?
-        # TODO: Torch is channel-first, what is MIP?
+        
         image = image.transpose([1, 2, 0])
         
         extra_dimension = image.shape[-1] == 1
-
-        #if extra_dimension:
-        #    image = image.squeeze(axis=-1)
-
-        # TODO: Test
         image = np.expand_dims(image, 0)
 
         # TODO: Verificare invert

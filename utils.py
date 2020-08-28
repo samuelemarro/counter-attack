@@ -176,32 +176,54 @@ def early_rejection(x, adversarials, labels, adversarial_output, p, threshold, t
 # come successo anche se ha mantenuto la stessa label di partenza
 # Testare!
 def remove_failed(model, images, labels, adversarials, has_detector):
+    assert len(images) == len(labels)
+    assert len(images) == len(adversarials)
+
     successful = misclassified(model, adversarials, labels, has_detector)
+
+    adversarials = list(adversarials)
+
+    for i in range(len(images)):
+        if not successful[i]:
+            adversarials[i] = None
     
-    return images[successful], labels[successful], adversarials[successful]
+    return adversarials
 
 def get_labels(model, images):
     model_device = next(model.parameters()).device
     return torch.argmax(model(images.to(model_device)), axis=1).to(images.device)
 
 def show_images(images, adversarials, limit=None, model=None):
-    if limit is not None:
-        images = images[:limit]
-        adversarials = adversarials[:limit]
+    assert len(images) == len(adversarials)
 
-    assert images.shape == adversarials.shape
+    successful_images = []
+    successful_adversarials = []
+
+    for image, adversarial in zip(images, adversarials):
+        if adversarial is not None:
+            successful_images.append(image)
+            successful_adversarials.append(adversarial)
+
+    successful_images = torch.stack(successful_images)
+    successful_adversarials = torch.stack(successful_adversarials)
+
+    if limit is not None:
+        successful_images = successful_images[:limit]
+        successful_adversarials = successful_adversarials[:limit]
+
+    assert successful_images.shape == successful_adversarials.shape
 
     if model is None:
-        labels = [None] * len(images)
-        adversarial_labels = [None] * len(images)
-    elif len(images) > 0:
-        labels = get_labels(model, images)
-        adversarial_labels = get_labels(model, adversarials)
+        labels = [None] * len(successful_images)
+        adversarial_labels = [None] * len(successful_images)
+    elif len(successful_images) > 0:
+        labels = get_labels(model, successful_images)
+        adversarial_labels = get_labels(model, successful_adversarials)
     else:
         labels = []
         adversarial_labels = []
 
-    for image, label, adversarial, adversarial_label in zip(images, labels, adversarials, adversarial_labels):
+    for image, label, adversarial, adversarial_label in zip(successful_images, labels, successful_adversarials, adversarial_labels):
         image_title = 'Original'
         adversarial_title = 'Adversarial'
 
@@ -254,7 +276,7 @@ def consistent_wrapper(linked_tensor, wrapped_function):
     # Get a consistent seed
     seed = tensor_md5(linked_tensor) % (2**63)
 
-    torch.manual_seed(seed) 
+    torch.manual_seed(seed)
 
     random_tensor = wrapped_function()
 

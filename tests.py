@@ -27,7 +27,6 @@ def attack_test(model, attack, loader, p, remove_misclassified, device, generati
     assert not attack.targeted
     model.to(device)
 
-    total_count = 0
 
     all_images = []
     all_labels = []
@@ -43,35 +42,31 @@ def attack_test(model, attack, loader, p, remove_misclassified, device, generati
 
         if remove_misclassified:
             images, labels = utils.remove_misclassified(model, images, labels)
-
-        total_count += len(images)
         
         adversarials = attack.perturb(images, y=labels).detach()
         assert adversarials.shape == images.shape
 
         if defended_model is None:
-            images, labels, adversarials = utils.remove_failed(model, images, labels, adversarials, False)
+            adversarials = utils.remove_failed(model, images, labels, adversarials, False)
         else:
-            images, labels, adversarials = utils.remove_failed(defended_model, images, labels, adversarials, True)
+            adversarials = utils.remove_failed(defended_model, images, labels, adversarials, True)
 
         # Move to CPU
         images = images.cpu()
         labels = labels.cpu()
-        adversarials = adversarials.cpu()
+        for i in range(len(adversarials)):
+            if adversarials[i] is not None:
+                adversarials[i] = adversarials[i].cpu()
 
         all_images += list(images)
         all_labels += list(labels)
         all_adversarials += list(adversarials)
 
-    # torch.stack doesn't work with empty lists, so in such cases we return a tensor with 0 as the first dimension
-    all_images = utils.maybe_stack(all_images, image_shape).to(device)
-    all_labels = utils.maybe_stack(all_labels, None, dtype=torch.long).to(device)
-    all_adversarials = utils.maybe_stack(all_adversarials, image_shape).to(device)
-
-    assert all_images.shape == all_adversarials.shape
+    
     assert len(all_images) == len(all_labels)
+    assert len(all_images) == len(all_adversarials)
 
-    return adversarial_dataset.AdversarialDataset(all_images, all_labels, all_adversarials, p, total_count, attack_configuration, generation_kwargs)
+    return adversarial_dataset.AdversarialDataset(all_images, all_labels, all_adversarials, p, attack_configuration, generation_kwargs)
 
 def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p, remove_misclassified, device, attack_configuration, generation_kwargs):
     assert all(not attack.targeted for attack in attacks)
@@ -109,13 +104,12 @@ def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p
             adversarials = attack.perturb(images, y=labels).detach()
 
             assert adversarials.shape == images.shape
-            
-            successful = utils.misclassified(defended_model, adversarials, labels, True)
+
+            adversarials = utils.remove_failed(defended_model, images, labels, adversarials, True)
 
             for i in range(len(images)):
-                if successful[i]:
-                    # Move to CPU and save
-                    attack_results[i][test_name] = adversarials[i].cpu()
+                # Move to CPU and save
+                attack_results[i][test_name] = adversarials[i].cpu()
             
         images = images.cpu()
         labels = labels.cpu()
@@ -124,16 +118,10 @@ def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p
         all_labels += list(labels)
         all_attack_results += attack_results
 
-    # torch.stack doesn't work with empty lists, so in such cases we
-    # return a tensor with 0 as the first dimension
-
-    all_images = utils.maybe_stack(all_images, image_shape).to(device)
-    all_labels = utils.maybe_stack(all_labels, None, dtype=torch.long).to(device)
-
     assert len(all_labels) == len(all_images)
     assert len(all_attack_results) == len(all_images)
 
-    return adversarial_dataset.EvasionResultDataset(all_images, all_labels, test_names, attack_results, p, attack_configuration, generation_kwargs)
+    return adversarial_dataset.AttackComparisonDataset(all_images, all_labels, test_names, attack_results, p, attack_configuration, generation_kwargs)
         
 def multiple_attack_test(model, attack_names, attacks, loader, p, remove_misclassified, device, attack_configuration, generation_kwargs):
     assert all(not attack.targeted for attack in attacks)
@@ -167,15 +155,11 @@ def multiple_attack_test(model, attack_names, attacks, loader, p, remove_misclas
 
             assert adversarials.shape == images.shape
             
-            successful = utils.misclassified(model, adversarials, labels, False)
-
-            successful = successful.cpu()
-            adversarials = adversarials.cpu()
+            adversarials = utils.remove_failed(model, images, labels, adversarials, False)
 
             for i in range(len(images)):
-                if successful[i]:
-                    # Move to CPU and save
-                    attack_results[i][test_name] = adversarials[i].cpu()
+                # Move to CPU and save
+                attack_results[i][test_name] = adversarials[i].cpu()
 
         images = images.cpu()
         labels = labels.cpu()
@@ -183,12 +167,6 @@ def multiple_attack_test(model, attack_names, attacks, loader, p, remove_misclas
         all_images += list(images)
         all_labels += list(labels)
         all_attack_results += attack_results
-
-    # torch.stack doesn't work with empty lists, so in such cases we
-    # return a tensor with 0 as the first dimension
-
-    all_images = utils.maybe_stack(all_images, image_shape)
-    all_labels = utils.maybe_stack(all_labels, None, dtype=torch.long)
 
     assert len(all_labels) == len(all_images)
     assert len(all_attack_results) == len(all_images)

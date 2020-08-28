@@ -40,9 +40,10 @@ class CounterAttackDetector(Detector):
         successful = utils.misclassified(self.model, adversarials, labels, False)
 
         # TODO: Testare
-        # Comportamento attuale: Accetta quando fallisci (dà problemi)
-        #distances[~successful] = -np.inf
-
+        # Comportamento attuale: Accetta quando fallisci (dà problemi perché uso inf)
+        # distances[~successful] = np.inf
+        distances[~successful] = 10000
+        
         # Distanza alta = bassa probabilità che sia un adversarial
         return -distances
 
