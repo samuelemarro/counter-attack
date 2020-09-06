@@ -4,6 +4,7 @@ import click
 import ignite
 import pathlib
 import torch
+import torchvision
 
 import parsing
 import tests
@@ -22,6 +23,8 @@ logger = logging.getLogger(__name__)
     help='The batch size of the dataset.')
 @click.option('--device', default='cuda', show_default=True, help='The device where the model will be executed.')
 @parsing.add_options(parsing.training_options)
+@click.option('--data-augmentation', callback=parsing.ParameterList(parsing.supported_augmentations),
+help='Data augmentation techniques. Supported: {}.'.format(', '.join(parsing.supported_augmentations)))
 @click.option('--seed', type=int, default=None,
     help='The seed for random generation. If unspecified, the current time is used as seed.')
 @click.option('--log-level', type=click.Choice(parsing.log_levels), default='info', show_default=True,
@@ -35,7 +38,13 @@ def train_classifier(**kwargs):
     model = parsing.get_model(kwargs['domain'], kwargs['state_dict_path'], True, load_weights=False)
     model.train()
 
-    train_dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'])
+    extra_transforms = []
+
+    if kwargs['data_augmentation'] is not None:
+        if 'flip' in kwargs['data_augmentation']:
+            extra_transforms.append(torchvision.transforms.RandomHorizontalFlip())
+
+    train_dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], extra_transforms=extra_transforms)
     train_dataloader = torch.utils.data.DataLoader(train_dataset, kwargs['batch_size'], shuffle=kwargs['shuffle'])
 
     val_dataloader = None
@@ -43,11 +52,10 @@ def train_classifier(**kwargs):
         val_dataset = parsing.get_dataset(kwargs['domain'], kwargs['validation_dataset'])
         val_dataloader = torch.utils.data.DataLoader(val_dataset, kwargs['batch_size'], shuffle=False)
 
-    additional_metrics = {'Accuracy' : ignite.metrics.Accuracy()}
     loss = torch.nn.CrossEntropyLoss()
     optimiser = parsing.get_optimiser(kwargs['optimiser'], model.parameters(), kwargs)
 
-    torch_utils.train(model, train_dataloader, optimiser, loss, kwargs['epochs'], kwargs['device'], val_loader=val_dataloader, additional_metrics=additional_metrics)
+    torch_utils.train(model, train_dataloader, optimiser, loss, kwargs['epochs'], kwargs['device'], val_loader=val_dataloader, l1_regularization=kwargs['l1_regularization'])
 
     save_to = kwargs['save_to']
     pathlib.Path(save_to).parent.mkdir(parents=True, exist_ok=True)

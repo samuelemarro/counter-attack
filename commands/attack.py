@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
     help='If passed, the attack is treated as a defense attack.')
 @click.option('--early-rejection', type=float, default=None,
     help='The threshold for early rejection. If unspecified, no early rejection is performed.')
+@click.option('--blind-trust', is_flag=True)
 @click.option('--max-samples', type=click.IntRange(1, None), default=None,
     help='The maximum number of images that are loaded from the dataset. '
          'If unspecified, all images are loaded.')
@@ -60,8 +61,11 @@ def attack(**kwargs):
     attack_pool = parsing.get_attack_pool(kwargs['attacks'], kwargs['domain'], kwargs['p'], attack_type, model, attack_config, early_rejection_threshold=kwargs['early_rejection'])
 
     p = kwargs['p']
+
+    if kwargs['blind_trust']:
+        logger.warn('Blind trust is activated. This means that the success of the attack will NOT be checked.')
     
-    adversarial_dataset = tests.attack_test(model, attack_pool, dataloader, p, not kwargs['keep_misclassified'], kwargs['device'], attack_config, kwargs, None)
+    adversarial_dataset = tests.attack_test(model, attack_pool, dataloader, p, not kwargs['keep_misclassified'], kwargs['device'], attack_config, kwargs, None, blind_trust=kwargs['blind_trust'])
     adversarial_dataset.print_stats()
 
     if kwargs['save_to'] is not None:

@@ -1,8 +1,7 @@
 import torch
 import numpy as np
 
-from ignite.engine import Events, create_supervised_trainer, create_supervised_evaluator
-from ignite.metrics import Accuracy, Loss
+from tqdm import tqdm
 
 class BatchLimitedModel(torch.nn.Module):
     def __init__(self, wrapped_model, batch_size):
@@ -52,38 +51,38 @@ class Squeeze(torch.nn.Module):
         else:
             return torch.squeeze(x, self.dim)
 
-def train(model, train_loader, optimiser, loss, max_epochs, device, val_loader=None, additional_metrics={}):
-    metrics = additional_metrics
-    if 'Loss' not in metrics.keys():
-        metrics['Loss'] = Loss(loss)
+def train(model, train_loader, optimiser, loss_function, max_epochs, device, val_loader=None, l1_regularization=0):
+    model.to(device)
 
-    trainer = create_supervised_trainer(model, optimiser, loss, device=device)
-    evaluator = create_supervised_evaluator(model,
-                                            metrics=metrics,
-                                            device=device)
+    for i in tqdm(range(max_epochs), desc='Training'):
+        for x, target in train_loader:
+            x = x.to(device)
+            target = target.to(device)
 
-    @trainer.on(Events.ITERATION_COMPLETED)
-    def log_training_loss(trainer):
-        print("Epoch[{}] Loss: {:.2f}".format(trainer.state.epoch, trainer.state.output))
+            y_pred = model(x)
 
-    @trainer.on(Events.EPOCH_COMPLETED)
-    def log_training_results(trainer):
-        evaluator.run(train_loader)
-        output_string = 'Training Results - Epoch {}: '.format(trainer.state.epoch)
-        for key, value in evaluator.state.metrics.items():
-            output_string += '\n{}: {}'.format(key, value)
-        print(output_string)
+            loss = loss_function(y_pred, target)
 
-    if val_loader is not None:
-        @trainer.on(Events.EPOCH_COMPLETED)
-        def log_validation_results(trainer):
-            evaluator.run(val_loader)
-            output_string = 'Validation Results - Epoch {}: '.format(trainer.state.epoch)
-            for key, value in evaluator.state.metrics.items():
-                output_string += '\n{}: {}'.format(key, value)
-            print(output_string)
+            if l1_regularization != 0:
+                for group in optimiser.param_groups:
+                    for p in group['params']:
+                        loss += torch.sum(torch.abs(p)) * l1_regularization
 
-    trainer.run(train_loader, max_epochs=max_epochs)
+            optimiser.zero_grad()
+            loss.backward()
+            optimiser.step()
+
+        if val_loader is not None:
+            val_loss = 0
+            with torch.no_grad():
+                for x_val, target_val in val_loader:
+                    x_val = x_val.to(device)
+                    target_val = target_val.to(target_val)
+
+                    y_pred_val = model(x_val)
+                    val_loss += loss_function(y_pred_val, target_val)
+
+            print('Validation Loss: {:.3e}'.format(val_loss.cpu().detach().item()))
 
 
 class FirstNDataset(torch.utils.data.Dataset):

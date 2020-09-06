@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 domains = ['cifar10', 'mnist', 'svhn']
 supported_attacks = ['bim', 'carlini', 'deepfool', 'fast_gradient', 'mip', 'pgd', 'uniform']
+supported_augmentations = ['flip']
 attacks_with_binary_search = ['bim', 'fast_gradient', 'pgd', 'uniform']
 targeted_attacks = ['bim', 'carlini', 'fast_gradient', 'mip', 'pgd']
 er_attacks = ['bim', 'carlini', 'pgd', 'uniform']
@@ -35,7 +36,7 @@ _distance_to_p = {'l2': 2, 'linf' : np.inf}
 training_options = [
     click.option('--optimiser', type=click.Choice(['adam', 'sgd']), default='adam', show_default=True,
         help='The optimiser that will be used for training.'),
-    click.option('--learning_rate', type=float, default=1e-3, show_default=True,
+    click.option('--learning-rate', type=float, default=1e-3, show_default=True,
         help='The learning rate for the optimiser.'),
     click.option('--weight-decay', type=float, default=0, show_default=True,
         help='The weight decay for the optimiser.'),
@@ -51,6 +52,8 @@ training_options = [
         help='The intensity of dampening. Ignored if the optimiser is not \'sgd\''),
     click.option('--sgd-nesterov', is_flag=True,
         help='Enables Nesterov Accelerated Gradient. Ignored if the optimiser is not \'adam\''),
+    click.option('--l1-regularization', type=float, default=0, show_default=True,
+        help='The weight of L1 regularization. 0 disables L1 regularization'),
     click.option('--validation-dataset', default=None),
     click.option('--shuffle', is_flag=True)
 ]
@@ -116,9 +119,10 @@ def get_model(domain, state_dict_path, apply_normalisation, load_weights=False, 
 
     return model
 
-def get_dataset(domain, dataset, allow_standard=True, max_samples=None):
+def get_dataset(domain, dataset, allow_standard=True, max_samples=None, extra_transforms=[]):
     matched_dataset = None
-    transform = torchvision.transforms.ToTensor()
+    tensor_transform = torchvision.transforms.ToTensor()
+    transform = torchvision.transforms.Compose(extra_transforms + [tensor_transform])
     
     if allow_standard:
         if domain == 'cifar10':
@@ -412,6 +416,9 @@ class ParameterList:
         self.cast_to = cast_to
 
     def __call__(self, ctx, param, value):
+        if value is None:
+            return []
+
         value = value.replace('[', '').replace(']', '')
         if ',' in value:
             try:

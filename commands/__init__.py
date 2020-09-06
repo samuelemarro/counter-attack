@@ -5,5 +5,6 @@ from commands.compare import compare
 from commands.cross_validation import cross_validation
 from commands.distance_dataset import distance_dataset
 from commands.evasion import evasion
+from commands.perfect_approximation import perfect_approximation
 from commands.train_approximator import train_approximator
 from commands.train_classifier import train_classifier

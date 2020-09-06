@@ -59,7 +59,9 @@
                 "--max-samples",
                 "5",
                 "--show",
-                "5"
+                "5",
+                "--state-dict-path",
+                "./trained-models/classifiers/cifar10-mini-100.pth"
             ]
         },
         {

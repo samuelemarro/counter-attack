@@ -57,12 +57,46 @@ def make_layers(cfg, batch_norm=False):
         model.load_state_dict(state_dict)
     return model"""
 
+# Preso da https://github.com/locuslab/convex_adversarial/blob/master/examples/problems.py
+
+def cifar10_wong_small():
+    return torch.nn.Sequential(
+        nn.Conv2d(3, 16, 4, stride=2, padding=1),
+        nn.ReLU(),
+        nn.Conv2d(16, 32, 4, stride=2, padding=1),
+        nn.ReLU(),
+        nn.Flatten(),
+        nn.Linear(32*8*8,100),
+        nn.ReLU(),
+        nn.Linear(100, 10)
+    )
+
+def cifar10_wong_large():
+    return nn.Sequential(
+        nn.Conv2d(3, 32, 3, stride=1, padding=1),
+        nn.ReLU(),
+        nn.Conv2d(32, 32, 4, stride=2, padding=1),
+        nn.ReLU(),
+        nn.Conv2d(32, 64, 3, stride=1, padding=1),
+        nn.ReLU(),
+        nn.Conv2d(64, 64, 4, stride=2, padding=1),
+        nn.ReLU(),
+        nn.Flatten(),
+        nn.Linear(64*8*8,512),
+        nn.ReLU(),
+        nn.Linear(512,512),
+        nn.ReLU(),
+        nn.Linear(512,10)
+    )
+
 def cifar10(n_channel=128, num_classes=10, pretrained=True):
-    cfg = [n_channel, n_channel, 'M', 2*n_channel, 2*n_channel, 'M', 4*n_channel, 4*n_channel, 'M', (8*n_channel, 0), 'M']
+    """cfg = [n_channel, n_channel, 'M', 2*n_channel, 2*n_channel, 'M', 4*n_channel, 4*n_channel, 'M', (8*n_channel, 0), 'M']
     layers = make_layers(cfg, batch_norm=True)
     classifier = nn.Linear(n_channel * 8, num_classes)
 
-    model = nn.Sequential(*layers, nn.Flatten(), classifier)
+    model = nn.Sequential(*layers, nn.Flatten(), classifier)"""
+    #model = cifar10_wong_small()
+    model = cifar10_wong_large()
 
     if pretrained:
         # TODO: Organizzare file

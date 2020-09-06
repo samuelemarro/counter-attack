@@ -23,10 +23,9 @@ def accuracy(model, loader, device):
 
     return correct_count / total_count
 
-def attack_test(model, attack, loader, p, remove_misclassified, device, generation_kwargs, attack_configuration, defended_model):
+def attack_test(model, attack, loader, p, remove_misclassified, device, generation_kwargs, attack_configuration, defended_model, blind_trust=False):
     assert not attack.targeted
     model.to(device)
-
 
     all_images = []
     all_labels = []
@@ -46,10 +45,13 @@ def attack_test(model, attack, loader, p, remove_misclassified, device, generati
         adversarials = attack.perturb(images, y=labels).detach()
         assert adversarials.shape == images.shape
 
-        if defended_model is None:
-            adversarials = utils.remove_failed(model, images, labels, adversarials, False)
+        if blind_trust:
+            adversarials = list(adversarials)
         else:
-            adversarials = utils.remove_failed(defended_model, images, labels, adversarials, True)
+            if defended_model is None:
+                adversarials = utils.remove_failed(model, images, labels, adversarials, False)
+            else:
+                adversarials = utils.remove_failed(defended_model, images, labels, adversarials, True)
 
         # Move to CPU
         images = images.cpu()
@@ -159,7 +161,10 @@ def multiple_attack_test(model, attack_names, attacks, loader, p, remove_misclas
 
             for i in range(len(images)):
                 # Move to CPU and save
-                attack_results[i][test_name] = adversarials[i].cpu()
+                if adversarials[i] is None:
+                    attack_results[i][test_name] = None
+                else:
+                    attack_results[i][test_name] = adversarials[i].cpu()
 
         images = images.cpu()
         labels = labels.cpu()

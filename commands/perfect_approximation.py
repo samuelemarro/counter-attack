@@ -1,4 +1,5 @@
 import click
+import numpy as np
 
 import adversarial_dataset as ad
 import parsing
@@ -15,7 +16,7 @@ def perfect_approximation(**kwargs):
     perfect_distance_dataset = parsing.get_dataset(kwargs['domain'], kwargs['perfect_distance_dataset'], allow_standard=False)
 
     if kwargs['from_perfect_adversarial_dataset']:
-        perfect_distance_dataset = perfect_distance_dataset.to_distance_dataset()
+        perfect_distance_dataset = perfect_distance_dataset.to_distance_dataset(failure_value=None)
     elif isinstance(perfect_distance_dataset, ad.AdversarialDataset):
         raise click.BadArgumentUsage('Expected a distance dataset as perfect distance dataset, got an adversarial dataset. '
                                         'If this is intentional, use --from-perfect-adversarial-dataset .')
@@ -23,7 +24,7 @@ def perfect_approximation(**kwargs):
     approximate_distance_dataset = parsing.get_dataset(kwargs['domain'], kwargs['approximate_distance_dataset'], allow_standard=False)
 
     if kwargs['from_approximate_adversarial_dataset']:
-        approximate_distance_dataset = approximate_distance_dataset.to_distance_dataset()
+        approximate_distance_dataset = approximate_distance_dataset.to_distance_dataset(failure_value=None)
     elif isinstance(approximate_distance_dataset, ad.AdversarialDataset):
         raise click.BadArgumentUsage('Expected a distance dataset as approximate distance dataset, got an adversarial dataset. '
                                         'If this is intentional, use --from-approximate-adversarial-dataset .')
@@ -31,14 +32,21 @@ def perfect_approximation(**kwargs):
     if perfect_distance_dataset.num_samples < approximate_distance_dataset.num_samples:
         raise click.BadArgumentUsage('The perfect distance dataset contains fewer samples than the approximate one.')
 
+    absolute_differences = []
+    relative_differences = []
 
-    failed_attacks = 0
-    approximate_index = 0
+    for (perfect_genuine, perfect_distance), (approximate_genuine, approximate_distance) in zip(perfect_distance_dataset, approximate_distance_dataset):
+        if np.average(np.abs(perfect_genuine - approximate_genuine)) > 1e5:
+            raise click.BadArgumentUsage('Datasets don\'t match (different genuine images).')
 
-    for perfect_index in range(perfect_distance_dataset.num_samples):
-        perfect_image, perfect_distance = perfect_distance_dataset.dataset[perfect_index]
-        approximate_image, approximate_distance = approximate_distance_dataset.dataset[approximate_index]
+        if approximate_distance is None:
+            continue
 
-    
+        if approximate_distance < perfect_distance:
+            raise click.BadArgumentUsage('Invalid datasets (approximate is better than perfect).')
 
-# TODO: Implementare e trovare un nome migliore
+        absolute_differences.append(approximate_distance - perfect_distance)
+        relative_differences.append((approximate_distance - perfect_distance) / perfect_distance)
+
+    print('Average absolute difference: {:.2f}%'.format(np.average(absolute_differences) * 100.0))
+    print('Average relative difference: {:.2f}%'.format(np.average(relative_differences) * 100.0))

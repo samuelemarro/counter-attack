@@ -15,12 +15,10 @@ logger = logging.getLogger(__name__)
 # JuMP
 # MIPVerify
 
+# TODO: Testare MaxPool e BatchNorm
 
 def module_to_mip(module):
-    # TODO: Nella versione finale, MIPVerify esiste
     from julia import MIPVerify
-    #from julia import Main
-    #MIPVerify = Main.MIPVerify
 
     def to_numpy(tensor):
         return tensor.detach().cpu().numpy()
@@ -106,7 +104,6 @@ def module_to_mip(module):
         # avrà dimensione (H - K_H + 1, W - K_W + 1)
 
         # TODO: Testare che sia corretto
-        # TODO: Implementare batch_norm (vedi foglio) e max_pooling
     elif isinstance(module, nn.MaxPool2d):
         if module.padding != 0:
             raise ValueError('MIPVerify does not support padding for MaxPool. Received: "{}".'.format(module.padding))
@@ -198,6 +195,12 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
         self.mip_model = sequential_to_mip(predict)
         self.targeted = targeted
+
+        if tolerance == 0:
+            logger.warn('MIP\'s tolerance is set to 0. Given the possible numerical errors,'
+            ' it is likely that MIP\'s adversarials will be considered unsuccessful by Torch\'s'
+            ' model.')
+
         self.tolerance = tolerance
 
         if solver == 'gurobi':

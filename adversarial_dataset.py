@@ -37,18 +37,29 @@ class AdversarialDataset(data.Dataset):
                 successful_genuines.append(genuine)
                 successful_adversarials.append(adversarial)
 
-        successful_genuines = torch.stack(successful_genuines)
-        successful_adversarials = torch.stack(successful_adversarials)
-
-        return utils.adversarial_distance(successful_genuines, successful_adversarials, self.p)
+        if len(successful_genuines) > 0:
+            successful_genuines = torch.stack(successful_genuines)
+            successful_adversarials = torch.stack(successful_adversarials)
+            return utils.adversarial_distance(successful_genuines, successful_adversarials, self.p)
+        else:
+            return torch.empty(0, dtype=torch.float32)
 
     @property
     def attack_success_rate(self):
         return self.successful_count / len(self.genuines)
 
-    def to_distance_dataset(self):
-        raise NotImplementedError
-        return AdversarialDistanceDataset(self.genuines, self.distances)
+    def to_distance_dataset(self, failure_value=None):
+        successful_distances = list(self.successful_distances)
+        final_distances = []
+        for i in range(len(self.genuines)):
+            if self.adversarials[i] is None:
+                final_distances.append(failure_value)
+            else:
+                final_distances.append(successful_distances.pop(0))
+        
+        assert len(successful_distances) == 0
+
+        return AdversarialDistanceDataset(self.genuines, final_distances)
 
     def to_adversarial_training_dataset(self):
         raise NotImplementedError
@@ -92,7 +103,7 @@ class AdversarialDistanceDataset(data.Dataset):
         self.distances = distances
 
     def __getitem__(self, idx):
-        return (self.images[idx], self.distances[idx].unsqueeze(0))
+        return (self.images[idx], self.distances[idx])
 
     def __len__(self):
         return len(self.images)
@@ -167,6 +178,7 @@ class AttackComparisonDataset(data.Dataset):
             if attack_result[attack_name] is None:
                 attack_positions['failure'] += 1
             else:
+                attack_result = [(image, adversarial) for image, adversarial in attack_result.items() if adversarial is not None]
                 # Note: dictionaries don't preserve order, so we convert to OrderedDict
                 attack_result = collections.OrderedDict(attack_result)
                 
@@ -180,6 +192,8 @@ class AttackComparisonDataset(data.Dataset):
                 # Sort by distance in ascending order (lower distance = better)
                 attack_distance_pairs = sorted(attack_distance_pairs, key=lambda x: x[1])
                 sorted_test_names = [x[0] for x in attack_distance_pairs]
+
+                # TODO: Come gestire uguali?
 
                 attack_ranking = sorted_test_names.index(attack_name)
 
@@ -215,12 +229,13 @@ class AttackComparisonDataset(data.Dataset):
                     victory_matrix[successful_attack][unsuccessful_attack] += 1
 
             if len(attack_result.values()) > 0:
-                adversarials = torch.stack(list(attack_result.values()))
+                adversarials = [x for x in attack_result.values() if x is not None]
+                adversarials = torch.stack(adversarials)
                 distances = utils.one_many_adversarial_distance(genuine, adversarials, self.p)
 
-                assert len(attack_result) == len(distances)
+                assert len(successful_attacks) == len(distances)
 
-                attack_distance_pairs = list(zip(attack_result.keys(), distances))
+                attack_distance_pairs = list(zip(successful_attacks, distances))
 
                 for winner_attack, winner_distance in attack_distance_pairs:
                     for loser_attack, loser_distance in attack_distance_pairs:

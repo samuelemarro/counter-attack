@@ -64,7 +64,7 @@ def train_approximator(**kwargs):
     loss = torch.nn.MSELoss()
     optimiser = parsing.get_optimiser(kwargs['optimiser'], model.parameters(), kwargs)
 
-    torch_utils.train(model, train_dataloader, optimiser, loss, kwargs['epochs'], kwargs['device'], val_loader=val_dataloader)
+    torch_utils.train(model, train_dataloader, optimiser, loss, kwargs['epochs'], kwargs['device'], val_loader=val_dataloader, l1_regularization=kwargs['l1_regularization'])
 
     save_to = kwargs['save_to']
     pathlib.Path(save_to).parent.mkdir(parents=True, exist_ok=True)

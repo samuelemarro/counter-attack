@@ -18,12 +18,13 @@ def main():
 # TODO: Aggiungere codice che controlla la correttezza del modello caricato da MIP
 # TODO: Abbandonare modelli pretrained, trasferirsi a modelli in-house?
 # TODO: Se necessario, si può aggiungere l'addestramento ReLU stability
-# TODO: Decidere il destino di MNIST
 # TODO: Addestrare modelli in-house? Sì, per tutti e tre i dataset
 # TODO: Implementare il test basato sulla distanza triangolare
 # TODO: Data augmentation?
-# TODO: Riorganizzare CLI e parsing in modo da ignorare l'idea degli attacchi di evasione?
 # TODO: Distinguere tra "classifier standard" e "classifier progettati per MIP"?
+# TODO: Abbandonare sistema di pretrained, caricare i modelli e metterli in una cartella, con percorsi di default?
+# TODO: get_dataset -> parse_dataset e simili
+# TODO: Aggiungere l'opzione --architecture
 # Questo mi permetterebbe di giustificare un'accuratezza più bassa
 
 # TODO: Esiste un metodo per rendere gli attacchi più efficaci? Questo potrebbe essere l'anello mancante
@@ -38,6 +39,7 @@ main.add_command(commands.compare)
 main.add_command(commands.cross_validation)
 main.add_command(commands.distance_dataset)
 main.add_command(commands.evasion)
+main.add_command(commands.perfect_approximation)
 main.add_command(commands.train_approximator)
 main.add_command(commands.train_classifier)
 
