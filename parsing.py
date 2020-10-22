@@ -19,7 +19,7 @@ import utils
 logger = logging.getLogger(__name__)
 
 domains = ['cifar10', 'mnist', 'svhn']
-architectures = ['extra_small', 'extra_small_2', 'extra_small_3', 'extra_small_bn', 'extra_small_2_bn', 'extra_small_3_bn', 'extra_small_4', 'extra_small_5', 'extra_small_6', 'extra_small_7', 'extra_small_8', 'extra_small_9', 'extra_small_10', 'extra_small_11', 'small', 'small_2', 'small_3', 'small_4', 'medium', 'medium_2', 'medium_3', 'large', 'large_2', 'large_3', 'large_4']
+architectures = ['a', 'b', 'c']
 supported_attacks = ['bim', 'carlini', 'deepfool', 'fast_gradient', 'mip', 'pgd', 'uniform']
 attacks_with_binary_search = ['bim', 'fast_gradient', 'pgd', 'uniform']
 targeted_attacks = ['bim', 'carlini', 'fast_gradient', 'mip', 'pgd']
