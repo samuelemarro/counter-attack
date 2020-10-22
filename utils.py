@@ -175,19 +175,34 @@ def early_rejection(x, adversarials, labels, adversarial_output, p, threshold, t
 # Nota: Se l'originale viene rifiutato ma l'adversarial no, l'adversarial conta
 # come successo anche se ha mantenuto la stessa label di partenza
 # Testare!
-def remove_failed(model, images, labels, adversarials, has_detector):
+def remove_failed(model, images, labels, adversarials, has_detector, p=None, eps=None):
     assert len(images) == len(labels)
     assert len(images) == len(adversarials)
 
     successful = misclassified(model, adversarials, labels, has_detector)
 
+    if eps is not None:
+        assert p is not None
+        distances = adversarial_distance(images, adversarials, p)
+
     adversarials = list(adversarials)
 
     for i in range(len(images)):
-        if not successful[i]:
+        valid_distance = (eps is None) or (distances[i] < eps)
+        if not successful[i] and valid_distance:
             adversarials[i] = None
     
     return adversarials
+
+
+# Returns b if filter_ is True, else a
+def fast_boolean_choice(a, b, filter_):
+    filter_shape = [1] + list(a.shape)[1:]
+    reshaped_filter = filter_.reshape(filter_shape).float()
+    repeat_dimensions = [len(a)] + (len(a.shape) - 1) * [1]
+
+    repeated_filter = reshaped_filter.repeat(repeat_dimensions)
+    return a + repeated_filter * (b - a)
 
 def get_labels(model, images):
     model_device = next(model.parameters()).device

@@ -24,8 +24,10 @@ def main():
 # TODO: Distinguere tra "classifier standard" e "classifier progettati per MIP"?
 # TODO: Abbandonare sistema di pretrained, caricare i modelli e metterli in una cartella, con percorsi di default?
 # TODO: get_dataset -> parse_dataset e simili
-# TODO: Aggiungere l'opzione --architecture
+# TODO: Aggiungere l'opzione di usare la previsione del modello come label "corretta"?
 # Questo mi permetterebbe di giustificare un'accuratezza più bassa
+# TODO: Supporto per caching del modello
+# TODO: Comando e dataset dedicati per MIP
 
 # TODO: Esiste un metodo per rendere gli attacchi più efficaci? Questo potrebbe essere l'anello mancante
 # per concludere il ragionamento empirico (potrei confrontare efficacia prima e dopo)
@@ -40,8 +42,11 @@ main.add_command(commands.cross_validation)
 main.add_command(commands.distance_dataset)
 main.add_command(commands.evasion)
 main.add_command(commands.perfect_approximation)
+main.add_command(commands.prune_relu)
+main.add_command(commands.prune_weights)
 main.add_command(commands.train_approximator)
 main.add_command(commands.train_classifier)
+main.add_command(commands.tune_mip)
 
 if __name__  == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(name)s:%(levelname)s: %(message)s')

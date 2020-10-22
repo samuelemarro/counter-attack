@@ -315,41 +315,31 @@ class ERCarliniWagnerLinfAttack(attacks.CarliniWagnerLinfAttack):
             for _ in range(self.max_iterations):
                 optimizer.zero_grad()
                 outputs, loss = self._outputs_and_loss(
-                    x[active],
-                    modifiers[active],
-                    starting_atanh[active],
-                    y[active],
+                    x,
+                    modifiers,
+                    starting_atanh,
+                    y,
                     const,
-                    taus[active])
+                    taus)
 
                 adversarials = tanh_rescale(
                     starting_atanh + modifiers,
                     self.clip_min,
                     self.clip_max).detach()
 
-                successful = self._successful(outputs, y[active])
+                successful = self._successful(outputs, y)
 
                 if self.return_best:
                     distances = torch.max(
                                 torch.abs(
-                                    x[active] - adversarials[active]
+                                    x - adversarials
                                     ).flatten(1),
                                 dim=1)[0]
-                    better_distance = distances < best_distances[active]
+                    better_distance = distances < best_distances
 
-                    replace_active(adversarials[active],
-                                   best_adversarials,
-                                   active,
-                                   successful & better_distance)
-                    replace_active(distances,
-                                   best_distances,
-                                   active,
-                                   successful & better_distance)
+                    best_adversarials = utils.fast_boolean_choice(best_adversarials, adversarials, better_distance)
                 else:
-                    best_adversarials[active] = adversarials[active]
-
-
-                drop = torch.zeros((len(torch.nonzero(active)),), dtype=torch.bool, device=x.device)
+                    best_adversarials = adversarials
 
                 # If early aborting is enabled, drop successful
                 # samples with a small loss (the current adversarials
@@ -357,25 +347,18 @@ class ERCarliniWagnerLinfAttack(attacks.CarliniWagnerLinfAttack):
                 if self.abort_early:
                     small_loss = loss < 0.0001 * const
 
-                    drop = drop | (successful & small_loss)
+                    active = active & ~(successful & small_loss)
 
                 if self.early_rejection_threshold is not None:
-                    reject = utils.early_rejection(x[active],
-                                                   adversarials[active],
-                                                   y[active],
+                    reject = utils.early_rejection(x,
+                                                   adversarials,
+                                                   y,
                                                    outputs,
                                                    np.inf,
                                                    self.early_rejection_threshold,
                                                    self.targeted)
 
-                    drop = drop | reject
-
-                # This workaround avoids modifying "active"
-                # in-place, which would mess with
-                # gradient computation in backwards()
-                active_clone = active.clone()
-                active_clone[active] = ~drop
-                active = active_clone
+                    active = active & ~reject
 
                 if not active.any():
                     break

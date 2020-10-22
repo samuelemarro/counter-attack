@@ -13,11 +13,14 @@ logger = logging.getLogger(__name__)
 
 @click.command()
 @click.argument('domain', type=click.Choice(parsing.domains))
+@click.argument('architecture', type=click.Choice(parsing.architectures))
 @click.argument('attacks', callback=parsing.ParameterList(parsing.supported_attacks))
 @click.argument('p', type=click.Choice(parsing.distances), callback=parsing.validate_lp_distance)
 @click.argument('save_to', type=click.Path(exists=False, file_okay=True, dir_okay=False))
 @click.option('--state-dict-path', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None,
     help='The path to the state-dict file of the model. If None, a pretrained model will be used (if available).')
+@click.option('--masked-relu', is_flag=True,
+    help='If passed, all ReLU layers will be converted to MaskedReLU layers.')
 @click.option('--from-genuine', default=None,
     help='The source of the genuine dataset. If unspecified, no genuine dataset is used.')
 @click.option('--from-adversarial', default=None,
@@ -30,6 +33,9 @@ logger = logging.getLogger(__name__)
 @click.option('--keep-misclassified', is_flag=True,
     help='If passed, the attack is also run on the images that were misclassified by the base model.')
 @click.option('--device', default='cuda', show_default=True, help='The device where the model will be executed.')
+@click.option('--cpu-threads', type=click.IntRange(1, None, False), default=None,
+    help='The number of PyTorch CPU threads. If unspecified, the default '
+          'number is used (usually the number of cores).')
 @click.option('--max-samples', type=click.IntRange(1, None), default=None,
     help='The maximum number of images that are loaded from the dataset. '
          'If unspecified, all images are loaded.')
@@ -40,10 +46,13 @@ logger = logging.getLogger(__name__)
 def distance_dataset(**kwargs):
     parsing.set_log_level(kwargs['log_level'])
 
+    if kwargs['cpu_threads'] is not None:
+        torch.set_num_threads(kwargs['cpu_threads'])
+
     if kwargs['seed'] is not None:
         torch.manual_seed(kwargs['seed'])
     
-    model = parsing.get_model(kwargs['domain'], kwargs['state_dict_path'], True, load_weights=True)
+    model = parsing.get_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'], True, kwargs['masked_relu'], load_weights=True)
     model.eval()
     model.to(kwargs['device'])
 

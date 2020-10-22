@@ -1,0 +1,8 @@
+Method  2
+DegenMoves  3
+Heuristics  0.001
+MIPFocus  3
+AggFill  10
+InfUnbdInfo  1
+NumericFocus  2
+Threads  1

@@ -19,8 +19,8 @@ import utils
 logger = logging.getLogger(__name__)
 
 domains = ['cifar10', 'mnist', 'svhn']
+architectures = ['extra_small', 'extra_small_2', 'extra_small_3', 'extra_small_bn', 'extra_small_2_bn', 'extra_small_3_bn', 'extra_small_4', 'extra_small_5', 'extra_small_6', 'extra_small_7', 'extra_small_8', 'extra_small_9', 'extra_small_10', 'extra_small_11', 'small', 'small_2', 'small_3', 'small_4', 'medium', 'medium_2', 'medium_3', 'large', 'large_2', 'large_3', 'large_4']
 supported_attacks = ['bim', 'carlini', 'deepfool', 'fast_gradient', 'mip', 'pgd', 'uniform']
-supported_augmentations = ['flip']
 attacks_with_binary_search = ['bim', 'fast_gradient', 'pgd', 'uniform']
 targeted_attacks = ['bim', 'carlini', 'fast_gradient', 'mip', 'pgd']
 er_attacks = ['bim', 'carlini', 'pgd', 'uniform']
@@ -55,7 +55,13 @@ training_options = [
     click.option('--l1-regularization', type=float, default=0, show_default=True,
         help='The weight of L1 regularization. 0 disables L1 regularization'),
     click.option('--validation-dataset', default=None),
-    click.option('--shuffle', is_flag=True)
+    click.option('--validation-split', type=float, default=0,
+        help='Uses a portion (0-1) of the train dataset as validation dataset. 0 disables the split.'),
+    click.option('--early-stopping', type=click.IntRange(0, None), default=0, show_default=True,
+        help='The patience of early stopping. 0 disables early stopping.'),
+    click.option('--early-stopping-delta', type=float, default=0, show_default=True,
+        help='The minimum improvement required to reset early stopping\'s patience.'),
+    click.option('--shuffle', type=bool, default=True)
 ]
 
 def add_options(options):
@@ -68,7 +74,7 @@ def add_options(options):
 def set_log_level(log_level):
     logging.getLogger().setLevel(_log_level_to_number[log_level])
 
-def get_model(domain, state_dict_path, apply_normalisation, load_weights=False, as_detector=False):
+def get_model(domain, architecture, state_dict_path, apply_normalisation, masked_relu, load_weights=False, as_detector=False):
     if as_detector:
         num_classes = 1
     else:
@@ -80,11 +86,11 @@ def get_model(domain, state_dict_path, apply_normalisation, load_weights=False, 
         logger.info('No state dict path provided. Using pretrained model.')
 
     if domain == 'cifar10':
-        model = models.cifar10(pretrained=pretrained, num_classes=num_classes)
+        model = models.cifar10(architecture, masked_relu, pretrained=pretrained, num_classes=num_classes)
     elif domain == 'svhn':
-        model = models.svhn(pretrained=pretrained, num_classes=num_classes)
+        model = models.svhn(architecture, masked_relu, pretrained=pretrained, num_classes=num_classes)
     elif domain == 'mnist':
-        model = models.mnist(pretrained=pretrained, num_classes=num_classes)
+        model = models.mnist(architecture, masked_relu, pretrained=pretrained, num_classes=num_classes)
     else:
         raise NotImplementedError('Unsupported domain {}.'.format(domain))
 
@@ -407,6 +413,8 @@ def validate_lp_distance(ctx, param, value):
         return 2
     elif value == 'linf':
         return np.inf
+    elif value is None:
+        return None
     else:
         raise NotImplementedError('Unsupported distance metric "{}."'.format(value))
 

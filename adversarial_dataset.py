@@ -61,9 +61,22 @@ class AdversarialDataset(data.Dataset):
 
         return AdversarialDistanceDataset(self.genuines, final_distances)
 
+    def successful_adversarials(self):
+        successful_genuines = []
+        successful_adversarials = []
+        successful_original_labels = []
+
+        for genuine, adversarial, original_label in zip(self.genuines, self.adversarials, self.original_labels):
+            if adversarial is not None:
+                successful_genuines.append(genuine)
+                successful_adversarials.append(adversarial)
+                successful_original_labels.append(original_label)
+
+        return successful_genuines, successful_adversarials, successful_original_labels
+
     def to_adversarial_training_dataset(self):
-        raise NotImplementedError
-        return AdversarialTrainingDataset(self.adversarials, self.original_labels)
+        _, successful_adversarials, successful_original_labels = self.successful_adversarials()
+        return AdversarialTrainingDataset(successful_adversarials, successful_original_labels)
 
     def __getitem__(self, idx):
         return (self.genuines[idx], self.original_labels[idx], self.adversarials[idx])

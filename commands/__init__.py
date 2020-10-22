@@ -6,5 +6,8 @@ from commands.cross_validation import cross_validation
 from commands.distance_dataset import distance_dataset
 from commands.evasion import evasion
 from commands.perfect_approximation import perfect_approximation
+from commands.prune_relu import prune_relu
+from commands.prune_weights import prune_weights
 from commands.train_approximator import train_approximator
 from commands.train_classifier import train_classifier
+from commands.tune_mip import tune_mip

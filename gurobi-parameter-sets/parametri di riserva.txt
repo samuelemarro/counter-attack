@@ -1,0 +1,85 @@
+MNIST M2:
+Improved parameter set 1 (mean runtime 7.98s):
+
+        Method 2
+        DegenMoves 3
+        Heuristics 0.001
+        MIPFocus 3
+        AggFill 10
+        InfUnbdInfo 1
+        NumericFocus 2
+        Threads 1
+
+Improved parameter set 2 (mean runtime 8.02s):
+
+        Method 2
+        Heuristics 0.001
+        MIPFocus 3
+        AggFill 10
+        InfUnbdInfo 1
+        NumericFocus 2
+        Threads 1
+
+Improved parameter set 3 (mean runtime 9.29s):
+
+        Method 2
+        Heuristics 0.001
+        MIPFocus 3
+        InfUnbdInfo 1
+        NumericFocus 2
+        Threads 1
+
+Improved parameter set 4 (mean runtime 11.27s):
+
+        Method 2
+        MIPFocus 3
+        InfUnbdInfo 1
+        NumericFocus 2
+        Threads 1
+
+Improved parameter set 5 (mean runtime 14.84s):
+
+        MIPFocus 3
+        InfUnbdInfo 1
+        NumericFocus 2
+        Threads 1
+
+Improved parameter set 6 (mean runtime 17.88s):
+
+        MIPFocus 3
+        InfUnbdInfo 1
+        Threads 1
+
+
+MNIST L2:
+
+Improved parameter set 1 (mean runtime 6.90s):
+
+        Heuristics 0.5
+        Cuts 2
+        InfUnbdInfo 1
+        Threads 1
+
+Improved parameter set 2 (mean runtime 7.66s):
+
+        CutPasses 1
+        InfUnbdInfo 1
+        Threads 1
+
+
+MNIST S4:
+
+Baseline parameter set: mean runtime 62.28s
+
+Improved parameter set 1 (mean runtime 25.29s):
+
+        Cuts 3
+        PreDual 0
+        InfUnbdInfo 1
+        Threads 1
+
+Improved parameter set 2 (mean runtime 25.58s):
+
+        Cuts 3
+        InfUnbdInfo 1
+        Threads 1

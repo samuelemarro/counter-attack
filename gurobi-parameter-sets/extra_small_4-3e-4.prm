@@ -1,0 +1,6 @@
+MIPGapAbs  0.0003
+NormAdjust  2
+Cuts  3
+FlowCoverCuts  1
+InfUnbdInfo  1
+Threads  4

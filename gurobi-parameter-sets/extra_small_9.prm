@@ -1,0 +1,6 @@
+TimeLimit  7200
+Method  0
+Aggregate  0
+PreDual  1
+InfUnbdInfo  1
+Threads  1

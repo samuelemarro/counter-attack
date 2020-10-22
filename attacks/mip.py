@@ -35,13 +35,24 @@ def module_to_mip(module):
         # [k-1, k-2, ..., 0] (inverte gli assi) e poi un flatten verso un vettore 1D
         # Perché fa la trasposizione? Forse perché Julia è column-major?
 
-        # TODO: Riportare all'originale
-        # Per CIFAR: [1, 2, 3, 4]
-        # Per MNIST: [1, 2]? O [2, 1]?
-        # Forse deve essere invertito per la questione del column-major! Sì!
-        converted = MIPVerify.Flatten(4, [4, 3, 2, 1])
+        # PyTorch uses the BCHW format and reads row-first (backwards), so the order is WHCB
+        # Julia uses the BHWC format and reads column-first (straightforward), so in order to read it
+        # in the same way as PyTorch, we have to permute the dimensions to WHCB using the permutation:
+        # [3, 2, 4, 1]
+        converted = MIPVerify.Flatten(4, [3, 2, 4, 1])
     elif isinstance(module, nn.ReLU):
         converted = MIPVerify.ReLU()
+    elif isinstance(module, torch_utils.MaskedReLU):
+        always_zero = module.always_zero.data
+        always_linear = module.always_linear.data
+        print(torch.sum(always_zero.float()))
+        assert not (always_zero & always_linear).any()
+        mask = torch.zeros_like(always_zero, dtype=float)
+
+        mask += always_linear.float()
+        mask -= always_zero.float()
+
+        converted = MIPVerify.MaskedReLU(mask)
     elif isinstance(module, torch_utils.Normalisation):
         mean = np.squeeze(to_numpy(module.mean))
         std = np.squeeze(to_numpy(module.std))
@@ -138,6 +149,9 @@ def module_to_mip(module):
         # mean = rmean - beta * sqrt(rvar + eps) / gamma
         # std = sqrt(rvar + eps) / gamma
 
+        if module.training:
+            raise ValueError('Batch normalization must be in eval mode.')
+
         if module.weight is None:
             gamma = 1
         else:
@@ -164,23 +178,18 @@ def module_to_mip(module):
 def sequential_to_mip(sequential):
     from julia import MIPVerify
 
-    converted_layers = []
+    layers = torch_utils.unpack_sequential(sequential)
 
-    def recursive_parser(module):
-        if isinstance(module, nn.Sequential):
-            for submodule in module:
-                recursive_parser(submodule)
-        else:
-            converted_layers.append(module_to_mip(module))
+    layers = [module_to_mip(layer) for layer in layers]
 
-    recursive_parser(sequential)
+    return MIPVerify.Sequential(layers, 'Converted network')
 
-    return MIPVerify.Sequential(converted_layers, 'Converted network')
+# TODO: Return None if the solver times out
 
 class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     _pyjulia_installed = False
 
-    def __init__(self, predict, p, targeted, tolerance=1e-6, clip_min=0, clip_max=1, solver='gurobi'):
+    def __init__(self, predict, p, targeted, tolerance=1e-6, clip_min=0, clip_max=1, solver='gurobi', time_limit=0, threads=0, tightening_time_limit=20, tightening_threads=0, absolute_gap=1e-10, **gurobi_kwargs):
         super().__init__(predict, None, clip_min, clip_max)
         if p in [1, 2, float('inf')]:
             self.p = p
@@ -204,9 +213,19 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         self.tolerance = tolerance
 
         if solver == 'gurobi':
+            if time_limit == 0:
+                time_limit = np.inf
+            if tightening_time_limit == 0:
+                tightening_time_limit = np.inf
+            
             from julia import Gurobi
-            # TODO: L'opzione extra è aggiunta per ridurre l'OutOfMemory
-            self.solver = Gurobi.GurobiSolver(OutputFlag=1)
+            self.solver = Gurobi.GurobiSolver(OutputFlag=1, TimeLimit=time_limit, Threads=threads, MIPGapAbs=absolute_gap, **gurobi_kwargs)
+            # TODO: Capire bene come funziona Gurobi.Env()
+            self.tightening_solver = Gurobi.GurobiSolver(Gurobi.Env(),
+                                                        OutputFlag=0,
+                                                        TimeLimit=tightening_time_limit,
+                                                        Threads=tightening_threads,
+                                                        **gurobi_kwargs)
         elif solver == 'cbc':
             from julia import Cbc
             main_solver = Cbc.CbcSolver(logLevel=0)
@@ -232,7 +251,8 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         # TODO: Verificare invert
         adversarial_result = MIPVerify.find_adversarial_example(self.mip_model,
                                     image, target_label, self.solver, norm_order=self.p,
-                                    tolerance=self.tolerance, invert_target_selection=not self.targeted)
+                                    tolerance=self.tolerance, invert_target_selection=not self.targeted,
+                                    tightening_solver=self.tightening_solver)
 
         adversarial = np.array(JuMP.getvalue(adversarial_result['PerturbedInput']))
 
@@ -245,7 +265,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         # Remove the batch dimension
         adversarial = adversarial.squeeze(axis=0)
 
-        return adversarial
+        return adversarial, adversarial_result
 
     def perturb(self, x, y=None):
         x, y = self._verify_and_process_inputs(x, y)
@@ -256,7 +276,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             image = image.detach().cpu().numpy()
             label = label.detach().cpu().numpy().item()
             
-            adversarial = self.mip_attack(image, label)
+            adversarial, _ = self.mip_attack(image, label)
             adversarials.append(torch.from_numpy(adversarial).to(x))
 
         return utils.maybe_stack(adversarials, x.shape[1:], device=x.device)
