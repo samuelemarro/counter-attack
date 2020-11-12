@@ -97,6 +97,9 @@ def adversarial_distance(genuines, adversarials, p):
 
         return distances
 
+def one_adversarial_distance(genuine, adversarial, p):
+    return adversarial_distance(genuine.unsqueeze(0), adversarial.unsqueeze(0), p)[0]
+
 def one_many_adversarial_distance(one, many, p):
     assert one.shape == many.shape[1:]
 
@@ -175,6 +178,7 @@ def early_rejection(x, adversarials, labels, adversarial_output, p, threshold, t
 # Nota: Se l'originale viene rifiutato ma l'adversarial no, l'adversarial conta
 # come successo anche se ha mantenuto la stessa label di partenza
 # Testare!
+# TODO: Come funziona valid_distance?
 def remove_failed(model, images, labels, adversarials, has_detector, p=None, eps=None):
     assert len(images) == len(labels)
     assert len(images) == len(adversarials)
@@ -189,7 +193,8 @@ def remove_failed(model, images, labels, adversarials, has_detector, p=None, eps
 
     for i in range(len(images)):
         valid_distance = (eps is None) or (distances[i] < eps)
-        if not successful[i] and valid_distance:
+        # TODO: Controllare
+        if not (successful[i] and valid_distance):
             adversarials[i] = None
     
     return adversarials
@@ -198,7 +203,7 @@ def remove_failed(model, images, labels, adversarials, has_detector, p=None, eps
 # Returns b if filter_ is True, else a
 def fast_boolean_choice(a, b, filter_):
     filter_shape = [1] + list(a.shape)[1:]
-    reshaped_filter = filter_.reshape(filter_shape).float()
+    reshaped_filter = filter_.float()#filter_.reshape(filter_shape).float()
     repeat_dimensions = [len(a)] + (len(a.shape) - 1) * [1]
 
     repeated_filter = reshaped_filter.repeat(repeat_dimensions)

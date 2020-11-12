@@ -1,0 +1,5 @@
+TimeLimit  7200
+MIPFocus  2
+InfUnbdInfo  1
+PreDepRow  1
+Threads  1

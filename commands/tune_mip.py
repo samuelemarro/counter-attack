@@ -1,3 +1,4 @@
+from logging import log
 import click
 import logging
 from click.types import IntRange
@@ -24,6 +25,13 @@ logger = logging.getLogger(__name__)
          'If -1, a random image is chosen.')
 @click.option('--masked-relu', is_flag=True,
     help='If passed, all ReLU layers will be converted to MaskedReLU layers.')
+# TODO: Rimuovere?
+@click.option('--batch-size', type=click.IntRange(1), default=50, show_default=True,
+    help='The batch size of the dataset.')
+@click.option('--keep-misclassified', is_flag=True,
+    help='If passed, the attack is also run on the images that were misclassified by the base model.')
+@click.option('--pre-adversarial-dataset', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None,
+    help='The path to an adversarial dataset of an attack run on the main dataset. Used to speed up MIP.')
 @click.option('--attack-config-file', type=click.Path(exists=True, file_okay=True, dir_okay=False),
     default='default_attack_configuration.cfg', show_default=True, help='The path to the file containing the '
     'attack configuration.')
@@ -37,20 +45,69 @@ def tune_mip(**kwargs):
 
     model = parsing.get_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'], True, kwargs['masked_relu'], load_weights=True)
 
-    attack_config = attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
+    attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
     attack = parsing.get_attack('mip', kwargs['domain'], kwargs['p'], 'standard', model, attack_config)
 
-    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], max_samples=1)
-    if kwargs['tuning_index'] == -1:
-        tuning_index = np.random.randint(len(dataset))
+    # TODO: Supporto adversarial initialization
+
+    if kwargs['pre_adversarial_dataset'] is None:
+        pre_adversarial_dataset = None
     else:
-        tuning_index = kwargs['tuning_index']
+        pre_adversarial_dataset = utils.load_zip(kwargs['pre_adversarial_dataset'])
+
+    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'])
+
+    # TODO: Rimuovere
+    if not kwargs['keep_misclassified']:
+        all_images = []
+        all_labels = []
+        for start in range(0, len(dataset), kwargs['batch_size']):
+            stop = min(start + kwargs['batch_size'], len(dataset))
+            indices = range(start, stop)
+            images = torch.stack([dataset[i][0] for i in indices])
+            labels = torch.stack([torch.tensor(dataset[i][1]) for i in indices])
+            images, labels = utils.remove_misclassified(model, images, labels)
+            all_images += list(images)
+            all_labels += list(labels)
+
+        dataset = list(zip(all_images, all_labels))
+    # ---------------
+
+    if pre_adversarial_dataset is None:
+        if kwargs['tuning_index'] == -1:
+            tuning_index = np.random.randint(len(dataset))
+        else:
+            tuning_index = kwargs['tuning_index']
+        pre_adversarial = None
+        pre_image = None
+    else:
+        successful_indices = [i for i in range(len(pre_adversarial_dataset)) if pre_adversarial_dataset.adversarials[i] is not None]
+        if kwargs['tuning_index'] == -1:
+            tuning_index = np.random.choice(successful_indices)
+        else:
+            tuning_index = kwargs['tuning_index']
+            if tuning_index not in successful_indices:
+                logger.warning('The chosen tuning_index does not have a matching '
+                               'pre-adversarial. Ignoring pre-adversarial optimizations.')
+
+        pre_adversarial = pre_adversarial_dataset.adversarials[tuning_index]
+        pre_adversarial = pre_adversarial.detach().cpu().numpy()
+        pre_image = pre_adversarial_dataset.genuines[tuning_index]
+        pre_image = pre_image.detach().cpu().numpy()
     
     image, label = dataset[tuning_index]
     image = image.detach().cpu().numpy()
+    label = label.detach().cpu().numpy().item()
+
+    if pre_image is not None and np.max(np.abs(image - pre_image)) > 1e-6:
+        print(np.max(np.abs(image - pre_image)))
+        raise RuntimeError('The pre-adversarial refers to a different genuine. '
+                           'This can slow down MIP at best and make it fail at worst. '
+                           'Are you sure that you\'re using the correct pre-adversarial dataset?')
+
 
     # Implicitly build the MIP model
-    _, adversarial_result = attack.mip_attack(image, label)
+    _, adversarial_result = attack.mip_attack(image, label, starting_point=pre_adversarial)
 
     jump_model = adversarial_result['Model']
 
@@ -60,7 +117,6 @@ def tune_mip(**kwargs):
     from julia import Main
     gurobi_model = JuMP.internalmodel(jump_model).inner
 
-    # TODO: Set parameters
     Gurobi.tune_model(gurobi_model)
     Main.model_pointer = gurobi_model
     Main.eval('Gurobi.get_tune_result!(model_pointer, 0)')
@@ -68,3 +124,5 @@ def tune_mip(**kwargs):
 
     # Save the model
     Gurobi.write_model(gurobi_model, kwargs['save_to'])
+
+    # TODO: Conversion?

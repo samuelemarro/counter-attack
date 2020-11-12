@@ -95,6 +95,48 @@ class AdversarialDataset(data.Dataset):
         print('Median Successful Distance: {}'.format(median_distance))
         print('Average Successful Distance: {}'.format(average_distance))
 
+class MIPDataset(data.Dataset):
+    def __init__(self, genuines, original_labels, adversarials, lower_bounds, upper_bounds, solve_times, p, attack_configuration, generation_kwargs):
+        assert len(genuines) == len(original_labels)
+        assert len(genuines) == len(adversarials)
+        assert len(genuines) == len(lower_bounds)
+        assert len(genuines) == len(upper_bounds)
+        assert len(genuines) == len(solve_times)
+        assert all([upper >= lower for upper, lower in zip(upper_bounds, lower_bounds)])
+
+        # TODO: è necessario prenderli come tensori?
+        # TODO: Imporre che nessun adversarial sia None?
+        self.genuines = [genuine.detach().cpu() for genuine in genuines]
+        self.original_labels = [original_label.detach().cpu() for original_label in original_labels]
+        self.adversarials = adversarials
+        self.lower_bounds = lower_bounds
+        self.upper_bounds = upper_bounds
+        self.solve_times = solve_times
+        self.p = p
+        self.attack_configuration = attack_configuration
+        self.generation_kwargs = generation_kwargs
+
+    def __getitem__(self, idx):
+        return (self.genuines[idx], self.original_labels[idx], self.adversarials[idx], self.lower_bounds[idx], self.upper_bounds[idx], self.solve_times[idx])
+
+    def __len__(self):
+        return len(self.genuines)
+
+    @property
+    def absolute_differences(self):
+        return np.array([upper - lower for upper, lower in zip(self.upper_bounds, self.lower_bounds)])
+
+    def print_stats(self):
+        # TODO: Statistiche sui tempi
+        absolute_differences = self.absolute_differences
+
+        print('Median Absolute Differences: ', np.median(absolute_differences))
+        print('Average Absolute Differences: ', np.average(absolute_differences))
+
+    @property
+    def convergence_stats(self):
+        return zip(self.solve_times, self.absolute_differences)
+
 class AdversarialTrainingDataset(data.Dataset):
     def __init__(self, adversarials, original_labels):
         assert len(adversarials) == len(original_labels)

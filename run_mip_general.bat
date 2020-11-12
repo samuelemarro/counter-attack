@@ -1,0 +1,3 @@
+python cli.py accuracy %1 %2 std:test --state-dict-path trained-models\best-classifiers\%1-%2.pth --max-samples %3
+python cli.py attack %1 %2 std:test bim %5 --max-samples %3 --state-dict-path trained-models\best-classifiers\%1-%2.pth  --save-to adversarial_tests\bim-%1-%2-%5.zip
+python cli.py mip %1 %2 std:test %5 --max-samples %3 --show %3 --attack-config-file %4 --state-dict-path trained-models\best-classifiers\%1-%2.pth --pre-adversarial-dataset adversarial_tests\bim-%1-%2-%5.zip
