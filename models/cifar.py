@@ -100,6 +100,16 @@ def cifar10_x2(masked_relu, num_classes):
         nn.Linear(144, num_classes)
     )
 
+def cifar10_x3(masked_relu, num_classes):
+    return torch.nn.Sequential(
+        nn.Conv2d(3, 8, 3, stride=2, padding=0),
+        MaskedReLU([8, 15, 15]) if masked_relu else nn.ReLU(),
+        nn.Conv2d(8, 8, 3, stride=2, padding=0),
+        MaskedReLU([8, 7, 7]) if masked_relu else nn.ReLU(),
+        nn.Flatten(),
+        nn.Linear(392, num_classes)
+    )
+
 def cifar10(architecture, masked_relu, n_channel=128, num_classes=10, pretrained=True):
     if architecture == 'a':
         model = cifar10_a(masked_relu, num_classes)
@@ -117,6 +127,8 @@ def cifar10(architecture, masked_relu, n_channel=128, num_classes=10, pretrained
         model = cifar10_x1(masked_relu, num_classes)
     elif architecture == 'x2':
         model = cifar10_x2(masked_relu, num_classes)
+    elif architecture == 'x3':
+        model = cifar10_x3(masked_relu, num_classes)
     else:
         raise ValueError('Architecture "{}" not supported for CIFAR10.'.format(architecture))
 
