@@ -140,7 +140,7 @@ function find_adversarial_example(
     rebuild::Bool = false,
     cache_model::Bool = true,
     solve_if_predicted_in_targeted = true,
-    starting_point::Array{<:Real} = nothing
+    starting_point::Union{Array{<:Real}, Nothing} = nothing
 )::Dict
 
     total_time = @elapsed begin

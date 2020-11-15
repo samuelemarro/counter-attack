@@ -7,12 +7,12 @@ import torch.utils.data as data
 import utils
 
 class AdversarialDataset(data.Dataset):
-    def __init__(self, genuines, original_labels, adversarials, p, attack_configuration, generation_kwargs):
-        assert len(genuines) == len(original_labels)
+    def __init__(self, genuines, true_labels, adversarials, p, misclassification_policy, attack_configuration, generation_kwargs):
+        assert len(genuines) == len(true_labels)
         assert len(genuines) == len(adversarials)
 
         self.genuines = [genuine.detach().cpu() for genuine in genuines]
-        self.original_labels = [original_label.detach().cpu() for original_label in original_labels]
+        self.true_labels = [true_label.detach().cpu() for true_label in true_labels]
         self.adversarials = []
         for adversarial in adversarials:
             if adversarial is None:
@@ -20,6 +20,7 @@ class AdversarialDataset(data.Dataset):
             else:
                 self.adversarials.append(adversarial.detach().cpu())
         self.p = p
+        self.misclassification_policy = misclassification_policy
         self.attack_configuration = attack_configuration
         self.generation_kwargs = generation_kwargs
 
@@ -64,22 +65,22 @@ class AdversarialDataset(data.Dataset):
     def successful_adversarials(self):
         successful_genuines = []
         successful_adversarials = []
-        successful_original_labels = []
+        successful_true_labels = []
 
-        for genuine, adversarial, original_label in zip(self.genuines, self.adversarials, self.original_labels):
+        for genuine, adversarial, true_label in zip(self.genuines, self.adversarials, self.true_labels):
             if adversarial is not None:
                 successful_genuines.append(genuine)
                 successful_adversarials.append(adversarial)
-                successful_original_labels.append(original_label)
+                successful_true_labels.append(true_label)
 
-        return successful_genuines, successful_adversarials, successful_original_labels
+        return successful_genuines, successful_adversarials, successful_true_labels
 
     def to_adversarial_training_dataset(self):
-        _, successful_adversarials, successful_original_labels = self.successful_adversarials()
-        return AdversarialTrainingDataset(successful_adversarials, successful_original_labels)
+        _, successful_adversarials, successful_true_labels = self.successful_adversarials()
+        return AdversarialTrainingDataset(successful_adversarials, successful_true_labels)
 
     def __getitem__(self, idx):
-        return (self.genuines[idx], self.original_labels[idx], self.adversarials[idx])
+        return (self.genuines[idx], self.true_labels[idx], self.adversarials[idx])
 
     def __len__(self):
         return len(self.genuines)
@@ -96,8 +97,8 @@ class AdversarialDataset(data.Dataset):
         print('Average Successful Distance: {}'.format(average_distance))
 
 class MIPDataset(data.Dataset):
-    def __init__(self, genuines, original_labels, adversarials, lower_bounds, upper_bounds, solve_times, p, attack_configuration, generation_kwargs):
-        assert len(genuines) == len(original_labels)
+    def __init__(self, genuines, true_labels, adversarials, lower_bounds, upper_bounds, solve_times, p, misclassification_policy, attack_configuration, generation_kwargs):
+        assert len(genuines) == len(true_labels)
         assert len(genuines) == len(adversarials)
         assert len(genuines) == len(lower_bounds)
         assert len(genuines) == len(upper_bounds)
@@ -107,17 +108,18 @@ class MIPDataset(data.Dataset):
         # TODO: è necessario prenderli come tensori?
         # TODO: Imporre che nessun adversarial sia None?
         self.genuines = [genuine.detach().cpu() for genuine in genuines]
-        self.original_labels = [original_label.detach().cpu() for original_label in original_labels]
+        self.true_labels = [true_label.detach().cpu() for true_label in true_labels]
         self.adversarials = adversarials
         self.lower_bounds = lower_bounds
         self.upper_bounds = upper_bounds
         self.solve_times = solve_times
         self.p = p
+        self.misclassification_policy = misclassification_policy
         self.attack_configuration = attack_configuration
         self.generation_kwargs = generation_kwargs
 
     def __getitem__(self, idx):
-        return (self.genuines[idx], self.original_labels[idx], self.adversarials[idx], self.lower_bounds[idx], self.upper_bounds[idx], self.solve_times[idx])
+        return (self.genuines[idx], self.true_labels[idx], self.adversarials[idx], self.lower_bounds[idx], self.upper_bounds[idx], self.solve_times[idx])
 
     def __len__(self):
         return len(self.genuines)
@@ -137,15 +139,16 @@ class MIPDataset(data.Dataset):
     def convergence_stats(self):
         return zip(self.solve_times, self.absolute_differences)
 
+# TODO: Remove?
 class AdversarialTrainingDataset(data.Dataset):
-    def __init__(self, adversarials, original_labels):
-        assert len(adversarials) == len(original_labels)
+    def __init__(self, adversarials, true_labels):
+        assert len(adversarials) == len(true_labels)
 
         self.adversarials = adversarials.detach().cpu()
-        self.original_labels = original_labels.detach().cpu()
+        self.true_labels = true_labels.detach().cpu()
 
     def __getitem__(self, idx):
-        return (self.adversarials[idx], self.original_labels[idx])
+        return (self.adversarials[idx], self.true_labels[idx])
 
     def __len__(self):
         return len(self.adversarials)
@@ -166,12 +169,12 @@ class AdversarialDistanceDataset(data.Dataset):
 # TODO: attack_names è troppo specifico, serve un nome più generale
 
 class AttackComparisonDataset(data.Dataset):
-    def __init__(self, genuines, original_labels, attack_names, attack_results, p, attack_configuration, generation_kwargs):
-        assert len(genuines) == len(original_labels)
+    def __init__(self, genuines, true_labels, attack_names, attack_results, p, misclassification_policy, attack_configuration, generation_kwargs):
+        assert len(genuines) == len(true_labels)
         assert len(genuines) == len(attack_results)
 
         self.genuines = [genuine.detach().cpu() for genuine in genuines]
-        self.original_labels = [original_label.detach().cpu() for original_label in original_labels]
+        self.true_labels = [true_label.detach().cpu() for true_label in true_labels]
         self.attack_names = attack_names
         self.attack_results = attack_results
 
@@ -182,26 +185,27 @@ class AttackComparisonDataset(data.Dataset):
                     attack_result[key] = value.detach().cpu()
 
         self.p = p
+        self.misclassification_policy = misclassification_policy
         self.attack_configuration = attack_configuration
         self.generation_kwargs = generation_kwargs
 
     def __getitem__(self, idx):
-        return (self.genuines[idx], self.original_labels[idx], self.attack_results[idx])
+        return (self.genuines[idx], self.true_labels[idx], self.attack_results[idx])
 
     def __len__(self):
         return len(self.genuines)
 
     def to_adversarial_dataset(self, attack_name):
         genuines = []
-        original_labels = []
+        true_labels = []
         adversarials = [attack_result[attack_name] for attack_result in self.attack_results]
         
-        return AdversarialDataset(self.genuines, self.original_labels, adversarials, self.p, len(self.genuines), self.attack_configuration, self.generation_kwargs)
+        return AdversarialDataset(self.genuines, self.true_labels, adversarials, self.p, self.misclassification_policy, len(self.genuines), self.attack_configuration, self.generation_kwargs)
 
     def simulate_pooling(self, selected_attacks):
         best_adversarials = []
 
-        for genuine, original_label, attack_result in zip(self.genuines, self.original_labels, self.attack_results):
+        for genuine, true_label, attack_result in zip(self.genuines, self.true_labels, self.attack_results):
             # Take the adversarials generated by attacks that were successful and
             # were selected by the user
             successful_adversarials = [attack_result[attack_name] for attack_name in selected_attacks if attack_result[attack_name] is not None]
@@ -220,7 +224,7 @@ class AttackComparisonDataset(data.Dataset):
 
         assert len(self.genuines) == len(best_adversarials)
 
-        return AdversarialDataset(self.genuines, self.original_labels, best_adversarials, self.p, self.attack_configuration, self.generation_kwargs)
+        return AdversarialDataset(self.genuines, self.true_labels, best_adversarials, self.p, self.misclassification_policy, self.attack_configuration, self.generation_kwargs)
 
     def attack_ranking_stats(self, attack_name):
         attack_positions = dict()
@@ -229,7 +233,7 @@ class AttackComparisonDataset(data.Dataset):
         
         attack_positions['failure'] = 0
 
-        for genuine, original_label, attack_result in zip(self.genuines, self.original_labels, self.attack_results):
+        for genuine, true_label, attack_result in zip(self.genuines, self.true_labels, self.attack_results):
             if attack_result[attack_name] is None:
                 attack_positions['failure'] += 1
             else:
@@ -271,7 +275,7 @@ class AttackComparisonDataset(data.Dataset):
             for other_attack_name in [x for x in self.attack_names if x != attack_name]:
                 victory_matrix[attack_name][other_attack_name] = 0
 
-        for genuine, original_label, attack_result in zip(self.genuines, self.original_labels, self.attack_results):
+        for genuine, true_label, attack_result in zip(self.genuines, self.true_labels, self.attack_results):
             # Note: dictionaries don't preserve order, so we convert to OrderedDict
             attack_result = collections.OrderedDict(attack_result)
 

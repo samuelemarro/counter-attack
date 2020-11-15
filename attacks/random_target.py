@@ -25,14 +25,14 @@ class RandomTargetEvasionAttack:
 
         num_classes = predictions.shape[1]
 
-        original_labels = torch.argmax(predictions, axis=-1)
+        predicted_labels = torch.argmax(predictions, axis=-1)
 
         target_labels = []
 
-        for i, original_label in enumerate(original_labels):
+        for i, true_label in enumerate(predicted_labels):
             target_label = None
 
-            while target_label is None or target_label == original_label:
+            while target_label is None or target_label == true_label:
                 if self.stochastic_consistency:
                     # TODO: Controllare consistenza
                     target_label = utils.consistent_randint(x[i], 0, num_classes, (1,), x.device)
@@ -41,8 +41,8 @@ class RandomTargetEvasionAttack:
 
             target_labels.append(target_label)
 
-        target_labels = torch.cat(target_labels).to(original_labels.device)
+        target_labels = torch.cat(target_labels).to(predicted_labels.device)
 
-        assert torch.all(torch.logical_not(torch.eq(original_labels, target_labels)))
+        assert torch.all(torch.logical_not(torch.eq(predicted_labels, target_labels)))
 
         return self.attack_on_detector_classifier.perturb(x, y=target_labels, **kwargs).detach()

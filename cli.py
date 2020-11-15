@@ -15,17 +15,12 @@ def main():
 # Nota: MIP supporta le skip-connections
 # TODO: Aggiungere codice che controlla la correttezza del modello caricato da MIP
 # TODO: Se necessario, si può aggiungere l'addestramento ReLU stability
-# TODO: Addestrare modelli in-house? Sì, per tutti e tre i dataset
 # TODO: Implementare il test basato sulla distanza triangolare
-# TODO: Distinguere tra "classifier standard" e "classifier progettati per MIP"?
 # TODO: Abbandonare sistema di pretrained, caricare i modelli e metterli in una cartella, con percorsi di default?
 # TODO: get_dataset -> parse_dataset e simili
-# TODO: Aggiungere l'opzione di usare la previsione del modello come label "corretta"?
-# Questo mi permetterebbe di giustificare un'accuratezza più bassa
 # TODO: Fix fast_boolean_choice
 # TODO: Brendel & Bethge (di foolbox)
 # TODO: Passare a foolbox?
-# TODO: Passare il punto di partenza?
 
 # TODO: Finire RS_Loss & simili
 # TODO: Eseguire gli addestramenti adversarial e RS

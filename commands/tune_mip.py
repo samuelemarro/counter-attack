@@ -28,8 +28,9 @@ logger = logging.getLogger(__name__)
 # TODO: Rimuovere?
 @click.option('--batch-size', type=click.IntRange(1), default=50, show_default=True,
     help='The batch size of the dataset.')
-@click.option('--keep-misclassified', is_flag=True,
-    help='If passed, the attack is also run on the images that were misclassified by the base model.')
+@click.option('--misclassification-policy', type=click.Choice(parsing.misclassification_policies),
+    default='remove', show_default=True, help='The policy that will be applied to deal with '
+    'misclassified images.')
 @click.option('--pre-adversarial-dataset', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None,
     help='The path to an adversarial dataset of an attack run on the main dataset. Used to speed up MIP.')
 @click.option('--attack-config-file', type=click.Path(exists=True, file_okay=True, dir_okay=False),
@@ -55,23 +56,27 @@ def tune_mip(**kwargs):
     else:
         pre_adversarial_dataset = utils.load_zip(kwargs['pre_adversarial_dataset'])
 
+        if pre_adversarial_dataset.misclassification_policy != kwargs['misclassification_policy']:
+            raise ValueError('The misclassification policy of the pre-adversarial dataset does '
+                             'not match the given policy. This can produce incorrent starting points.')
+
     dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'])
 
-    # TODO: Rimuovere
-    if not kwargs['keep_misclassified']:
+    # The misclassification policy "remove" messes with
+    # indexing, so we apply it to the genuine dataset too
+    if kwargs['misclassification_policy'] == 'remove':
         all_images = []
-        all_labels = []
+        all_true_labels = []
         for start in range(0, len(dataset), kwargs['batch_size']):
             stop = min(start + kwargs['batch_size'], len(dataset))
             indices = range(start, stop)
             images = torch.stack([dataset[i][0] for i in indices])
-            labels = torch.stack([torch.tensor(dataset[i][1]) for i in indices])
-            images, labels = utils.remove_misclassified(model, images, labels)
+            true_labels = torch.stack([torch.tensor(dataset[i][1]) for i in indices])
+            images, true_labels, _ = utils.apply_misclassification_policy(model, images, true_labels, 'remove')
             all_images += list(images)
-            all_labels += list(labels)
+            all_true_labels += list(true_labels)
 
-        dataset = list(zip(all_images, all_labels))
-    # ---------------
+        dataset = list(zip(all_images, all_true_labels))
 
     if pre_adversarial_dataset is None:
         if kwargs['tuning_index'] == -1:

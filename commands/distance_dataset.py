@@ -30,8 +30,9 @@ logger = logging.getLogger(__name__)
 @click.option('--attack-config-file', type=click.Path(exists=True, file_okay=True, dir_okay=False),
     default='default_attack_configuration.cfg', show_default=True, help='The path to the file containing the '
     'attack configuration.')
-@click.option('--keep-misclassified', is_flag=True,
-    help='If passed, the attack is also run on the images that were misclassified by the base model.')
+@click.option('--misclassification-policy', type=click.Choice(parsing.misclassification_policies),
+    default='remove', show_default=True, help='The policy that will be applied to deal with '
+    'misclassified images.')
 @click.option('--device', default='cuda', show_default=True, help='The device where the model will be executed.')
 @click.option('--cpu-threads', type=click.IntRange(1, None, False), default=None,
     help='The number of PyTorch CPU threads. If unspecified, the default '
@@ -73,7 +74,7 @@ def distance_dataset(**kwargs):
     if kwargs['from_genuine'] is not None:
         genuine_dataset = parsing.get_dataset(kwargs['domain'], kwargs['from_genuine'], start=kwargs['start'], stop=kwargs['stop'])
         genuine_loader = torch.utils.data.DataLoader(genuine_dataset, kwargs['batch_size'], shuffle=False)
-        genuine_result_dataset = tests.attack_test(model, attack_pool, genuine_loader, p, not kwargs['keep_misclassified'], kwargs['device'], attack_config, kwargs, None)
+        genuine_result_dataset = tests.attack_test(model, attack_pool, genuine_loader, p, kwargs['misclassification_policy'], kwargs['device'], attack_config, kwargs, None)
 
         images += list(genuine_result_dataset.genuines)
         distances += list(genuine_result_dataset.distances)

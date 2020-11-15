@@ -29,8 +29,9 @@ logger = logging.getLogger(__name__)
 @click.option('--attack-config-file', type=click.Path(exists=True, file_okay=True, dir_okay=False),
     default='default_attack_configuration.cfg', show_default=True, help='The path to the file containing the '
     'attack configuration.')
-@click.option('--keep-misclassified', is_flag=True,
-    help='If passed, the attack is also run on the images that were misclassified by the base model.')
+@click.option('--misclassification-policy', type=click.Choice(parsing.misclassification_policies),
+    default='remove', show_default=True, help='The policy that will be applied to deal with '
+    'misclassified images.')
 # TODO: Rimuovere?
 @click.option('--gurobi-model', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None,
     help='The path to the cached Gurobi model that will be used to run the attack. If unspecified, the model '
@@ -84,11 +85,11 @@ def mip(**kwargs):
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
     attack_kwargs = attack_config.get_arguments('mip', kwargs['domain'], metric, 'standard')
 
-    #TODO: Gurobi caching
+    #TODO: Gurobi caching?
 
     attack = attacks.MIPAttack(model, p, False, **attack_kwargs)
     
-    mip_dataset = tests.mip_test(model, attack, dataloader, p, not kwargs['keep_misclassified'], kwargs['device'], attack_config, kwargs,
+    mip_dataset = tests.mip_test(model, attack, dataloader, p, kwargs['misclassification_policy'], kwargs['device'], attack_config, kwargs,
                                  pre_adversarial_dataset=pre_adversarial_dataset)
     mip_dataset.print_stats()
 

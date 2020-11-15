@@ -25,6 +25,7 @@ attacks_with_binary_search = ['bim', 'fast_gradient', 'pgd', 'uniform']
 targeted_attacks = ['bim', 'carlini', 'fast_gradient', 'mip', 'pgd']
 er_attacks = ['bim', 'carlini', 'pgd', 'uniform']
 distances = ['l2', 'linf']
+misclassification_policies = ['ignore', 'remove', 'use_predicted']
 log_levels = ['debug', 'info', 'warning', 'error', 'critical']
 _log_level_to_number = {'debug' : logging.DEBUG,
                         'info' : logging.INFO,

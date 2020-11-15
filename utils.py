@@ -110,31 +110,20 @@ def one_many_adversarial_distance(one, many, p):
 
     return adversarial_distance(one, many, p)
 
-def remove_misclassified(model, images, labels):
-    """Removes samples that are misclassified by the model.
-    
-    Parameters
-    ----------
-    model : torch.nn.Module
-        The model that might misclassify the images.
-    images : torch.FloatTensor
-        The images that might be misclassified.
-    labels : torch.LongTensor
-        The correct labels for the images.
-    
-    Returns
-    -------
-    tuple
-        A tuple containing the images that are classified
-        correctly and the corresponding labels.
-    """
-    predicted_labels = get_labels(model, images)
+def apply_misclassification_policy(model, images, true_labels, policy):
+    if policy == 'ignore':
+        return images, true_labels, true_labels
+    else:
+        predicted_labels = get_labels(model, images)
+        assert predicted_labels.shape == true_labels.shape
 
-    assert predicted_labels.shape == labels.shape
-    
-    correct_label = torch.eq(predicted_labels, labels)
-
-    return images[correct_label], labels[correct_label]
+        if policy == 'remove':
+            correct_label = torch.eq(predicted_labels, true_labels)
+            return images[correct_label], true_labels[correct_label], true_labels[correct_label]
+        elif policy == 'use_predicted':
+            return images, true_labels, predicted_labels
+        else:
+            raise NotImplementedError(f'Unsupported policy "{policy}".')
 
 def misclassified(model, adversarials, labels, has_detector):
     assert len(adversarials) == len(labels)

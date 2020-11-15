@@ -36,8 +36,9 @@ logger = logging.getLogger(__name__)
 @click.option('--attack-config-file', type=click.Path(exists=True, file_okay=True, dir_okay=False),
     default='default_attack_configuration.cfg', show_default=True, help='The path to the file containing the '
     'attack configuration.')
-@click.option('--keep-misclassified', is_flag=True,
-    help='If passed, the attack is also run on the images that were misclassified by the base model.')
+@click.option('--misclassification-policy', type=click.Choice(parsing.misclassification_policies),
+    default='remove', show_default=True, help='The policy that will be applied to deal with '
+    'misclassified images.')
 @click.option('--start', type=click.IntRange(0, None), default=0,
     help='The first index (inclusive) of the dataset that will be used.')
 @click.option('--stop', type=click.IntRange(0, None), default=None,
@@ -120,7 +121,7 @@ def cross_validation(**kwargs):
 
     logger.info('Tests:\n{}'.format('\n'.join(test_names)))
 
-    evasion_dataset = tests.multiple_evasion_test(model, test_names, evasion_attacks, defended_models, dataloader, p, not kwargs['keep_misclassified'], kwargs['device'], attack_config, kwargs)
+    evasion_dataset = tests.multiple_evasion_test(model, test_names, evasion_attacks, defended_models, dataloader, p, kwargs['misclassification_policy'], kwargs['device'], attack_config, kwargs)
 
     if kwargs['save_to'] is not None:
         utils.save_zip(evasion_dataset, kwargs['save_to'])

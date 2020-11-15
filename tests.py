@@ -11,37 +11,33 @@ def accuracy(model, loader, device):
 
     model.to(device)
 
-    for images, labels in tqdm(loader, desc='Accuracy Test'):
+    for images, true_labels in tqdm(loader, desc='Accuracy Test'):
         total_count += len(images)
         images = images.to(device)
-        labels = labels.to(device)
+        true_labels = true_labels.to(device)
 
         predicted_labels = utils.get_labels(model, images)
 
-        correct = torch.eq(predicted_labels, labels)
+        correct = torch.eq(predicted_labels, true_labels)
         correct_count += len(torch.nonzero(correct))
 
     return correct_count / total_count
 
-def attack_test(model, attack, loader, p, remove_misclassified, device, generation_kwargs, attack_configuration, defended_model, blind_trust=False):
+def attack_test(model, attack, loader, p, misclassification_policy, device, generation_kwargs, attack_configuration, defended_model, blind_trust=False):
     assert not attack.targeted
     model.to(device)
 
     all_images = []
-    all_labels = []
+    all_true_labels = []
     all_adversarials = []
 
-    for images, labels in tqdm(loader, desc='Attack Test'):
+    for images, true_labels in tqdm(loader, desc='Attack Test'):
         images = images.to(device)
-        labels = labels.to(device)
-
-        image_shape = images.shape[1:]
+        true_labels = true_labels.to(device)
         
-        assert len(images) == len(labels)
+        assert len(images) == len(true_labels)
 
-        if remove_misclassified:
-            images, labels = utils.remove_misclassified(model, images, labels)
-
+        images, true_labels, labels = utils.apply_misclassification_policy(model, images, true_labels, misclassification_policy)
         # TODO: Supporto politica misclassified?
         
         adversarials = attack.perturb(images, y=labels).detach()
@@ -57,44 +53,41 @@ def attack_test(model, attack, loader, p, remove_misclassified, device, generati
 
         # Move to CPU
         images = images.cpu()
-        labels = labels.cpu()
+        true_labels = true_labels.cpu()
         for i in range(len(adversarials)):
             if adversarials[i] is not None:
                 adversarials[i] = adversarials[i].cpu()
 
         all_images += list(images)
-        all_labels += list(labels)
+        all_true_labels += list(true_labels)
         all_adversarials += list(adversarials)
 
     
-    assert len(all_images) == len(all_labels)
+    assert len(all_images) == len(all_true_labels)
     assert len(all_images) == len(all_adversarials)
 
-    return adversarial_dataset.AdversarialDataset(all_images, all_labels, all_adversarials, p, attack_configuration, generation_kwargs)
+    return adversarial_dataset.AdversarialDataset(all_images, all_true_labels, all_adversarials, p, misclassification_policy, attack_configuration, generation_kwargs)
 
-def mip_test(model, attack, loader, p, remove_misclassified, device, generation_kwargs, attack_configuration, pre_adversarial_dataset=None):
+def mip_test(model, attack, loader, p, misclassification_policy, device, generation_kwargs, attack_configuration, pre_adversarial_dataset=None):
     assert not attack.targeted
     model.to(device)
 
     all_images = []
-    all_labels = []
+    all_true_labels = []
     all_adversarials = []
     all_lower_bounds = []
     all_upper_bounds = []
     all_solve_times = []
 
-    for images, labels in tqdm(loader, desc='MIP Test'):
+    for images, true_labels in tqdm(loader, desc='MIP Test'):
         images = images.to(device)
-        labels = labels.to(device)
-
-        image_shape = images.shape[1:]
+        true_labels = true_labels.to(device)
         
-        assert len(images) == len(labels)
+        assert len(images) == len(true_labels)
 
         # TODO: La politica con i misclassified potrebbe scontrarsi con i controlli per i pre
 
-        if remove_misclassified:
-            images, labels = utils.remove_misclassified(model, images, labels)
+        images, true_labels, labels = utils.apply_misclassification_policy(model, images, true_labels, misclassification_policy)
 
         if pre_adversarial_dataset is None:
             pre_images = None
@@ -108,8 +101,6 @@ def mip_test(model, attack, loader, p, remove_misclassified, device, generation_
                 pre_images[i] = pre_images[i].to(device)
                 if pre_adversarials[i] is not None:
                     pre_adversarials[i] = pre_adversarials[i].to(device)
-        
-        # TODO: Supporto politica per misclassified
 
         if pre_adversarial_dataset is not None:
             # Check that the images are the same
@@ -130,21 +121,21 @@ def mip_test(model, attack, loader, p, remove_misclassified, device, generation_
         labels = labels.cpu()
 
         all_images += list(images)
-        all_labels += list(labels)
+        all_true_labels += list(true_labels)
         all_adversarials += list(adversarials)
         all_lower_bounds += list(lower_bounds)
         all_upper_bounds += list(upper_bounds)
         all_solve_times += list(solve_times)
     
-    assert len(all_images) == len(all_labels)
+    assert len(all_images) == len(all_true_labels)
     assert len(all_images) == len(all_adversarials)
     assert len(all_images) == len(all_lower_bounds)
     assert len(all_images) == len(all_upper_bounds)
     assert len(all_images) == len(all_solve_times)
 
-    return adversarial_dataset.MIPDataset(all_images, all_labels, all_adversarials, all_lower_bounds, all_upper_bounds, all_solve_times, p, attack_configuration, generation_kwargs)
+    return adversarial_dataset.MIPDataset(all_images, all_true_labels, all_adversarials, all_lower_bounds, all_upper_bounds, all_solve_times, p, misclassification_policy, attack_configuration, generation_kwargs)
 
-def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p, remove_misclassified, device, attack_configuration, generation_kwargs):
+def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p, misclassification_policy, device, attack_configuration, generation_kwargs):
     assert all(not attack.targeted for attack in attacks)
     assert all(attack.predict == defended_model.predict for attack, defended_model in zip(attacks, defended_models))
 
@@ -157,21 +148,14 @@ def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p
     assert len(test_names) == len(defended_models)
 
     all_images = []
-    all_labels = []
+    all_true_labels = []
     all_attack_results = []
 
-    total_count = 0
-
-    for images, labels in tqdm(loader, desc='Multiple Evasion Test'):
-        total_count += len(images)
-
+    for images, true_labels in tqdm(loader, desc='Multiple Evasion Test'):
         images = images.to(device)
-        labels = labels.to(device)
+        true_labels = true_labels.to(device)
 
-        image_shape = images.shape[1:]
-        
-        if remove_misclassified:
-            images, labels = utils.remove_misclassified(model, images, labels)
+        images, true_labels, labels = utils.apply_misclassification_policy(model, images, true_labels, misclassification_policy)
 
         attack_results = [dict() for _ in range(len(images))]
 
@@ -191,15 +175,15 @@ def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p
         labels = labels.cpu()
 
         all_images += list(images)
-        all_labels += list(labels)
+        all_true_labels += list(true_labels)
         all_attack_results += attack_results
 
-    assert len(all_labels) == len(all_images)
+    assert len(all_true_labels) == len(all_images)
     assert len(all_attack_results) == len(all_images)
 
-    return adversarial_dataset.AttackComparisonDataset(all_images, all_labels, test_names, all_attack_results, p, attack_configuration, generation_kwargs)
+    return adversarial_dataset.AttackComparisonDataset(all_images, all_true_labels, test_names, all_attack_results, p, misclassification_policy, attack_configuration, generation_kwargs)
         
-def multiple_attack_test(model, attack_names, attacks, loader, p, remove_misclassified, device, attack_configuration, generation_kwargs):
+def multiple_attack_test(model, attack_names, attacks, loader, p, misclassification_policy, device, attack_configuration, generation_kwargs):
     assert all(not attack.targeted for attack in attacks)
 
     model.to(device)
@@ -207,21 +191,14 @@ def multiple_attack_test(model, attack_names, attacks, loader, p, remove_misclas
     assert len(attack_names) == len(attacks)
 
     all_images = []
-    all_labels = []
+    all_true_labels = []
     all_attack_results = []
 
-    total_count = 0
-
-    for images, labels in tqdm(loader, desc='Multiple Attack Test'):
-        total_count += len(images)
-
+    for images, true_labels in tqdm(loader, desc='Multiple Attack Test'):
         images = images.to(device)
-        labels = labels.to(device)
-
-        image_shape = images.shape[1:]
+        true_labels = true_labels.to(device)
         
-        if remove_misclassified:
-            images, labels = utils.remove_misclassified(model, images, labels)
+        images, true_labels, labels = utils.apply_misclassification_policy(model, images, true_labels, misclassification_policy)
 
         attack_results = [dict() for _ in range(len(images))]
 
@@ -244,10 +221,10 @@ def multiple_attack_test(model, attack_names, attacks, loader, p, remove_misclas
         labels = labels.cpu()
 
         all_images += list(images)
-        all_labels += list(labels)
+        all_true_labels += list(true_labels)
         all_attack_results += attack_results
 
-    assert len(all_labels) == len(all_images)
+    assert len(all_true_labels) == len(all_images)
     assert len(all_attack_results) == len(all_images)
 
-    return adversarial_dataset.AttackComparisonDataset(all_images, all_labels, attack_names, all_attack_results, p, attack_configuration, generation_kwargs)
+    return adversarial_dataset.AttackComparisonDataset(all_images, all_true_labels, attack_names, all_attack_results, p, misclassification_policy, attack_configuration, generation_kwargs)
