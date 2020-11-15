@@ -181,19 +181,29 @@ def unpack_sequential(module):
 
     return layers
 
-class FirstNDataset(torch.utils.data.Dataset):
-    def __init__(self, dataset, num_samples):
-        if num_samples < 1:
-            raise ValueError('num_samples must be at least 1.')
+class StartStopDataset(torch.utils.data.Dataset):
+    def __init__(self, dataset, start=None, stop=None):
+        if start is None:
+            start = 0
+        if stop is None:
+            stop = len(dataset)
+
+        if start < 0:
+            raise ValueError('start must be at least 0.')
+        if stop > len(dataset):
+            raise ValueError('stop must be smaller than or equal to the dataset size.')
+        if stop <= start:
+            raise ValueError('stop must be strictly larger than start.')
 
         self.dataset = dataset
-        self.num_samples = num_samples
+        self.start = start
+        self.stop = stop
 
     def __getitem__(self, idx):
-        return self.dataset[idx]
+        return self.dataset[self.start + idx]
 
     def __len__(self):
-        return self.num_samples
+        return self.stop - self.start
 
 class IndexedDataset(torch.utils.data.Dataset):
     def __init__(self, dataset, indices):

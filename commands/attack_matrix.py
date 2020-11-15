@@ -36,9 +36,11 @@ logger = logging.getLogger(__name__)
     'attack configuration.')
 @click.option('--keep-misclassified', is_flag=True,
     help='If passed, the attack is also run on the images that were misclassified by the base model.')
-@click.option('--max-samples', type=click.IntRange(1, None), default=None,
-    help='The maximum number of images that are loaded from the dataset. '
-         'If unspecified, all images are loaded.')
+@click.option('--start', type=click.IntRange(0, None), default=0,
+    help='The first index (inclusive) of the dataset that will be used.')
+@click.option('--stop', type=click.IntRange(0, None), default=None,
+    help='The last index (exclusive) of the dataset that will be used. If unspecified, defaults to '
+         'the dataset size.')
 @click.option('--save-to', type=click.Path(exists=False, file_okay=True, dir_okay=False),
     help='The path to the file where the test results will be saved (as a dataset). If unspecified, '
          'no dataset is saved.')
@@ -61,7 +63,7 @@ def attack_matrix(**kwargs):
     model.eval()
     model.to(kwargs['device'])
 
-    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], max_samples=kwargs['max_samples'])
+    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], start=kwargs['start'], stop=kwargs['stop'])
     dataloader = torch.utils.data.DataLoader(dataset, kwargs['batch_size'], shuffle=False)
 
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])

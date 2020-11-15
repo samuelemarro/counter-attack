@@ -24,9 +24,11 @@ logger = logging.getLogger(__name__)
           'number is used (usually the number of cores).')
 @click.option('--from-adversarial-dataset', is_flag=True,
     help='If passed, the accuracy is computed on an adversarial dataset.')
-@click.option('--max-samples', type=click.IntRange(1, None), default=None,
-    help='The maximum number of images that are loaded from the dataset. '
-         'If unspecified, all images are loaded.')
+@click.option('--start', type=click.IntRange(0, None), default=0,
+    help='The first index (inclusive) of the dataset that will be used.')
+@click.option('--stop', type=click.IntRange(0, None), default=None,
+    help='The last index (exclusive) of the dataset that will be used. If unspecified, defaults to '
+         'the dataset size.')
 @click.option('--log-level', type=click.Choice(parsing.log_levels), default='info', show_default=True,
     help='The minimum logging level.')
 def accuracy(**kwargs):
@@ -38,7 +40,7 @@ def accuracy(**kwargs):
     model = parsing.get_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'], True, kwargs['masked_relu'], load_weights=True)
     model.eval()
 
-    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], max_samples=kwargs['max_samples'])
+    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], start=kwargs['start'], stop=kwargs['stop'])
 
     if kwargs['from_adversarial_dataset']:
         dataset = dataset.to_adversarial_training_dataset()

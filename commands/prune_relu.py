@@ -68,9 +68,11 @@ def recursive_converter(sequential, num_samples_threshold):
 @click.option('--cpu-threads', type=click.IntRange(1, None, False), default=None,
     help='The number of PyTorch CPU threads. If unspecified, the default '
           'number is used (usually the number of cores).')
-@click.option('--max-samples', type=click.IntRange(1, None), default=None,
-    help='The maximum number of images that are loaded from the dataset. '
-         'If unspecified, all images are loaded.')
+@click.option('--start', type=click.IntRange(0, None), default=0,
+    help='The first index (inclusive) of the dataset that will be used.')
+@click.option('--stop', type=click.IntRange(0, None), default=None,
+    help='The last index (exclusive) of the dataset that will be used. If unspecified, defaults to '
+         'the dataset size.')
 @click.option('--log-level', type=click.Choice(parsing.log_levels), default='info', show_default=True,
     help='The minimum logging level.')
 def prune_relu(**kwargs):
@@ -98,7 +100,7 @@ def prune_relu(**kwargs):
         logger.warn('By using a threshold smaller than 0.5, a lot of unstable ReLUs will be treated as stable. '
                     'Is this intentional?')
 
-    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], max_samples=kwargs['max_samples'])
+    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], start=kwargs['start'], stop=kwargs['stop'])
     dataloader = torch.utils.data.DataLoader(dataset, kwargs['batch_size'], shuffle=False)
 
     counter_model = recursive_counter(model)

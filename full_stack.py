@@ -87,7 +87,7 @@ if not Path(target_path).exists():
 attack_path = f'adversarial_tests/bim-{domain}-{architecture}-{count}-linf.zip'
 
 if not Path(attack_path).exists():
-    os.system(f'python cli.py attack {domain} {architecture} std:test bim linf --max-samples {count} --state-dict-path {target_path}  --save-to {attack_path}')
+    os.system(f'python cli.py attack {domain} {architecture} std:test bim linf --stop {count} --state-dict-path {target_path}  --save-to {attack_path}')
 
 cfg_path = f'attack_configurations/architecture_specific/mip_1th_240b_0t_7200s_{domain}-{architecture}.cfg'
 cfg_f3_path = f'attack_configurations/architecture_specific/mip_1th_240b_0t_7200s_{domain}-{architecture}_f3.cfg'
@@ -113,11 +113,11 @@ if not Path(cfg_f3_path).exists():
 
 if not Path(mip_path).exists():
     print('Running standard tuned set')
-    os.system(f'python cli.py mip {domain} {architecture} std:test linf --max-samples {count} --show {count} --attack-config-file {cfg_path} --state-dict-path {target_path} --pre-adversarial-dataset {attack_path} --save-to {mip_path}')
+    os.system(f'python cli.py mip {domain} {architecture} std:test linf --stop {count} --show {count} --attack-config-file {cfg_path} --state-dict-path {target_path} --pre-adversarial-dataset {attack_path} --save-to {mip_path}')
 
 if Path(cfg_f3_path).exists() and not Path(mip_f3_path).exists():
     print('Running standard tuned set with MIPFocus = 3')
-    os.system(f'python cli.py mip {domain} {architecture} std:test linf --max-samples {count} --show {count} --attack-config-file {cfg_f3_path} --state-dict-path {target_path} --pre-adversarial-dataset {attack_path} --save-to {mip_f3_path}')
+    os.system(f'python cli.py mip {domain} {architecture} std:test linf --stop {count} --show {count} --attack-config-file {cfg_f3_path} --state-dict-path {target_path} --pre-adversarial-dataset {attack_path} --save-to {mip_f3_path}')
 
 mip_results = utils.load_zip(mip_path)
 print('Standard Convergence')

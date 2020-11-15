@@ -125,7 +125,7 @@ def get_model(domain, architecture, state_dict_path, apply_normalisation, masked
 
     return model
 
-def get_dataset(domain, dataset, allow_standard=True, max_samples=None, extra_transforms=[]):
+def get_dataset(domain, dataset, allow_standard=True, start=None, stop=None, extra_transforms=[]):
     matched_dataset = None
     tensor_transform = torchvision.transforms.ToTensor()
     transform = torchvision.transforms.Compose(extra_transforms + [tensor_transform])
@@ -148,7 +148,7 @@ def get_dataset(domain, dataset, allow_standard=True, max_samples=None, extra_tr
                 matched_dataset = torchvision.datasets.MNIST('./data/mnist', train=True, download=True, transform=transform)
             elif dataset == 'std:test':
                 matched_dataset = torchvision.datasets.MNIST('./data/mnist', train=False, download=True, transform=transform)
-    
+
     if matched_dataset is None:
         # No matches found, try to read it as a file path
         try:
@@ -156,8 +156,8 @@ def get_dataset(domain, dataset, allow_standard=True, max_samples=None, extra_tr
         except:
             raise RuntimeError('Could not find a standard dataset or a dataset file "{}".'.format(dataset))
 
-    if max_samples is not None:
-        matched_dataset = torch_utils.FirstNDataset(matched_dataset, max_samples)
+    if (start is not None and start != 0) or stop is not None:
+        matched_dataset = torch_utils.StartStopDataset(matched_dataset, start=start, stop=stop)
 
     return matched_dataset
 

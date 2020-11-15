@@ -36,9 +36,11 @@ logger = logging.getLogger(__name__)
 @click.option('--cpu-threads', type=click.IntRange(1, None, False), default=None,
     help='The number of PyTorch CPU threads. If unspecified, the default '
           'number is used (usually the number of cores).')
-@click.option('--max-samples', type=click.IntRange(1, None), default=None,
-    help='The maximum number of images that are loaded from the dataset. '
-         'If unspecified, all images are loaded.')
+@click.option('--start', type=click.IntRange(0, None), default=0,
+    help='The first index (inclusive) of the dataset that will be used.')
+@click.option('--stop', type=click.IntRange(0, None), default=None,
+    help='The last index (exclusive) of the dataset that will be used. If unspecified, defaults to '
+         'the dataset size.')
 @click.option('--seed', type=int, default=None,
     help='The seed for random generation. If unspecified, the current time is used as seed.')
 @click.option('--log-level', type=click.Choice(parsing.log_levels), default='info', show_default=True,
@@ -69,7 +71,7 @@ def distance_dataset(**kwargs):
     distances = []
 
     if kwargs['from_genuine'] is not None:
-        genuine_dataset = parsing.get_dataset(kwargs['domain'], kwargs['from_genuine'], max_samples=kwargs['max_samples'])
+        genuine_dataset = parsing.get_dataset(kwargs['domain'], kwargs['from_genuine'], start=kwargs['start'], stop=kwargs['stop'])
         genuine_loader = torch.utils.data.DataLoader(genuine_dataset, kwargs['batch_size'], shuffle=False)
         genuine_result_dataset = tests.attack_test(model, attack_pool, genuine_loader, p, not kwargs['keep_misclassified'], kwargs['device'], attack_config, kwargs, None)
 
@@ -77,7 +79,7 @@ def distance_dataset(**kwargs):
         distances += list(genuine_result_dataset.distances)
 
     if kwargs['from_adversarial'] is not None:
-        adversarial_dataset = parsing.get_dataset(kwargs['domain'], kwargs['from_adversarial'], allow_standard=False, max_samples=kwargs['max_samples'])
+        adversarial_dataset = parsing.get_dataset(kwargs['domain'], kwargs['from_adversarial'], allow_standard=False, start=kwargs['start'], stop=kwargs['stop'])
 
         # Get the labels for the adversarial samples
         adversarial_dataset = utils.create_label_dataset(model, adversarial_dataset.adversarials, kwargs['batch_size'])
