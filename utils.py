@@ -257,7 +257,7 @@ def show_images(images, adversarials, limit=None, model=None):
         axes[0, 2].title.set_text('Difference')
         axes[0, 2].imshow(difference, norm=normalisation)
 
-        print('L2 norm: {}'.format(np.linalg.norm(difference)))
+        print('L2 norm: {}'.format(np.linalg.norm(difference.flatten())))
         print('LInf norm: {}'.format(np.max(difference)))
 
         plt.show()

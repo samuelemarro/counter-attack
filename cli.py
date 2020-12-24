@@ -14,21 +14,18 @@ def main():
 # Obiettivo: Arrivare a modelli Sequential MNIST, CIFAR10 e SVHN che possano essere attaccati da MIP
 # Nota: MIP supporta le skip-connections
 # TODO: Aggiungere codice che controlla la correttezza del modello caricato da MIP
-# TODO: Se necessario, si può aggiungere l'addestramento ReLU stability
-# TODO: Implementare il test basato sulla distanza triangolare
-# TODO: Abbandonare sistema di pretrained, caricare i modelli e metterli in una cartella, con percorsi di default?
 # TODO: get_dataset -> parse_dataset e simili
 # TODO: Fix fast_boolean_choice
 # TODO: Brendel & Bethge (di foolbox)
 # TODO: Passare a foolbox?
+# TODO: Nell'adversarial training, non si ha modo di dire all'attacco di usare --adversarial-eps
+#       O si toglie l'opzione, o, devo trovare un modo per permettere l'override
+#       In alternativa si può lasciare così dove l'attacco è best-effort ma si rifiutano quelli oltre --adversarial-eps 
 
 # TODO: Finire RS_Loss & simili
 # TODO: Eseguire gli addestramenti adversarial e RS
-
-# TODO: Esiste un metodo per rendere gli attacchi più efficaci? Questo potrebbe essere l'anello mancante
-# per concludere il ragionamento empirico (potrei confrontare efficacia prima e dopo)
-# In altre parole, serve qualcosa che rende il classifier provably più robusto (o ugualmente robusto),
-# ma gli attacchi ottengono una distortion più vicina all'ottimale
+# TODO: Capire da dove vengono i nan
+# TODO: Aggiungere start e stop ai parametri degli adversarial dataset
 
 main.add_command(commands.accuracy)
 main.add_command(commands.attack)

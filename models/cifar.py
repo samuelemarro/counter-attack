@@ -110,6 +110,81 @@ def cifar10_x3(masked_relu, num_classes):
         nn.Linear(392, num_classes)
     )
 
+def cifar10_x4(masked_relu, num_classes):
+    return torch.nn.Sequential(
+        nn.Conv2d(3, 12, 5, stride=4, padding=0),
+        MaskedReLU([12, 7, 7]) if masked_relu else nn.ReLU(),
+        nn.Conv2d(12, 12, 3, stride=2, padding=0),
+        MaskedReLU([12, 3, 3]) if masked_relu else nn.ReLU(),
+        nn.Flatten(),
+        nn.Linear(108, num_classes)
+    )
+
+def cifar10_x5(masked_relu, num_classes):
+    return torch.nn.Sequential(
+        nn.Conv2d(3, 8, 5, stride=4, padding=0),
+        MaskedReLU([8, 7, 7]) if masked_relu else nn.ReLU(),
+        nn.Flatten(),
+        nn.Linear(392, 100),
+        nn.Linear(100, num_classes)
+    )
+
+def cifar10_x6(masked_relu, num_classes):
+    return torch.nn.Sequential(
+        nn.Conv2d(3, 8, 5, stride=4, padding=0),
+        MaskedReLU([8, 7, 7]) if masked_relu else nn.ReLU(),
+        nn.Flatten(),
+        nn.Linear(392, 100),
+        MaskedReLU([100]) if masked_relu else nn.ReLU(),
+        nn.Linear(100, num_classes)
+    )
+
+def cifar10_x7(masked_relu, num_classes):
+    return torch.nn.Sequential(
+        nn.Conv2d(3, 16, 5, stride=4, padding=0),
+        MaskedReLU([16, 7, 7]) if masked_relu else nn.ReLU(),
+        nn.Flatten(),
+        nn.Linear(784, 100),
+        MaskedReLU([100]) if masked_relu else nn.ReLU(),
+        nn.Linear(100, num_classes)
+    )
+
+def cifar10_x8(masked_relu, num_classes):
+    return torch.nn.Sequential(
+        nn.Conv2d(3, 12, 3, stride=2, padding=0),
+        MaskedReLU([12, 15, 15]) if masked_relu else nn.ReLU(),
+        nn.Flatten(),
+        nn.Linear(2700, num_classes)
+    )
+
+def cifar10_x9(masked_relu, num_classes):
+    return torch.nn.Sequential(
+        nn.Flatten(),
+        nn.Linear(3072, 500),
+        MaskedReLU([500]) if masked_relu else nn.ReLU(),
+        nn.Linear(500, num_classes)
+    )
+
+def cifar10_x10(masked_relu, num_classes):
+    return torch.nn.Sequential(
+        nn.Flatten(),
+        nn.Linear(3072, 200),
+        MaskedReLU([200]) if masked_relu else nn.ReLU(),
+        nn.Linear(200, num_classes)
+    )
+
+def cifar10_x11(masked_relu, num_classes):
+    return torch.nn.Sequential(
+        nn.Conv2d(3, 8, 5, stride=4, padding=0),
+        MaskedReLU([8, 7, 7]) if masked_relu else nn.ReLU(),
+        nn.Conv2d(8, 8, 3, stride=2, padding=0),
+        MaskedReLU([8, 3, 3]) if masked_relu else nn.ReLU(),
+        nn.Flatten(),
+        nn.Linear(72, 72),
+        MaskedReLU([72]) if masked_relu else nn.ReLU(),
+        nn.Linear(72, num_classes)
+    )
+
 def cifar10(architecture, masked_relu, n_channel=128, num_classes=10, pretrained=True):
     if architecture == 'a':
         model = cifar10_a(masked_relu, num_classes)
@@ -129,6 +204,22 @@ def cifar10(architecture, masked_relu, n_channel=128, num_classes=10, pretrained
         model = cifar10_x2(masked_relu, num_classes)
     elif architecture == 'x3':
         model = cifar10_x3(masked_relu, num_classes)
+    elif architecture == 'x4':
+        model = cifar10_x4(masked_relu, num_classes)
+    elif architecture == 'x5':
+        model = cifar10_x5(masked_relu, num_classes)
+    elif architecture == 'x6':
+        model = cifar10_x6(masked_relu, num_classes)
+    elif architecture == 'x7':
+        model = cifar10_x7(masked_relu, num_classes)
+    elif architecture == 'x8':
+        model = cifar10_x8(masked_relu, num_classes)
+    elif architecture == 'x9':
+        model = cifar10_x9(masked_relu, num_classes)
+    elif architecture == 'x10':
+        model = cifar10_x10(masked_relu, num_classes)
+    elif architecture == 'x11':
+        model = cifar10_x11(masked_relu, num_classes)
     else:
         raise ValueError('Architecture "{}" not supported for CIFAR10.'.format(architecture))
 

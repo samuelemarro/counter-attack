@@ -188,10 +188,13 @@ def sequential_to_mip(sequential):
 
 # TODO: Return None if the solver times out
 
+# TODO: Retry system (restart n times with higher correction factor)
+# Il test su x9 falliva con correction_factor=1, ricontrollare ora che è 1.25
+
 class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     _pyjulia_installed = False
 
-    def __init__(self, predict, p, targeted, tolerance=1e-6, clip_min=0, clip_max=1, correction_factor=1, tightening_overrides=dict(), **gurobi_kwargs):
+    def __init__(self, predict, p, targeted, tolerance=1e-6, clip_min=0, clip_max=1, correction_factor=1.25, tightening_overrides=dict(), **gurobi_kwargs):
         super().__init__(predict, None, clip_min, clip_max)
         if p in [1, 2, float('inf')]:
             self.p = p

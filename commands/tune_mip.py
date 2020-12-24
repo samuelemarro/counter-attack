@@ -48,9 +48,7 @@ def tune_mip(**kwargs):
 
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
     attack = parsing.get_attack('mip', kwargs['domain'], kwargs['p'], 'standard', model, attack_config)
-
-    # TODO: Supporto adversarial initialization
-
+    
     if kwargs['pre_adversarial_dataset'] is None:
         pre_adversarial_dataset = None
     else:

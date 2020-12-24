@@ -95,21 +95,31 @@ def mip_test(model, attack, loader, p, misclassification_policy, device, generat
         else:
             offset = len(all_images)
             count = len(images)
-            pre_images = pre_adversarial_dataset.genuines[offset:offset+count]
-            pre_adversarials = pre_adversarial_dataset.adversarials[offset:offset+count]
+            #pre_images = pre_adversarial_dataset.genuines[offset:offset+count]
+            #pre_adversarials = pre_adversarial_dataset.adversarials[offset:offset+count]
+            matching_indices = pre_adversarial_dataset.index_of_genuines(images)
+            if any(i == -1 for i in matching_indices):
+                raise RuntimeError('Could not find a matching element in the pre-adversarial dataset '
+                                   'for a genuine. Are you sure that you are using the correct '
+                                   'pre-adversarial set?')
+            pre_images = [pre_adversarial_dataset.genuines[i] for i in matching_indices]
+            pre_adversarials = [pre_adversarial_dataset.adversarials[i] for i in matching_indices]
+
+            assert len(pre_images) == len(images)
+            assert len(pre_adversarials) == len(images)
+
             for i in range(len(pre_images)):
                 pre_images[i] = pre_images[i].to(device)
                 if pre_adversarials[i] is not None:
                     pre_adversarials[i] = pre_adversarials[i].to(device)
 
-        if pre_adversarial_dataset is not None:
             # Check that the images are the same
             all_match = all([torch.max(torch.abs(image - pre_image)) < 1e-6 for image, pre_image in zip(images, pre_images)])
 
             if not all_match:
                 raise RuntimeError('The pre-adversarials refer to different genuines. '
                                    'This can slow down MIP at best and make it fail at worst. '
-                                   'Are you sure that you\'re using the correct pre-adversarial dataset?')
+                                   'Are you sure that you are using the correct pre-adversarial dataset?')
         adversarials, lower_bounds, upper_bounds, solve_times = attack.perturb_advanced(images, y=labels, starting_points=pre_adversarials)
         assert len(adversarials) == len(images)
         assert len(adversarials) == len(lower_bounds)

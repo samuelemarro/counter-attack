@@ -7,6 +7,7 @@ import torch
 import attacks
 import parsing
 import tests
+import torch_utils
 import utils
 
 logger = logging.getLogger(__name__)
@@ -84,8 +85,6 @@ def mip(**kwargs):
 
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
     attack_kwargs = attack_config.get_arguments('mip', kwargs['domain'], metric, 'standard')
-
-    #TODO: Gurobi caching?
 
     attack = attacks.MIPAttack(model, p, False, **attack_kwargs)
     

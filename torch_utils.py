@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 import numpy as np
 
@@ -10,6 +11,19 @@ import utils
 import logging
 logger = logging.getLogger(__name__)
 
+def split_batch(x, minibatch_size):
+    num_minibatches = int(np.ceil(x.shape[0] / float(minibatch_size)))
+
+    minibatches = []
+
+    for minibatch_id in range(num_minibatches):
+        minibatch_begin = minibatch_id * minibatch_size
+        minibatch_end = (minibatch_id + 1) * minibatch_size
+
+        minibatches.append(x[minibatch_begin:minibatch_end])
+
+    return minibatches
+
 class BatchLimitedModel(nn.Module):
     def __init__(self, wrapped_model, batch_size):
         super().__init__()
@@ -17,17 +31,10 @@ class BatchLimitedModel(nn.Module):
         self.batch_size = batch_size
 
     def forward(self, x):
-        num_batches = int(np.ceil(x.shape[0] / float(self.batch_size)))
-
         outputs = []
 
-        for batch_id in range(num_batches):
-            batch_begin = batch_id * self.batch_size
-            batch_end = (batch_id + 1) * self.batch_size
-
-            batch = x[batch_begin:batch_end]
-            
-            outputs.append(self.wrapped_model(batch))
+        for minibatch in split_batch(x, self.batch_size):
+            outputs.append(self.wrapped_model(minibatch))
 
         outputs = torch.cat(outputs)
 
@@ -101,25 +108,202 @@ class ReLUCounter(nn.ReLU):
         self.negative_counter += negative
 
         return torch.relu(x)
-        
+
+def conv_to_matrix(conv, image_shape, output_shape, device):
+    identity = torch.eye(np.prod(image_shape).item()).reshape([-1] + list(image_shape)).to(device)
+    output = F.conv2d(identity, conv.weight, None, conv.stride, conv.padding)
+    W = output.reshape(-1, np.prod(output_shape).item())
+    # In theory W should be transposed, but the algorithm requires it to be left as it is
+    b = torch.stack([torch.ones(output_shape[1:], device=device) * bi for bi in conv.bias])
+    #b = b.reshape(-1, np.prod(output_shape[1:]).item())
+    b = b.reshape(-1)
+    #print(b.shape)
+    #print(conv.bias.shape)
+    #print('===')
+    
+    return W, b
+
+def _interval_arithmetic(lb, ub, W, b):
+    W_max = torch.maximum(W, torch.tensor(0.0).to(W))
+    W_min = torch.minimum(W, torch.tensor(0.0).to(W))
+    new_lb = torch.matmul(lb, W_max) + torch.matmul(ub, W_min) + b
+    new_ub = torch.matmul(ub, W_max) + torch.matmul(lb, W_min) + b
+    return new_lb, new_ub
+
+# Assumes shapes of m, m, Bxmxn, n
+def _interval_arithmetic_batch(lb, ub, W, b):
+    W_max = torch.maximum(W, torch.tensor(0.0).to(W))
+    W_min = torch.minimum(W, torch.tensor(0.0).to(W))
+    new_lb = torch.einsum("m,bmn->bn", lb, W_max) + torch.einsum("m,bmn->bn", ub, W_min) + b
+    new_ub = torch.einsum("m,bmn->bn", ub, W_max) + torch.einsum("m,bmn->bn", lb, W_min) + b
+    return new_lb, new_ub
+
+# Assumes shapes of Bxm, Bxm, Bxmxn, Bxn
+def _interval_arithmetic_all_batch(lb, ub, W, b):
+    W_max = torch.maximum(W, torch.tensor(0.0).to(W))
+    W_min = torch.minimum(W, torch.tensor(0.0).to(W))
+    new_lb = torch.einsum("bm,bmn->bn", lb, W_max) + torch.einsum("bm,bmn->bn", ub, W_min) + b
+    new_ub = torch.einsum("bm,bmn->bn", ub, W_max) + torch.einsum("bm,bmn->bn", lb, W_min) + b
+    return new_lb, new_ub
+
+def _compute_bounds_n_layers(n, lbs, ubs, Ws, biases):
+    # print(n, len(lbs))
+    assert n == len(lbs)
+    assert n == len(ubs)
+    assert n == len(Ws)
+    assert n == len(biases)
+
+    # Current layer
+    lb = lbs[0]
+    ub = ubs[0]
+    W = Ws[0]
+    b = biases[0]
+
+    #print('n: ', n)
+    # Base case
+    if n == 1:
+        if len(W.shape) == 2:
+            naive_ia_bounds = _interval_arithmetic(lb, ub, W, b)
+        else:
+            naive_ia_bounds = _interval_arithmetic_all_batch(lb, ub, W, b)
+        return naive_ia_bounds
+
+    # Recursive case
+    W_prev = Ws[1]
+    b_prev = biases[1]
+
+    # Compute W_A and W_NA
+    out_dim = W.shape[-1]
+    active_mask_unexpanded = (lb > 0).float()
+    
+    #active_mask = torch.tile(torch.unsqueeze(active_mask_unexpanded, 2), [1, 1, out_dim]) # This should be B x y x p
+    active_mask = torch.unsqueeze(active_mask_unexpanded, 2).expand([-1, -1, out_dim]) # This should be B x y x p
+
+    nonactive_mask = 1.0 - active_mask
+    #print('W: ', W.shape)
+    #print('active_mask: ', active_mask.shape)
+    W_A = torch.mul(W, active_mask) # B x y x p
+    W_NA = torch.mul(W, nonactive_mask) # B x y x p
+
+    # Compute bounds from previous layer
+    if len(lb.shape) == 2:
+        prev_layer_bounds = _interval_arithmetic_all_batch(lb, ub, W_NA, b)
+    else:
+        prev_layer_bounds = _interval_arithmetic_batch(lb, ub, W_NA, b) # TODO: Quando avviene?
+
+    # Compute new products
+    W_prod = torch.einsum('my,byp->bmp', W_prev, W_A) # b x m x p
+    b_prod = torch.einsum('y,byp->bp', b_prev, W_A) # b x p
+
+    #print('W_prod: ', W_prod.shape)
+    #print('b_prod: ', b_prod.shape)
+
+    lbs_new = lbs[1:]
+    ubs_new = ubs[1:]
+    Ws_new = [W_prod] + Ws[2:]
+    biases_new = [b_prod] + biases[2:]
+
+    deeper_bounds = _compute_bounds_n_layers(n-1, lbs_new, ubs_new, Ws_new, biases_new)
+    return (prev_layer_bounds[0] + deeper_bounds[0], prev_layer_bounds[1] + deeper_bounds[1])
+
+def model_to_rs_sequence(model, input_shape, device):
+    layers = unpack_sequential(model)
+    new_layers = []
+
+    placeholder = torch.zeros([1] + list(input_shape), device=device)
+
+    for layer in layers:
+        if isinstance(layer, Normalisation) or isinstance(layer, nn.ReLU) or isinstance(layer, nn.Flatten):
+            placeholder = layer(placeholder)
+            new_layers.append(layer)
+        elif isinstance(layer, nn.Conv2d):
+            before_conv_shape = placeholder.shape[1:]
+            placeholder = layer(placeholder)
+            after_conv_shape = placeholder.shape[1:]
+            W, b = conv_to_matrix(layer, before_conv_shape, after_conv_shape, device)
+            new_layers.append((W, b))
+        elif isinstance(layer, nn.Linear):
+            placeholder = layer(placeholder)
+            new_layers.append((layer.weight.T, layer.bias))
+        else:
+            raise NotImplementedError(f'Unsupported layer {type(layer).__name__}.')
+
+    #print('New layers: ', [type(l).__name__ for l in new_layers])
+    return new_layers
+
+def rs_loss(model, x, epsilon, input_min=0, input_max=1):
+    layers = model_to_rs_sequence(model, x.shape[1:], x.device)
+    batch_size = x.shape[0]
+    total_loss = 0
+
+    input_lower = torch.clamp(x - epsilon, min=input_min, max=input_max)
+    input_upper = torch.clamp(x + epsilon, min=input_min, max=input_max)
+
+    if isinstance(layers[0], Normalisation):
+        input_lower = layers[0].forward(input_lower)
+        input_upper = layers[0].forward(input_upper)
+        layers = layers[1:]
+
+    input_lower = input_lower.reshape(batch_size, -1)
+    input_upper = input_upper.reshape(batch_size, -1)
+
+    post_relu_lowers = []
+    post_relu_uppers = []
+    Ws = []
+    bs = []
+
+    post_relu_lowers.append(input_lower)
+    post_relu_uppers.append(input_upper)
+
+    # RS Loss is designed for networks that are sequences of conv/linear and ReLUs
+    layer_index = 0
+
+    for layer in layers:
+        if isinstance(layer, Normalisation):
+            raise RuntimeError('More than one normalisation in the Sequential.')
+        elif isinstance(layer, nn.ReLU):
+            lower = F.relu(lower)
+            upper = F.relu(upper)
+            post_relu_lowers.insert(0, lower)
+            post_relu_uppers.insert(0, upper)
+        elif isinstance(layer, tuple):
+            layer_index += 1
+            W, b = layer
+
+            Ws.insert(0, W)
+            bs.insert(0, b)
+            #print(f'layer {layer_index}: {W.shape}, {b.shape}')
+
+            if len(post_relu_lowers) != layer_index:
+                raise RuntimeError('There aren\'t as many Linear/Conv2D layers as ReLU layers. '
+                                    'Check the architecture of the model.')
+
+            lower, upper = _compute_bounds_n_layers(layer_index, post_relu_lowers, post_relu_uppers, Ws, bs)
+            #print(layer_index, ': ',  lower)
+            # Il segno è corretto?
+            total_loss -= torch.mean(torch.sum(torch.tanh(1 + lower * upper), -1))
+        elif not isinstance(layer, nn.Flatten): # Flatten is ignored
+            raise NotImplementedError('Unsupported layer')
+
+    #print('Total loss:', total_loss)
+    return total_loss
 
 # For adversarial training, we don't replace genuines with failed adversarial samples
 
-def train(model, train_loader, optimiser, loss_function, max_epochs, device, val_loader=None, l1_regularization=0, early_stopping=None, attack=None, attack_ratio=0.5, attack_p=None, attack_eps=None):
+def train(model, train_loader, optimiser, loss_function, max_epochs, device, val_loader=None, l1_regularization=0, rs_regularization=0, rs_eps=0, rs_minibatch=None, early_stopping=None, attack=None, attack_ratio=0.5, attack_p=None, attack_eps=None):
     if early_stopping is not None:
         if val_loader is None:
             raise ValueError('Early stopping requires a validation loader.')
 
     model.train()
     model.to(device)
-
     iterator = tqdm(range(max_epochs), desc='Training')
 
     for i in iterator:
         for x, target in train_loader:
             x = x.to(device)
             target = target.to(device)
-
+            
             if attack is not None:
                 indices = np.random.choice(list(range(len(x))), int(len(x) * attack_ratio))
                 adversarial_x = x[indices]
@@ -132,7 +316,6 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
                 for i, index in enumerate(indices):
                     if adversarials[i] is not None:
                         x[index] = adversarials[i]
-
             y_pred = model(x)
 
             loss = loss_function(y_pred, target)
@@ -144,17 +327,45 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
 
             optimiser.zero_grad()
             loss.backward()
+            start_time = datetime.now()
+            # RS Regularization uses a high amount of GPU memory, so we use .backward()
+            # for each minibatch
+            if rs_regularization != 0:
+                if rs_minibatch is None:
+                    rs = rs_loss(model, x, epsilon=rs_eps) * rs_regularization
+                    rs.backward()
+                else:
+                    for minibatch in split_batch(x, rs_minibatch):
+                        rs = rs_loss(model, minibatch, epsilon=rs_eps) * rs_regularization
+                        rs.backward()
+            
             optimiser.step()
 
         if val_loader is not None:
             val_loss = 0
             with torch.no_grad():
+                #rs_sum = 0
                 for x_val, target_val in val_loader:
                     x_val = x_val.to(device)
                     target_val = target_val.to(device)
 
                     y_pred_val = model(x_val)
                     val_loss += loss_function(y_pred_val, target_val)
+
+                    # TODO: In realtà può esssere calcolato una sola volta, anche se così facendo scombina il suo peso relativo
+                    if l1_regularization != 0:
+                        for group in optimiser.param_groups:
+                            for p in group['params']:
+                                val_loss += torch.sum(torch.abs(p)) * l1_regularization
+
+                    if rs_regularization != 0:
+                        if rs_minibatch is None:
+                            rs = rs_loss(model, x, epsilon=rs_eps) * rs_regularization
+                            val_loss += rs
+                        else:
+                            for minibatch in split_batch(x, rs_minibatch):
+                                rs = rs_loss(model, minibatch, epsilon=rs_eps) * rs_regularization
+                                val_loss += rs
 
             iterator.set_description('Training | Validation Loss: {:.3e}'.format(val_loss.cpu().detach().item()))
 
@@ -200,7 +411,13 @@ class StartStopDataset(torch.utils.data.Dataset):
         self.stop = stop
 
     def __getitem__(self, idx):
-        return self.dataset[self.start + idx]
+        if isinstance(idx, slice):
+            if self.start + idx.stop > self.stop:
+                raise ValueError('Slice stop is bigger than dataset stop.')
+            slice_ = slice(self.start + idx.start, self.start + idx.stop, idx.step)
+            return self.dataset[slice_]
+        else:
+            return self.dataset[self.start + idx]
 
     def __len__(self):
         return self.stop - self.start
@@ -217,7 +434,6 @@ class IndexedDataset(torch.utils.data.Dataset):
 
     def __len__(self):
         return len(self.indices)
-
 
 class EarlyStopping:
     """Early stops the training if validation loss doesn't improve after a given patience."""

@@ -79,6 +79,19 @@ class AdversarialDataset(data.Dataset):
         _, successful_adversarials, successful_true_labels = self.successful_adversarials()
         return AdversarialTrainingDataset(successful_adversarials, successful_true_labels)
 
+    def index_of_genuine(self, genuine, rtol=1e-5, atol=1e-8):
+        genuine = genuine.cpu()
+        
+        for i in range(len(self)):
+            # Using NumPy's isclose() equation
+            if (torch.abs(genuine - self.genuines[i]) <= atol + rtol * torch.abs(self.genuines[i])).all():
+                return i
+
+        return -1
+
+    def index_of_genuines(self, genuines, rtol=1e-5, atol=1e-8):
+        return [self.index_of_genuine(x, rtol=rtol, atol=atol) for x in genuines]
+
     def __getitem__(self, idx):
         return (self.genuines[idx], self.true_labels[idx], self.adversarials[idx])
 
