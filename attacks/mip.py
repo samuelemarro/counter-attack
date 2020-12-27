@@ -332,7 +332,13 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             label = label.detach().cpu().numpy().item()
             
             adversarial, _ = self.mip_attack(image, label)
-            adversarials.append(torch.from_numpy(adversarial).to(x))
+
+            if np.any(np.isnan(adversarial)):
+                adversarial = None
+            else:
+                adversarial = torch.from_numpy(adversarial).to(x)
+
+            adversarials.append(adversarial)
 
         # TODO: Ritornare semplicemente adversarials
         return utils.maybe_stack(adversarials, x.shape[1:], device=x.device)
@@ -356,11 +362,24 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                 starting_point = starting_point.detach().cpu().numpy()
 
             adversarial, adversarial_result = self.mip_attack(image, label, starting_point)
+            if np.any(np.isnan(adversarial)):
+                adversarial = None
+            else:
+                adversarial = torch.from_numpy(adversarial).to(x)
+
             from julia import JuMP
+
             lower = JuMP.getobjectivebound(adversarial_result['Model'])
+            if np.isnan(lower):
+                lower = None
+
             upper = JuMP.getobjectivevalue(adversarial_result['Model'])
+            if np.isnan(upper):
+                upper = None
+
             solve_time = adversarial_result['WallClockTime']
-            adversarials.append(torch.from_numpy(adversarial).to(x))
+
+            adversarials.append(adversarial)
             lower_bounds.append(lower)
             upper_bounds.append(upper)
             solve_times.append(solve_time)

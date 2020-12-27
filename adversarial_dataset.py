@@ -116,10 +116,8 @@ class MIPDataset(data.Dataset):
         assert len(genuines) == len(lower_bounds)
         assert len(genuines) == len(upper_bounds)
         assert len(genuines) == len(solve_times)
-        assert all([upper >= lower for upper, lower in zip(upper_bounds, lower_bounds)])
+        assert all([upper is None or lower is None or upper >= lower for upper, lower in zip(upper_bounds, lower_bounds)])
 
-        # TODO: è necessario prenderli come tensori?
-        # TODO: Imporre che nessun adversarial sia None?
         self.genuines = [genuine.detach().cpu() for genuine in genuines]
         self.true_labels = [true_label.detach().cpu() for true_label in true_labels]
         self.adversarials = adversarials
@@ -139,14 +137,15 @@ class MIPDataset(data.Dataset):
 
     @property
     def absolute_differences(self):
-        return np.array([upper - lower for upper, lower in zip(self.upper_bounds, self.lower_bounds)])
+        return [None if (lower is None or upper is None) else upper - lower for upper, lower in zip(self.upper_bounds, self.lower_bounds)]
 
     def print_stats(self):
-        # TODO: Statistiche sui tempi
         absolute_differences = self.absolute_differences
+        successful_absolute_differences = np.array([x for x in absolute_differences if x is None])
 
-        print('Median Absolute Differences: ', np.median(absolute_differences))
-        print('Average Absolute Differences: ', np.average(absolute_differences))
+        print('Median Successful Absolute Differences: ', np.median(successful_absolute_differences))
+        print('Average Successful Absolute Differences: ', np.average(successful_absolute_differences))
+        print('Convergence stats: ', self.convergence_stats)
 
     @property
     def convergence_stats(self):
@@ -209,11 +208,8 @@ class AttackComparisonDataset(data.Dataset):
         return len(self.genuines)
 
     def to_adversarial_dataset(self, attack_name):
-        genuines = []
-        true_labels = []
         adversarials = [attack_result[attack_name] for attack_result in self.attack_results]
-        
-        return AdversarialDataset(self.genuines, self.true_labels, adversarials, self.p, self.misclassification_policy, len(self.genuines), self.attack_configuration, self.generation_kwargs)
+        return AdversarialDataset(self.genuines, self.true_labels, adversarials, self.p, self.misclassification_policy, self.attack_configuration, self.generation_kwargs)
 
     def simulate_pooling(self, selected_attacks):
         best_adversarials = []

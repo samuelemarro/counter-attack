@@ -85,8 +85,6 @@ def mip_test(model, attack, loader, p, misclassification_policy, device, generat
         
         assert len(images) == len(true_labels)
 
-        # TODO: La politica con i misclassified potrebbe scontrarsi con i controlli per i pre
-
         images, true_labels, labels = utils.apply_misclassification_policy(model, images, true_labels, misclassification_policy)
 
         if pre_adversarial_dataset is None:
