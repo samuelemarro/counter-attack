@@ -20,10 +20,11 @@ logger = logging.getLogger(__name__)
 
 domains = ['cifar10', 'mnist', 'svhn']
 architectures = ['a', 'b', 'c', 'wong_small', 'wong_large', 'small', 'x1', 'x2', 'x3', 'x4', 'x5', 'x6', 'x7', 'x8', 'x9', 'x10', 'x11']
-supported_attacks = ['bim', 'carlini', 'deepfool', 'fast_gradient', 'mip', 'pgd', 'uniform']
+supported_attacks = ['bim', 'carlini', 'brendel', 'deepfool', 'fast_gradient', 'mip', 'pgd', 'uniform']
 attacks_with_binary_search = ['bim', 'fast_gradient', 'pgd', 'uniform']
 targeted_attacks = ['bim', 'carlini', 'fast_gradient', 'mip', 'pgd']
 er_attacks = ['bim', 'carlini', 'pgd', 'uniform']
+foolbox_attacks = ['brendel', 'deepfool']
 distances = ['l2', 'linf']
 misclassification_policies = ['ignore', 'remove', 'use_predicted']
 log_levels = ['debug', 'info', 'warning', 'error', 'critical']
@@ -198,9 +199,10 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
 
     early_rejection = kwargs.pop('early_rejection', None)
     binary_search = 'enable_binary_search' in kwargs and kwargs['enable_binary_search']
+    return_best = kwargs.pop('return_best', False)
 
     if early_rejection:
-        logger.debug('Enabled arly rejection for "{}" ({}).'.format(attack_name, early_rejection_threshold))
+        logger.debug('Enabled early rejection for "{}" ({}).'.format(attack_name, early_rejection_threshold))
         if attack_name not in er_attacks:
             if binary_search:
                 logger.warning('Attack "{}" does not support early rejection, but binary search is enabled. '
@@ -259,27 +261,28 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
     else:
         target_model = model
 
+    # TODO: Check compatibility between evasion and return_best
+    if return_best:
+        target_model = attacks.BestSampleWrapper(target_model)
+
     if attack_name == 'bim':
         if metric == 'l2':
-            attack = attacks.L2ERBasicIterativeAttack(target_model, targeted=evade_detector, **kwargs)
+            attack = advertorch.attacks.L2BasicIterativeAttack(target_model, targeted=evade_detector, **kwargs)
         elif metric == 'linf':
-            attack = attacks.LinfERBasicIterativeAttack(target_model, targeted=evade_detector, **kwargs)
+            attack = advertorch.attacks.LinfBasicIterativeAttack(target_model, targeted=evade_detector, **kwargs)
         else:
             raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, metric))
+    elif attack_name == 'brendel':
+        attack = attacks.BrendelBethgeAttack(target_model, p, **kwargs)
     elif attack_name == 'carlini':
         if metric == 'l2':
-            attack = attacks.ERCarliniWagnerL2Attack(target_model, num_classes, targeted=evade_detector, **kwargs)
+            attack = advertorch.attacks.CarliniWagnerL2Attack(target_model, num_classes, targeted=evade_detector, **kwargs)
         elif metric == 'linf':
-            attack = attacks.ERCarliniWagnerLinfAttack(target_model, num_classes, targeted=evade_detector, **kwargs)
+            attack = advertorch.attacks.CarliniWagnerLinfAttack(target_model, num_classes, targeted=evade_detector, **kwargs)
         else:
             raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, metric))
     elif attack_name == 'deepfool':
-        if metric == 'l2':
-            attack = attacks.L2DeepFoolAttack(target_model, evade_detector, **kwargs)
-        elif metric == 'linf':
-            attack = attacks.LInfDeepFoolAttack(target_model, evade_detector, **kwargs)
-        else:
-            raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, metric))
+        attack = attacks.DeepFoolAttack(target_model, p, **kwargs)
     elif attack_name == 'fast_gradient':
         # FGM is the L2 variant, FGSM is the LInf variant
         if metric == 'l2':
@@ -294,9 +297,9 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
         attack = attacks.MIPAttack(target_model, p, targeted=evade_detector, **kwargs)
     elif attack_name == 'pgd':
         if metric == 'l2':
-            attack = attacks.L2ERPGDAttack(target_model, targeted=evade_detector, **kwargs)
+            attack = advertorch.attacks.L2PGDAttack(target_model, targeted=evade_detector, **kwargs)
         elif metric == 'linf':
-            attack = attacks.LinfERPGDAttack(target_model, targeted=evade_detector, **kwargs)
+            attack = advertorch.attacks.LinfPGDAttack(target_model, targeted=evade_detector, **kwargs)
         else:
             raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, metric))
     elif attack_name == 'uniform':
@@ -330,6 +333,10 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
             binary_search_kwargs['early_rejection_threshold'] = early_rejection_threshold
 
         attack = attacks.EpsilonBinarySearchAttack(target_model, evade_detector, p, attack, unsqueeze, targeted=evade_detector, **binary_search_kwargs)
+
+    if return_best:
+        suppress_warning = attack_name in foolbox_attacks
+        attack = attacks.BestSampleAttack(target_model, attack, p, evade_detector, suppress_warning=suppress_warning)
 
     # Convert targeted evasion attacks into untargeted ones
     if evade_detector and (attack_name in targeted_attacks):

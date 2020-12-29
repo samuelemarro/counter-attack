@@ -191,12 +191,12 @@ def remove_failed(model, images, labels, adversarials, has_detector, p=None, eps
 
 # Returns b if filter_ is True, else a
 def fast_boolean_choice(a, b, filter_):
-    filter_shape = [1] + list(a.shape)[1:]
-    reshaped_filter = filter_.float()#filter_.reshape(filter_shape).float()
-    repeat_dimensions = [len(a)] + (len(a.shape) - 1) * [1]
+    pre_expansion_shape = [len(filter_)] + ([1] * (len(a.shape) - 1))
+    post_expansion_shape = [len(filter_)] + list(a.shape[1:])
 
-    repeated_filter = reshaped_filter.repeat(repeat_dimensions)
-    return a + repeated_filter * (b - a)
+    filter_ = filter_.float().reshape(*pre_expansion_shape)
+    filter_ = filter_.expand(*post_expansion_shape)
+    return a + filter_ * (b - a)
 
 def get_labels(model, images):
     model_device = next(model.parameters()).device

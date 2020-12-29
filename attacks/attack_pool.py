@@ -13,7 +13,7 @@ class AttackPool(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         self.predict = predict
         self.evade_detector = evade_detector
         assert all(not attack.targeted for attack in attacks)
-        assert all(attack.predict == predict for attack in attacks)
+        assert all((attack.predict == predict) if hasattr(attack, 'predict') else True for attack in attacks)
         self.attacks = attacks
         self.p = p
         self.targeted = False # Always false

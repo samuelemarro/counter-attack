@@ -15,17 +15,19 @@ def main():
 # Nota: MIP supporta le skip-connections
 # TODO: Aggiungere codice che controlla la correttezza del modello caricato da MIP
 # TODO: get_dataset -> parse_dataset e simili
-# TODO: Fix fast_boolean_choice
-# TODO: Brendel & Bethge (di foolbox)
-# TODO: Passare a foolbox?
 # TODO: Nell'adversarial training, non si ha modo di dire all'attacco di usare --adversarial-eps
 #       O si toglie l'opzione, o, devo trovare un modo per permettere l'override
 #       In alternativa si può lasciare così dove l'attacco è best-effort ma si rifiutano quelli oltre --adversarial-eps 
 
-# TODO: Finire RS_Loss & simili
 # TODO: Eseguire gli addestramenti adversarial e RS
 # TODO: Capire da dove vengono i nan
 # TODO: Aggiungere start e stop ai parametri degli adversarial dataset
+# TODO: Linf, L2 -> inf, 2
+# TODO: Passare a formattazione nuova?
+
+
+# TODO oggi:
+# - Deprecare ER
 
 main.add_command(commands.accuracy)
 main.add_command(commands.attack)
