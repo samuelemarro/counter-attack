@@ -202,6 +202,14 @@ def get_labels(model, images):
     model_device = next(model.parameters()).device
     return torch.argmax(model(images.to(model_device)), axis=1).to(images.device)
 
+def replace_active(from_, to, active, filter_):
+    assert len(to) == len(active)
+    assert len(from_) == len(filter_)
+
+    replace_to = active.clone()
+    replace_to[active] = filter_
+    to[replace_to] = from_[filter_]
+
 def show_images(images, adversarials, limit=None, model=None):
     assert len(images) == len(adversarials)
 

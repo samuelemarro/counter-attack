@@ -262,7 +262,7 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
         target_model = model
 
     # TODO: Check compatibility between evasion and return_best
-    if return_best:
+    if return_best and not (attack_name == 'carlini' and np.isposinf(p)):
         target_model = attacks.BestSampleWrapper(target_model)
 
     if attack_name == 'bim':
@@ -278,7 +278,7 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
         if metric == 'l2':
             attack = advertorch.attacks.CarliniWagnerL2Attack(target_model, num_classes, targeted=evade_detector, **kwargs)
         elif metric == 'linf':
-            attack = advertorch.attacks.CarliniWagnerLinfAttack(target_model, num_classes, targeted=evade_detector, **kwargs)
+            attack = attacks.CarliniWagnerLinfAttack(target_model, num_classes, targeted=evade_detector, return_best=return_best, **kwargs)
         else:
             raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, metric))
     elif attack_name == 'deepfool':
@@ -334,7 +334,8 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
 
         attack = attacks.EpsilonBinarySearchAttack(target_model, evade_detector, p, attack, unsqueeze, targeted=evade_detector, **binary_search_kwargs)
 
-    if return_best:
+    # Carlini Linf does not support BestSample
+    if return_best and not (attack_name == 'carlini' and np.isposinf(p)):
         suppress_warning = attack_name in foolbox_attacks
         attack = attacks.BestSampleAttack(target_model, attack, p, evade_detector, suppress_warning=suppress_warning)
 

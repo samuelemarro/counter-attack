@@ -1,7 +1,6 @@
 import copy
 
 import advertorch
-from advertorch.utils import replace_active
 import numpy as np
 import torch
 
@@ -78,11 +77,11 @@ class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.La
 
             replace = successful & better_distances
 
-            replace_active(adversarials, best_adversarials, active, replace)
-            replace_active(distances, last_distances, active, replace)
+            utils.replace_active(adversarials, best_adversarials, active, replace)
+            utils.replace_active(distances, last_distances, active, replace)
 
             # Success: Reduce the upper bound
-            replace_active(initial_search_eps[active], eps_upper_bound, active, replace)
+            utils.replace_active(initial_search_eps[active], eps_upper_bound, active, replace)
 
             # Halve eps, regardless of the success
             initial_search_eps = initial_search_eps / 2
@@ -106,14 +105,14 @@ class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.La
             better_distances = distances < last_distances[active]
             replace = successful & better_distances
 
-            replace_active(adversarials, best_adversarials, active, replace)
-            replace_active(distances, last_distances, active, replace)
+            utils.replace_active(adversarials, best_adversarials, active, replace)
+            utils.replace_active(distances, last_distances, active, replace)
 
             # Success: Reduce the upper bound
-            replace_active(eps, eps_upper_bound, active, replace)
+            utils.replace_active(eps, eps_upper_bound, active, replace)
 
             # Failure: Increase the lower bound
-            replace_active(eps, eps_lower_bound, active, ~replace)
+            utils.replace_active(eps, eps_lower_bound, active, ~replace)
 
             if self.early_rejection_threshold is not None:
                 reject = utils.early_rejection(x[active], adversarials, y[active],

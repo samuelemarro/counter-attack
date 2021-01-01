@@ -1,5 +1,5 @@
 import advertorch.attacks as attacks
-from advertorch.utils import clamp, calc_l2distsq, replace_active, replicate_input, tanh_rescale, torch_arctanh, to_one_hot
+from advertorch.utils import clamp, calc_l2distsq, replicate_input, tanh_rescale, torch_arctanh, to_one_hot
 
 import numpy as np
 
@@ -12,9 +12,8 @@ import utils
 ONE_MINUS_EPS = 0.999999
 TARGET_MULT = 10000.0
 
-# TODO: Rimuovere return_best e early_rejection
 
-class ERCarliniWagnerLinfAttack(attacks.CarliniWagnerLinfAttack):
+class CarliniWagnerLinfAttack(attacks.Attack, attacks.LabelMixin):
     """
     The Carlini and Wagner LInfinity Attack, https://arxiv.org/abs/1608.04644
 
@@ -40,8 +39,6 @@ class ERCarliniWagnerLinfAttack(attacks.CarliniWagnerLinfAttack):
     :param loss_fn: loss function
     :param return_best: if True, return the best adversarial found, else
         return the the last adversarial found.
-    :param early_rejection_threshold: the maximum distortion required for
-        early rejection.
     """
 
     def __init__(self, predict, num_classes, min_tau=1 / 256,
@@ -49,7 +46,7 @@ class ERCarliniWagnerLinfAttack(attacks.CarliniWagnerLinfAttack):
                  max_const=20, const_factor=2, reduce_const=False,
                  warm_start=True, targeted=False, learning_rate=5e-3,
                  max_iterations=1000, abort_early=True, clip_min=0.,
-                 clip_max=1., loss_fn=None, return_best=True, early_rejection_threshold=None):
+                 clip_max=1., loss_fn=None, return_best=True):
         """Carlini Wagner LInfinity Attack implementation in pytorch."""
         if loss_fn is not None:
             import warnings
@@ -60,29 +57,22 @@ class ERCarliniWagnerLinfAttack(attacks.CarliniWagnerLinfAttack):
             )
 
         loss_fn = None
+        super().__init__(predict, loss_fn, clip_min=clip_min, clip_max=clip_max)
 
-        super().__init__(
-            predict,
-            num_classes,
-            min_tau=min_tau,
-            initial_tau=initial_tau,
-            tau_factor=tau_factor,
-            initial_const=initial_const,
-            max_const=max_const,
-            const_factor=const_factor,
-            reduce_const=reduce_const,
-            warm_start=warm_start,
-            targeted=targeted,
-            learning_rate=learning_rate,
-            max_iterations=max_iterations,
-            abort_early=abort_early,
-            clip_min=clip_min,
-            clip_max=clip_max,
-            loss_fn=loss_fn,
-            return_best=return_best
-            )
-
-        self.early_rejection_threshold = early_rejection_threshold
+        self.num_classes = num_classes
+        self.min_tau = min_tau
+        self.initial_tau = initial_tau
+        self.tau_factor = tau_factor
+        self.initial_const = initial_const
+        self.max_const = max_const
+        self.const_factor = const_factor
+        self.reduce_const = reduce_const
+        self.warm_start = warm_start
+        self.targeted = targeted
+        self.learning_rate = learning_rate
+        self.max_iterations = max_iterations
+        self.abort_early = abort_early
+        self.return_best = return_best
 
     def _get_arctanh_x(self, x):
         result = clamp((x - self.clip_min) / (self.clip_max - self.clip_min),
@@ -188,17 +178,6 @@ class ERCarliniWagnerLinfAttack(attacks.CarliniWagnerLinfAttack):
 
                     active = active & ~(successful & small_loss)
 
-                if self.early_rejection_threshold is not None:
-                    reject = utils.early_rejection(x,
-                                                   adversarials,
-                                                   y,
-                                                   outputs,
-                                                   np.inf,
-                                                   self.early_rejection_threshold,
-                                                   self.targeted)
-
-                    active = active & ~reject
-
                 if not active.any():
                     break
 
@@ -258,7 +237,7 @@ class ERCarliniWagnerLinfAttack(attacks.CarliniWagnerLinfAttack):
                 dim=1)[0]
             linf_lower = linf_distances < taus[active]
 
-            replace_active(linf_distances,
+            utils.replace_active(linf_distances,
                            taus,
                            active,
                            linf_lower & successful)
@@ -266,16 +245,16 @@ class ERCarliniWagnerLinfAttack(attacks.CarliniWagnerLinfAttack):
             # Save the remaining adversarials
             if self.return_best:
                 better_distance = linf_distances < best_distances[active]
-                replace_active(adversarials,
+                utils.replace_active(adversarials,
                                best_adversarials,
                                active,
                                successful & better_distance)
-                replace_active(linf_distances,
+                utils.replace_active(linf_distances,
                                best_distances,
                                active,
                                successful & better_distance)
             else:
-                replace_active(adversarials,
+                utils.replace_active(adversarials,
                                best_adversarials,
                                active,
                                successful)
@@ -288,19 +267,6 @@ class ERCarliniWagnerLinfAttack(attacks.CarliniWagnerLinfAttack):
             # Drop failed samples or with a low tau
             low_tau = taus[active] <= self.min_tau
             drop = low_tau | (~successful)
-
-            # If early rejection is enabled, drop the relevant samples
-            if self.early_rejection_threshold is not None:
-                reject = utils.early_rejection(x[active],
-                                               adversarials,
-                                               y[active],
-                                               adversarial_outputs,
-                                               np.inf,
-                                               self.early_rejection_threshold,
-                                               self.targeted)
-
-                drop = drop | reject
-
             active[active] = ~drop
 
         return best_adversarials

@@ -58,8 +58,8 @@ class UniformNoiseAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixi
             distances = utils.adversarial_distance(x[active], adversarials, self.p)
             better_distance = distances < best_distances[active]
 
-            advertorch.utils.replace_active(adversarials.detach(), best_adversarials, active, successful & better_distance)
-            advertorch.utils.replace_active(distances.detach(), best_distances, active, successful & better_distance)
+            utils.replace_active(adversarials.detach(), best_adversarials, active, successful & better_distance)
+            utils.replace_active(distances.detach(), best_distances, active, successful & better_distance)
 
             if self.early_rejection_threshold is not None:
                 reject = utils.early_rejection(x[active], adversarials, y[active], outputs, self.p, self.early_rejection_threshold, self.targeted)
