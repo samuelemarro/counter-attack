@@ -70,7 +70,7 @@ def attack(**kwargs):
 
     attack_type = 'defense' if kwargs['as_defense'] else 'standard'
 
-    attack_pool = parsing.get_attack_pool(kwargs['attacks'], kwargs['domain'], kwargs['p'], attack_type, model, attack_config, early_rejection_threshold=kwargs['early_rejection'])
+    attack_pool = parsing.get_attack_pool(kwargs['attacks'], kwargs['domain'], kwargs['p'], attack_type, model, attack_config)
 
     p = kwargs['p']
 

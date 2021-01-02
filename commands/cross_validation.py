@@ -13,8 +13,6 @@ logger = logging.getLogger(__name__)
 
 # Nota: In questo test, il rejection_threshold indica "se togli l'attacco corrispondente, quanto deve ottenere la detector pool per rifiutare?"
 
-# Nota: Gli early_rejection_threshold sono negati
-
 @click.command()
 @click.argument('domain', type=click.Choice(parsing.domains))
 @click.argument('architecture', type=click.Choice(parsing.architectures))
@@ -107,7 +105,7 @@ def cross_validation(**kwargs):
         rejection_threshold = rejection_thresholds[i]
         
         detector = parsing.get_detector_pool(counter_attack_names, kwargs['domain'], kwargs['p'], 'standard', model, attack_config, kwargs['device'],
-        use_substitute=True, substitute_state_dict_paths=ca_substitute_state_dict_paths, early_rejection_threshold=-rejection_threshold)
+        use_substitute=True, substitute_state_dict_paths=ca_substitute_state_dict_paths)
 
         defended_model = detectors.NormalisedDetectorModel(model, detector, rejection_threshold)
 

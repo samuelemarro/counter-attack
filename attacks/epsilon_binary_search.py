@@ -7,9 +7,10 @@ import torch
 import utils
 # Nota: Aggiorna eps se ha una distanza più bassa (non solo se ha successo)
 
+# TODO: Passare a fast_boolean_choice
+
 class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
-    def __init__(self, predict, evade_detector, ord, attack, unsqueeze, targeted=False, min_eps=0, max_eps=1, eps_initial_search_steps=9, eps_binary_search_steps=9,
-                early_rejection_threshold=None):
+    def __init__(self, predict, evade_detector, ord, attack, unsqueeze, targeted=False, min_eps=0, max_eps=1, eps_initial_search_steps=9, eps_binary_search_steps=9):
         super().__init__(predict, None, None, None)
 
         self.predict = predict
@@ -23,7 +24,6 @@ class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.La
         self.max_eps = max_eps
         self.eps_initial_search_steps = eps_initial_search_steps
         self.eps_binary_search_steps = eps_binary_search_steps
-        self.early_rejection_threshold = early_rejection_threshold
 
     def perturb_standard(self, x, y, eps):
         assert len(x) == len(y)
@@ -86,12 +86,6 @@ class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.La
             # Halve eps, regardless of the success
             initial_search_eps = initial_search_eps / 2
 
-            if self.early_rejection_threshold is not None:
-                reject = utils.early_rejection(x[active], adversarials, y[active],
-                    adversarial_outputs, self.ord, self.early_rejection_threshold, self.targeted)
-
-                active[active] = ~reject
-
         for _ in range(self.eps_binary_search_steps):
             if not active.any():
                 break
@@ -113,12 +107,6 @@ class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.La
 
             # Failure: Increase the lower bound
             utils.replace_active(eps, eps_lower_bound, active, ~replace)
-
-            if self.early_rejection_threshold is not None:
-                reject = utils.early_rejection(x[active], adversarials, y[active],
-                    adversarial_outputs, self.ord, self.early_rejection_threshold, self.targeted)
-
-                active[active] = ~reject
 
         assert best_adversarials.shape == x.shape
 

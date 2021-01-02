@@ -4,14 +4,15 @@ import torch
 
 import utils
 
+# TODO: Ora sono tutti sempre attivi, passare a fast_boolean_choice?
+
 class UniformNoiseAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
-    def __init__(self, predict, p, targeted, eps=0.3, count=100, early_rejection_threshold=None, clip_min=0, clip_max=1, stochastic_consistency=False):
+    def __init__(self, predict, p, targeted, eps=0.3, count=100, clip_min=0, clip_max=1, stochastic_consistency=False):
         super().__init__(predict, None, clip_min, clip_max)
         self.p = p
         self.targeted = targeted
         self.eps = eps
         self.count = count
-        self.early_rejection_threshold = early_rejection_threshold
         self.stochastic_consistency = stochastic_consistency
 
     def successful(self, adversarial_outputs, y):
@@ -60,12 +61,7 @@ class UniformNoiseAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixi
 
             utils.replace_active(adversarials.detach(), best_adversarials, active, successful & better_distance)
             utils.replace_active(distances.detach(), best_distances, active, successful & better_distance)
-
-            if self.early_rejection_threshold is not None:
-                reject = utils.early_rejection(x[active], adversarials, y[active], outputs, self.p, self.early_rejection_threshold, self.targeted)
-
-                active[active] = ~reject
-
+            
             if not active.any():
                 break
 

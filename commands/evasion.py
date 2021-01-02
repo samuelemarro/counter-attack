@@ -93,8 +93,7 @@ def evasion(**kwargs):
                                         attack_config,
                                         kwargs['device'],
                                         use_substitute=True,
-                                        substitute_state_dict_paths=substitute_state_dict_paths,
-                                        early_rejection_threshold=-kwargs['rejection_threshold'])
+                                        substitute_state_dict_paths=substitute_state_dict_paths)
 
     
     defended_model = detectors.NormalisedDetectorModel(model, detector, kwargs['rejection_threshold'])

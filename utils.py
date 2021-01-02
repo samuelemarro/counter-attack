@@ -150,19 +150,6 @@ def misclassified_outputs(outputs, labels, has_detector):
 
     return successful
 
-def early_rejection(x, adversarials, labels, adversarial_output, p, threshold, targeted):
-    predicted_labels = torch.argmax(adversarial_output, dim=1)
-
-    if targeted:
-        successful = torch.eq(labels, predicted_labels)
-    else:
-        successful = ~torch.eq(labels, predicted_labels)
-    
-    distances = adversarial_distance(x, adversarials, p)
-    valid_distance = distances < threshold
-
-    return successful & valid_distance
-
 # AdverTorch come considera i failed?
 # Nota: Se l'originale viene rifiutato ma l'adversarial no, l'adversarial conta
 # come successo anche se ha mantenuto la stessa label di partenza
