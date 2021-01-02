@@ -24,7 +24,7 @@ supported_attacks = ['bim', 'carlini', 'brendel', 'deepfool', 'fast_gradient', '
 attacks_with_binary_search = ['bim', 'fast_gradient', 'pgd', 'uniform']
 targeted_attacks = ['bim', 'carlini', 'fast_gradient', 'mip', 'pgd']
 er_attacks = ['bim', 'carlini', 'pgd', 'uniform']
-foolbox_attacks = ['brendel', 'deepfool']
+fb_binary_search_attacks = ['brendel', 'deepfool']
 distances = ['l2', 'linf']
 misclassification_policies = ['ignore', 'remove', 'use_predicted']
 log_levels = ['debug', 'info', 'warning', 'error', 'critical']
@@ -250,7 +250,7 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
         attack = attacks.BrendelBethgeAttack(target_model, p, **kwargs)
     elif attack_name == 'carlini':
         if metric == 'l2':
-            attack = advertorch.attacks.CarliniWagnerL2Attack(target_model, num_classes, targeted=evade_detector, **kwargs)
+            attack = attacks.CarliniWagnerL2Attack(target_model, num_classes, targeted=evade_detector, **kwargs)
         elif metric == 'linf':
             attack = attacks.CarliniWagnerLinfAttack(target_model, num_classes, targeted=evade_detector, return_best=return_best, **kwargs)
         else:
@@ -307,7 +307,7 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
 
     # Carlini Linf does not support BestSample
     if return_best and not (attack_name == 'carlini' and np.isposinf(p)):
-        suppress_warning = attack_name in foolbox_attacks
+        suppress_warning = attack_name in fb_binary_search_attacks
         attack = attacks.BestSampleAttack(target_model, attack, p, evade_detector, suppress_warning=suppress_warning)
 
     # Convert targeted evasion attacks into untargeted ones

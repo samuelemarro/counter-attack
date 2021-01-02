@@ -24,8 +24,13 @@ class FoolboxAttackWrapper(advertorch.attacks.LabelMixin):
         if y is None:
             y = self._get_predicted_label(x)
 
+        if self.targeted:
+            criterion = fb.criteria.TargetedMisclassification(y)
+        else:
+            criterion = fb.criteria.Misclassification(y)
+
         # Returns adv, clipped_adv, success
-        return self.foolbox_attack(self.foolbox_model, x, y, epsilons=None)[1]
+        return self.foolbox_attack(self.foolbox_model, x, criterion, epsilons=None)[1]
 
 class EpsilonFoolboxAttackWrapper(FoolboxAttackWrapper):
     def __init__(self, model, foolbox_attack, targeted, clip_min=0, clip_max=1):
@@ -49,6 +54,7 @@ class BrendelBethgeAttack(FoolboxAttackWrapper):
         p,
         clip_min = 0,
         clip_max = 1,
+        targeted = False,
         init_attack: Optional[fb.attacks.base.MinimizationAttack] = None,
         overshoot: float = 1.1,
         steps: int = 1000,
@@ -84,8 +90,7 @@ class BrendelBethgeAttack(FoolboxAttackWrapper):
         else:
             raise NotImplementedError('Unsupported metric.')
             
-        # Brendel&Bethge is untargeted
-        super().__init__(model, foolbox_attack, False, clip_min=clip_min, clip_max=clip_max)
+        super().__init__(model, foolbox_attack, targeted, clip_min=clip_min, clip_max=clip_max)
 
 class DeepFoolAttack(FoolboxAttackWrapper):
     def __init__(
@@ -108,3 +113,29 @@ class DeepFoolAttack(FoolboxAttackWrapper):
 
         # DeepFool is untargeted
         super().__init__(model, foolbox_attack, False, clip_min=clip_min, clip_max=clip_max)
+
+
+class CarliniWagnerL2Attack(FoolboxAttackWrapper):
+    def __init__(
+        self,
+        model,
+        p,
+        clip_min = 0,
+        clip_max = 1,
+        targeted = False,
+        binary_search_steps: int = 9,
+        steps: int = 10000,
+        stepsize: float = 1e-2,
+        confidence: float = 0,
+        initial_const: float = 1e-3,
+        abort_early: bool = True,
+    ):
+        foolbox_attack = fb.attacks.L2CarliniWagnerAttack(
+            binary_search_steps=binary_search_steps,
+            steps=steps,
+            stepsize=stepsize,
+            confidence=confidence,
+            initial_const=initial_const,
+            abort_early=abort_early)
+
+        super().__init__(model, foolbox_attack, targeted, clip_min=clip_min, clip_max=clip_max)
