@@ -183,7 +183,7 @@ def fast_boolean_choice(a, b, filter_):
 
     filter_ = filter_.float().reshape(*pre_expansion_shape)
     filter_ = filter_.expand(*post_expansion_shape)
-    return a + filter_ * (b - a)
+    return filter_ * b + (1 - filter_) * a
 
 def get_labels(model, images):
     model_device = next(model.parameters()).device

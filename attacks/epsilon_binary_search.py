@@ -7,8 +7,6 @@ import torch
 import utils
 # Nota: Aggiorna eps se ha una distanza più bassa (non solo se ha successo)
 
-# TODO: Passare a fast_boolean_choice
-
 class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     def __init__(self, predict, evade_detector, ord, attack, unsqueeze, targeted=False, min_eps=0, max_eps=1, eps_initial_search_steps=9, eps_binary_search_steps=9):
         super().__init__(predict, None, None, None)
@@ -57,56 +55,48 @@ class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.La
         best_adversarials = x.clone()
         N = x.shape[0]
 
-        active = torch.ones((N,), dtype=bool, device=x.device)
-
         eps_lower_bound = torch.ones((N,), device=x.device) * self.min_eps
         eps_upper_bound = torch.ones((N,), device=x.device) * self.max_eps
-        last_distances = torch.ones((N), device=x.device) * np.inf
+        best_distances = torch.ones((N), device=x.device) * torch.finfo(x.dtype).max
 
         initial_search_eps = eps_upper_bound.clone()
         for _ in range(self.eps_initial_search_steps):
-            if not active.any():
-                break
-
-            adversarials = self.perturb_standard(x[active], y[active], initial_search_eps[active]).detach()
+            adversarials = self.perturb_standard(x, y, initial_search_eps).detach()
             adversarial_outputs = self.predict(adversarials).detach()
-            successful = self.successful(adversarial_outputs, y[active])
+            successful = self.successful(adversarial_outputs, y)
 
-            distances = utils.adversarial_distance(x[active], adversarials, self.ord)
-            better_distances = distances < last_distances[active]
+            distances = utils.adversarial_distance(x, adversarials, self.ord)
+            better_distances = distances < best_distances
 
             replace = successful & better_distances
 
-            utils.replace_active(adversarials, best_adversarials, active, replace)
-            utils.replace_active(distances, last_distances, active, replace)
+            best_adversarials = utils.fast_boolean_choice(best_adversarials, adversarials, replace)
+            best_distances = utils.fast_boolean_choice(best_distances, distances, replace)
 
             # Success: Reduce the upper bound
-            utils.replace_active(initial_search_eps[active], eps_upper_bound, active, replace)
+            eps_upper_bound = utils.fast_boolean_choice(eps_upper_bound, initial_search_eps, successful)
 
             # Halve eps, regardless of the success
             initial_search_eps = initial_search_eps / 2
 
         for _ in range(self.eps_binary_search_steps):
-            if not active.any():
-                break
-
-            eps = (eps_lower_bound[active] + eps_upper_bound[active]) / 2
-            adversarials = self.perturb_standard(x[active], y[active], eps).detach()
+            eps = (eps_lower_bound + eps_upper_bound) / 2
+            adversarials = self.perturb_standard(x, y, eps).detach()
             adversarial_outputs = self.predict(adversarials).detach()
-            successful = self.successful(adversarial_outputs, y[active])
+            successful = self.successful(adversarial_outputs, y)
 
-            distances = utils.adversarial_distance(x[active], adversarials, self.ord)
-            better_distances = distances < last_distances[active]
+            distances = utils.adversarial_distance(x, adversarials, self.ord)
+            better_distances = distances < best_distances
             replace = successful & better_distances
 
-            utils.replace_active(adversarials, best_adversarials, active, replace)
-            utils.replace_active(distances, last_distances, active, replace)
+            best_adversarials = utils.fast_boolean_choice(best_adversarials, adversarials, replace)
+            best_distances = utils.fast_boolean_choice(best_distances, distances, replace)
 
             # Success: Reduce the upper bound
-            utils.replace_active(eps, eps_upper_bound, active, replace)
+            eps_upper_bound = utils.fast_boolean_choice(eps_upper_bound, eps, successful)
 
             # Failure: Increase the lower bound
-            utils.replace_active(eps, eps_lower_bound, active, ~replace)
+            eps_lower_bound = utils.fast_boolean_choice(eps_lower_bound, eps, ~successful)
 
         assert best_adversarials.shape == x.shape
 
