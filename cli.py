@@ -1,3 +1,9 @@
+# PyTorch has some serious bugs concerning dll loading:
+# If PyTorch is loaded before Julia, Julia's import fails.
+# We therefore import Julia before anything else
+import julia
+from julia import Base
+
 import logging
 
 import click

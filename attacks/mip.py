@@ -102,17 +102,6 @@ def module_to_mip(module):
 
         converted = MIPVerify.Conv2d(filter_, bias, stride, padding)
 
-        # Simulate MIPVerify's padding and compare it with the actual one
-        # TODO: Richiede la dimensione dell'input, che io non ho
-        """in_height = stride.filter
-        out_height = ceil(Int, in_height/stride)
-        out_width = ceil(Int, in_width/stride)
-        out_height = 
-        pad_along_height = max((out_height - 1)*stride + filter_height - in_height, 0)
-        pad_along_width = max((out_width - 1)*stride + filter_width - in_width, 0)
-        filter_height_offset = round(Int, pad_along_height/2, RoundDown)
-        filter_width_offset = round(Int, pad_along_width/2, RoundDown)"""
-
         # L'immagine (H, W) filtrata (senza padding) dal filtro (K_H, K_W)
         # avrà dimensione (H - K_H + 1, W - K_W + 1)
 
@@ -265,47 +254,11 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         
         image = image.transpose([1, 2, 0])
         image = np.expand_dims(image, 0)
-
-        """# TODO: Verificare invert
+        
         adversarial_result = MIPVerify.find_adversarial_example(self.mip_model,
                                     image, target_label, self.solver, norm_order=self.p,
                                     tolerance=self.tolerance, invert_target_selection=not self.targeted,
-                                    tightening_solver=self.tightening_solver)"""
-        """from julia import Main
-        Main.include('mip_interface.jl')
-
-        if pre_distance is None:
-            perturbation = MIPVerify.UnrestrictedPerturbationFamily()
-            if self.cached_model is None:
-                reusable_model = Main.get_reusable_model(self.mip_model, image, perturbation, self.tightening_solver, MIPVerify.DEFAULT_TIGHTENING_ALGORITHM)
-                self.cached_model = reusable_model
-            else:
-                reusable_model = self.cached_model
-        else:
-            perturbation = MIPVerify.LInfNormBoundedPerturbationFamily(pre_distance)
-            reusable_model = Main.get_reusable_model(self.mip_model, image, perturbation, self.tightening_solver, MIPVerify.DEFAULT_TIGHTENING_ALGORITHM)
-        # Converting from Julia converts symbol dicts to string dicts, so we manually add them back
-        reusable_model = { Main.Symbol(key) : value for key, value in reusable_model.items() }"""
-
-
-        
-
-        """adversarial_result = MIPVerify.find_adversarial_example(self.mip_model,
-                                    image, target_label, self.solver, norm_order=self.p,
-                                    tolerance=self.tolerance, invert_target_selection=not self.targeted,
-                                    tightening_solver=self.tightening_solver, rebuild=True, pp=perturbation)"""
-        
-        
-        
-        # TODO: Istanziare solver
-        from julia import Main
-        Main.include('mip_interface.jl')
-        
-        adversarial_result = Main.find_adversarial_example(self.mip_model,
-                                    image, target_label, self.solver, norm_order=self.p,
-                                    tolerance=self.tolerance, invert_target_selection=not self.targeted,
-                                    tightening_solver=self.tightening_solver, rebuild=True, pp=perturbation,
-                                    starting_point=starting_point)
+                                    tightening_solver=self.tightening_solver, pp=perturbation)
 
         adversarial = np.array(JuMP.getvalue(adversarial_result['PerturbedInput']))
 

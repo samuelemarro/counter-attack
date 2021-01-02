@@ -38,7 +38,6 @@ def attack_test(model, attack, loader, p, misclassification_policy, device, gene
         assert len(images) == len(true_labels)
 
         images, true_labels, labels = utils.apply_misclassification_policy(model, images, true_labels, misclassification_policy)
-        # TODO: Supporto politica misclassified?
         
         adversarials = attack.perturb(images, y=labels).detach()
         assert adversarials.shape == images.shape

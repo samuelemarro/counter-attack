@@ -1,5 +1,7 @@
-import os
+import julia
+from julia import Base
 
+import os
 from torch.nn import parameter
 import parsing
 import logging
@@ -25,6 +27,8 @@ args = parser.parse_args()
 domain = args.domain
 architecture = args.architecture
 count = args.count
+
+# TODO: Usare poi Brendel per ottenere un pre-calcolo migliore
 
 def custom_accuracy(domain, architecture, path):
     model = parsing.get_model(domain, architecture, path, True, False, load_weights=True)
@@ -76,7 +80,6 @@ target_path = f'trained-models/best-classifiers/{domain}-{architecture}.pth'
 parsing.set_log_level('info')
 
 if not Path(target_path).exists():
-    # TODO: Fornire più controllo?
     os.system(f'train-classifier {domain} {architecture}')
 
     best_accuracy = -np.inf
