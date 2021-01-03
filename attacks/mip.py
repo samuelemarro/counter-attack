@@ -72,10 +72,6 @@ def module_to_mip(module):
         # MIP expects the following format:
         # (filter_height, filter_width, in_channels, out_channels)
         # Remember: PyTorch is height-first
-        # MIP uses "same" padding and a (1, 1, 1, 1) stride
-
-        # TODO: Handle uneven padding
-        # Con le modifiche potrei ora gestire ogni tipo di padding
 
         if not all(x == 1 for x in module.dilation):
             raise ValueError('MIP only supports (1, 1)-style dilation. Received: {}.'.format(module.dilation))
@@ -93,7 +89,6 @@ def module_to_mip(module):
 
         filter_ = module.weight.cpu().detach().numpy()
         # Transpose the filter to match MIPVerify
-        # TODO: Attenzione alla posizione del canale!
         filter_ = np.transpose(filter_, [2, 3, 1, 0])
 
         padding = module.padding
@@ -104,65 +99,8 @@ def module_to_mip(module):
 
         # L'immagine (H, W) filtrata (senza padding) dal filtro (K_H, K_W)
         # avrà dimensione (H - K_H + 1, W - K_W + 1)
-
-        # TODO: Testare che sia corretto
-    elif isinstance(module, nn.MaxPool2d):
-        if module.padding != 0:
-            raise ValueError('MIPVerify does not support padding for MaxPool. Received: "{}".'.format(module.padding))
-
-        if module.dilation != 1:
-            raise ValueError('MIPVerify does not support dilation for MaxPool. Received: "{}".'.format(module.dilation))
-
-        if module.stride != module.kernel_size:
-            raise ValueError('MIPVerify does not support MaxPool with stride != kernel_size. Received: "{}", "{}".'.format(module.stride, module.dilation))
-
-        if module.return_indices:
-            raise ValueError('MIPVerify does not support return_indices=True.')
-        if isinstance(module.stride, tuple):
-            stride = module.stride
-        else:
-            # TODO: Perché?
-            stride = (1, module.stride, module.stride, 1)
-
-        converted = MIPVerify.MaxPool(stride)
-    elif isinstance(module, nn.BatchNorm2d):
-        # Batch Normalization computes the formula:
-        # y = (x - rmean) * gamma / sqrt(rvar + eps) + beta
-        # where rmean is the running mean, rvar is the running variance,
-        # eps is a small value and gamma and beta are optional parameters
-        # If gamma and beta are not used (i.e. affine=False), the default value
-        # of beta is 0 and the default value of gamma is 1
-        #
-        # MIPVerify's normalization uses the formula:
-        # y = (x - mean) / std
-        # We can therefore convert batch normalization to MIPVerify's
-        # normalization using
-        # mean = rmean - beta * sqrt(rvar + eps) / gamma
-        # std = sqrt(rvar + eps) / gamma
-
-        if module.training:
-            raise ValueError('Batch normalization must be in eval mode.')
-
-        if module.weight is None:
-            gamma = 1
-        else:
-            gamma = module.weight.detach().cpu().numpy()
-
-        if module.bias is None:
-            beta = 0
-        else:
-            beta = module.bias.detach().cpu().numpy()
-
-        running_mean = module.running_mean.detach().cpu().numpy()
-        running_var = module.running_var.detach().cpu().numpy()
-        eps = module.eps
-
-        mean = running_mean - beta * np.sqrt(running_var + eps) / gamma
-        std = np.sqrt(running_var + eps) / gamma
-
-        converted = MIPVerify.Normalize(mean, std)
     else:
-        raise NotImplementedError('Unsupported module "{}".'.format(type(module).__name__)) # TODO: Supporto altri moduli?
+        raise NotImplementedError('Unsupported module "{}".'.format(type(module).__name__))
 
     return converted
 
@@ -231,7 +169,6 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         from julia import MIPVerify
 
         from julia import JuMP
-        # TODO: Install jump?
 
         start_time = time.clock()
 

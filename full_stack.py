@@ -14,18 +14,19 @@ import os.path
 from pathlib import Path
 import argparse
 
-
 logger = logging.getLogger(__name__)
 
 parser = argparse.ArgumentParser()
 parser.add_argument('domain')
 parser.add_argument('architecture')
+parser.add_argument('pre_attack')
 parser.add_argument('count', type=int)
 
 args = parser.parse_args()
 
 domain = args.domain
 architecture = args.architecture
+pre_attack = args.pre_attack
 count = args.count
 
 # TODO: Usare poi Brendel per ottenere un pre-calcolo migliore
@@ -98,10 +99,10 @@ if not Path(target_path).exists():
 
     os.system(f'copy {best_path} {target_path}'.replace('/', '\\'))
 
-attack_path = f'adversarial_tests/bim-{domain}-{architecture}-{count}-linf.zip'
+attack_path = f'adversarial_tests/{pre_attack}-{domain}-{architecture}-{count}-linf.zip'
 
 if not Path(attack_path).exists():
-    os.system(f'python cli.py attack {domain} {architecture} std:test bim linf --stop {count} --state-dict-path {target_path}  --save-to {attack_path}')
+    os.system(f'python cli.py attack {domain} {architecture} std:test {pre_attack} linf --stop {count} --state-dict-path {target_path}  --save-to {attack_path}')
 
 cfg_path = f'attack_configurations/architecture_specific/mip_1th_240b_0t_7200s_{domain}-{architecture}.cfg'
 cfg_f3_path = f'attack_configurations/architecture_specific/mip_1th_240b_0t_7200s_{domain}-{architecture}_f3.cfg'

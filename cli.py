@@ -26,14 +26,9 @@ def main():
 #       In alternativa si può lasciare così dove l'attacco è best-effort ma si rifiutano quelli oltre --adversarial-eps 
 
 # TODO: Eseguire gli addestramenti adversarial e RS
-# TODO: Capire da dove vengono i nan
 # TODO: Aggiungere start e stop ai parametri degli adversarial dataset
 # TODO: Linf, L2 -> inf, 2
 # TODO: Passare a formattazione nuova?
-
-
-# TODO oggi:
-# - Deprecare ER
 
 main.add_command(commands.accuracy)
 main.add_command(commands.attack)
