@@ -15,17 +15,19 @@ import torch
 
 logger = logging.getLogger(__name__)
 
+
 def save_zip(object, path, protocol=0):
     """
     Saves a compressed object to disk.
     """
     # Create the folder, if necessary
     pathlib.Path(path).parent.mkdir(parents=True, exist_ok=True)
-    
+
     file = gzip.GzipFile(path, 'wb')
     pickled = pickle.dumps(object, protocol)
     file.write(pickled)
     file.close()
+
 
 def load_zip(path):
     """
@@ -42,16 +44,19 @@ def load_zip(path):
     file.close()
     return obj
 
+
 class AttackConfig:
     def __init__(self, config_dict):
         self.config_dict = config_dict
+
     def get_arguments(self, attack_name, domain, p, attack_type):
         kwargs = {}
 
         def load_kwargs(new_kwargs):
             for key, value in new_kwargs.items():
                 if key in kwargs.keys():
-                    logger.debug(f'Overriding key "{key}" by replacing {kwargs[key]} with {value}.')
+                    logger.debug(
+                        f'Overriding key "{key}" by replacing {kwargs[key]} with {value}.')
                 kwargs[key] = value
 
         def loop_across_dict(current_dict, ramifications):
@@ -62,25 +67,28 @@ class AttackConfig:
 
                 for branch in current_ramification:
                     if branch in current_dict.keys():
-                        loop_across_dict(current_dict[branch], ramifications[1:])
+                        loop_across_dict(
+                            current_dict[branch], ramifications[1:])
 
         # The specific value overrides the general one
-        loop_across_dict(self.config_dict, 
-        [
-            ['all_attacks', attack_name],
-            ['all_domains', domain],
-            ['all_distances', p],
-            ['all_types', attack_type]
-        ]
-        )
+        loop_across_dict(self.config_dict,
+                         [
+                             ['all_attacks', attack_name],
+                             ['all_domains', domain],
+                             ['all_distances', p],
+                             ['all_types', attack_type]
+                         ]
+                         )
 
         return kwargs
+
 
 def read_attack_config_file(path):
     with open(path, 'r') as f:
         config_dict = json.load(f)
 
     return AttackConfig(config_dict)
+
 
 def adversarial_distance(genuines, adversarials, p):
     assert genuines.shape == adversarials.shape
@@ -91,14 +99,17 @@ def adversarial_distance(genuines, adversarials, p):
         genuines = genuines.flatten(1)
         adversarials = adversarials.flatten(1)
 
-        distances = torch.nn.functional.pairwise_distance(genuines, adversarials, p)
+        distances = torch.nn.functional.pairwise_distance(
+            genuines, adversarials, p)
 
         assert len(distances) == len(genuines)
 
         return distances
 
+
 def one_adversarial_distance(genuine, adversarial, p):
     return adversarial_distance(genuine.unsqueeze(0), adversarial.unsqueeze(0), p)[0]
+
 
 def one_many_adversarial_distance(one, many, p):
     assert one.shape == many.shape[1:]
@@ -109,6 +120,7 @@ def one_many_adversarial_distance(one, many, p):
     assert one.shape == many.shape
 
     return adversarial_distance(one, many, p)
+
 
 def apply_misclassification_policy(model, images, true_labels, policy):
     if policy == 'ignore':
@@ -125,18 +137,20 @@ def apply_misclassification_policy(model, images, true_labels, policy):
         else:
             raise NotImplementedError(f'Unsupported policy "{policy}".')
 
+
 def misclassified(model, adversarials, labels, has_detector):
     assert len(adversarials) == len(labels)
 
     adversarial_predictions = model(adversarials)
-    
+
     return misclassified_outputs(adversarial_predictions, labels, has_detector)
+
 
 def misclassified_outputs(outputs, labels, has_detector):
     assert len(outputs) == len(labels)
 
     adversarial_labels = torch.argmax(outputs, axis=1)
-    
+
     assert adversarial_labels.shape == labels.shape
 
     successful = torch.logical_not(torch.eq(adversarial_labels, labels))
@@ -155,6 +169,8 @@ def misclassified_outputs(outputs, labels, has_detector):
 # come successo anche se ha mantenuto la stessa label di partenza
 # Testare!
 # TODO: Come funziona valid_distance?
+
+
 def remove_failed(model, images, labels, adversarials, has_detector, p=None, eps=None):
     assert len(images) == len(labels)
     assert len(images) == len(adversarials)
@@ -172,7 +188,7 @@ def remove_failed(model, images, labels, adversarials, has_detector, p=None, eps
         # TODO: Controllare
         if not (successful[i] and valid_distance):
             adversarials[i] = None
-    
+
     return adversarials
 
 
@@ -185,9 +201,11 @@ def fast_boolean_choice(a, b, filter_):
     filter_ = filter_.expand(*post_expansion_shape)
     return filter_ * b + (1 - filter_) * a
 
+
 def get_labels(model, images):
     model_device = next(model.parameters()).device
     return torch.argmax(model(images.to(model_device)), axis=1).to(images.device)
+
 
 def replace_active(from_, to, active, filter_):
     assert len(to) == len(active)
@@ -196,6 +214,7 @@ def replace_active(from_, to, active, filter_):
     replace_to = active.clone()
     replace_to[active] = filter_
     to[replace_to] = from_[filter_]
+
 
 def show_images(images, adversarials, limit=None, model=None):
     assert len(images) == len(adversarials)
@@ -257,6 +276,7 @@ def show_images(images, adversarials, limit=None, model=None):
 
         plt.show()
 
+
 def maybe_stack(tensors, fallback_shape, dtype=torch.float, device='cpu'):
     if len(tensors) > 0:
         return torch.stack(tensors)
@@ -267,11 +287,13 @@ def maybe_stack(tensors, fallback_shape, dtype=torch.float, device='cpu'):
             shape = (0, ) + fallback_shape
         return torch.zeros(shape, dtype=dtype, device=device)
 
+
 def tensor_md5(tensor):
     tensor = tensor.detach().cpu().numpy()
     tensor_content = tensor.tostring()
 
     return int(hashlib.md5(tensor).hexdigest(), 16)
+
 
 def consistent_wrapper(linked_tensor, wrapped_function):
     # Save the current RNG state
@@ -289,9 +311,11 @@ def consistent_wrapper(linked_tensor, wrapped_function):
 
     return random_tensor
 
+
 def consistent_randint(linked_tensor, min, max, shape, device):
     return consistent_wrapper(linked_tensor,
-    lambda: torch.randint(min, max, shape, device=device))
+                              lambda: torch.randint(min, max, shape, device=device))
+
 
 def consistent_rand_init_delta(deltas, x, ord, eps, clip_min, clip_max):
     assert len(x) == len(deltas)
@@ -302,10 +326,12 @@ def consistent_rand_init_delta(deltas, x, ord, eps, clip_min, clip_max):
         unsqueezed_image = image.unsqueeze(0)
         unsqueezed_eps = eps.unsqueeze(0)
         consistent_wrapper(image,
-            lambda: advertorch.attacks.utils.rand_init_delta(delta, unsqueezed_image, ord, unsqueezed_eps, clip_min, clip_max)[0]
-        )
-    
+                           lambda: advertorch.attacks.utils.rand_init_delta(
+                               delta, unsqueezed_image, ord, unsqueezed_eps, clip_min, clip_max)[0]
+                           )
+
     return deltas
+
 
 class ConsistentGenerator:
     def __init__(self, wrapped_function):
@@ -346,9 +372,11 @@ class ConsistentGenerator:
 
         return torch.stack(return_values)
 
+
 def create_label_dataset(model, images, batch_size):
     image_dataset = torch.utils.data.TensorDataset(images)
-    dataloader = torch.utils.data.DataLoader(image_dataset, batch_size=batch_size)
+    dataloader = torch.utils.data.DataLoader(
+        image_dataset, batch_size=batch_size)
 
     labels = []
 
@@ -363,6 +391,7 @@ def create_label_dataset(model, images, batch_size):
 
     return torch.utils.data.TensorDataset(images, labels)
 
+
 def powerset(iterable, allow_empty=False):
     if allow_empty:
         start = 0
@@ -371,7 +400,8 @@ def powerset(iterable, allow_empty=False):
 
     s = list(iterable)
 
-    return list(itertools.chain.from_iterable(itertools.combinations(s, r) for r in range(start, len(s)+1)))  
+    return list(itertools.chain.from_iterable(itertools.combinations(s, r) for r in range(start, len(s)+1)))
+
 
 class HiddenPrint:
     def __enter__(self):

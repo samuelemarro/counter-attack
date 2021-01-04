@@ -8,6 +8,7 @@ import utils
 
 logger = logging.getLogger(__name__)
 
+
 class BestSampleTracker:
     def __init__(self, genuines, labels, p, targeted):
         genuines = genuines.detach()
@@ -17,8 +18,10 @@ class BestSampleTracker:
         self.p = p
         self.targeted = targeted
         self.best = torch.zeros_like(genuines)
-        self.found_adversarial = torch.zeros([len(genuines)], device=genuines.device, dtype=torch.bool)
-        self.best_distances = torch.zeros([len(genuines)], device=genuines.device)
+        self.found_adversarial = torch.zeros(
+            [len(genuines)], device=genuines.device, dtype=torch.bool)
+        self.best_distances = torch.zeros(
+            [len(genuines)], device=genuines.device)
 
 
 class BestSampleWrapper(nn.Module):
@@ -26,7 +29,7 @@ class BestSampleWrapper(nn.Module):
         super().__init__()
         self.model = model
         self.training = model.training
-        self.tracker = None     
+        self.tracker = None
 
     def __call__(self, x):
         if self.tracker is None:
@@ -38,20 +41,27 @@ class BestSampleWrapper(nn.Module):
 
         with torch.no_grad():
             if self.tracker.targeted:
-                successful = torch.eq(torch.argmax(outputs, dim=1), self.tracker.labels)
+                successful = torch.eq(torch.argmax(
+                    outputs, dim=1), self.tracker.labels)
             else:
-                successful = ~torch.eq(torch.argmax(outputs, dim=1), self.tracker.labels)
-            
-            distances = utils.adversarial_distance(self.tracker.genuines, x, self.tracker.p)
+                successful = ~torch.eq(torch.argmax(
+                    outputs, dim=1), self.tracker.labels)
+
+            distances = utils.adversarial_distance(
+                self.tracker.genuines, x, self.tracker.p)
             better_distances = distances < self.tracker.best_distances
             # Replace only if successful and with a better distance
-            replace = successful & (better_distances | (~self.tracker.found_adversarial))
+            replace = successful & (better_distances | (
+                ~self.tracker.found_adversarial))
 
-            self.tracker.best = utils.fast_boolean_choice(self.tracker.best, x, replace)
-            self.tracker.best_distances = utils.fast_boolean_choice(self.tracker.best_distances, distances, replace)
+            self.tracker.best = utils.fast_boolean_choice(
+                self.tracker.best, x, replace)
+            self.tracker.best_distances = utils.fast_boolean_choice(
+                self.tracker.best_distances, distances, replace)
             self.tracker.found_adversarial = self.tracker.found_adversarial | replace
 
         return outputs
+
 
 class BestSampleAttack(attacks.Attack, attacks.LabelMixin):
     def __init__(self, wrapped_model, inner_attack, p, targeted, suppress_warning=False):
@@ -59,7 +69,7 @@ class BestSampleAttack(attacks.Attack, attacks.LabelMixin):
             if wrapped_model is not inner_attack.predict:
                 logger.warn('BestSampleAttack was passed a model that is different from inner_attack\'s model. '
                             'Is this intentional?')
-        
+
         self.wrapped_model = wrapped_model
         self.inner_attack = inner_attack
         self.p = p
@@ -83,7 +93,8 @@ class BestSampleAttack(attacks.Attack, attacks.LabelMixin):
 
         # If the wrapper failed to find some adversarials, use the
         # last ones
-        final_adversarials = utils.fast_boolean_choice(last_adversarials, tracker.best, tracker.found_adversarial)
+        final_adversarials = utils.fast_boolean_choice(
+            last_adversarials, tracker.best, tracker.found_adversarial)
 
         self.wrapped_model.tracker = None
 

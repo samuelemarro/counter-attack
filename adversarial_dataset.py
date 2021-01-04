@@ -6,13 +6,15 @@ import torch.utils.data as data
 
 import utils
 
+
 class AdversarialDataset(data.Dataset):
     def __init__(self, genuines, true_labels, adversarials, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs):
         assert len(genuines) == len(true_labels)
         assert len(genuines) == len(adversarials)
 
         self.genuines = [genuine.detach().cpu() for genuine in genuines]
-        self.true_labels = [true_label.detach().cpu() for true_label in true_labels]
+        self.true_labels = [true_label.detach().cpu()
+                            for true_label in true_labels]
         self.adversarials = []
         for adversarial in adversarials:
             if adversarial is None:
@@ -59,7 +61,7 @@ class AdversarialDataset(data.Dataset):
                 final_distances.append(failure_value)
             else:
                 final_distances.append(successful_distances.pop(0))
-        
+
         assert len(successful_distances) == 0
 
         return AdversarialDistanceDataset(self.genuines, final_distances)
@@ -83,7 +85,7 @@ class AdversarialDataset(data.Dataset):
 
     def index_of_genuine(self, genuine, rtol=1e-5, atol=1e-8):
         genuine = genuine.cpu()
-        
+
         for i in range(len(self)):
             # Using NumPy's isclose() equation
             if (torch.abs(genuine - self.genuines[i]) <= atol + rtol * torch.abs(self.genuines[i])).all():
@@ -111,6 +113,7 @@ class AdversarialDataset(data.Dataset):
         print(f'Median Successful Distance: {median_distance}')
         print(f'Average Successful Distance: {average_distance}')
 
+
 class MIPDataset(data.Dataset):
     def __init__(self, genuines, true_labels, adversarials, lower_bounds, upper_bounds, solve_times, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs):
         assert len(genuines) == len(true_labels)
@@ -118,10 +121,12 @@ class MIPDataset(data.Dataset):
         assert len(genuines) == len(lower_bounds)
         assert len(genuines) == len(upper_bounds)
         assert len(genuines) == len(solve_times)
-        assert all([upper is None or lower is None or upper >= lower for upper, lower in zip(upper_bounds, lower_bounds)])
+        assert all([upper is None or lower is None or upper >=
+                    lower for upper, lower in zip(upper_bounds, lower_bounds)])
 
         self.genuines = [genuine.detach().cpu() for genuine in genuines]
-        self.true_labels = [true_label.detach().cpu() for true_label in true_labels]
+        self.true_labels = [true_label.detach().cpu()
+                            for true_label in true_labels]
         self.adversarials = adversarials
         self.lower_bounds = lower_bounds
         self.upper_bounds = upper_bounds
@@ -145,15 +150,19 @@ class MIPDataset(data.Dataset):
 
     def print_stats(self):
         absolute_differences = self.absolute_differences
-        successful_absolute_differences = np.array([x for x in absolute_differences if x is None])
+        successful_absolute_differences = np.array(
+            [x for x in absolute_differences if x is None])
 
-        print('Median Successful Absolute Differences: ', np.median(successful_absolute_differences))
-        print('Average Successful Absolute Differences: ', np.average(successful_absolute_differences))
+        print('Median Successful Absolute Differences: ',
+              np.median(successful_absolute_differences))
+        print('Average Successful Absolute Differences: ',
+              np.average(successful_absolute_differences))
         print('Convergence stats: ', self.convergence_stats)
 
     @property
     def convergence_stats(self):
         return zip(self.solve_times, self.absolute_differences)
+
 
 class AdversarialDistanceDataset(data.Dataset):
     def __init__(self, images, distances):
@@ -170,13 +179,15 @@ class AdversarialDistanceDataset(data.Dataset):
 
 # TODO: attack_names è troppo specifico, serve un nome più generale
 
+
 class AttackComparisonDataset(data.Dataset):
     def __init__(self, genuines, true_labels, attack_names, attack_results, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs):
         assert len(genuines) == len(true_labels)
         assert len(genuines) == len(attack_results)
 
         self.genuines = [genuine.detach().cpu() for genuine in genuines]
-        self.true_labels = [true_label.detach().cpu() for true_label in true_labels]
+        self.true_labels = [true_label.detach().cpu()
+                            for true_label in true_labels]
         self.attack_names = attack_names
         self.attack_results = attack_results
 
@@ -200,7 +211,8 @@ class AttackComparisonDataset(data.Dataset):
         return len(self.genuines)
 
     def to_adversarial_dataset(self, attack_name):
-        adversarials = [attack_result[attack_name] for attack_result in self.attack_results]
+        adversarials = [attack_result[attack_name]
+                        for attack_result in self.attack_results]
         return AdversarialDataset(self.genuines, self.true_labels, adversarials, self.p, self.misclassification_policy, self.attack_configuration, self.start, self.stop, self.generation_kwargs)
 
     def simulate_pooling(self, selected_attacks):
@@ -209,17 +221,20 @@ class AttackComparisonDataset(data.Dataset):
         for genuine, true_label, attack_result in zip(self.genuines, self.true_labels, self.attack_results):
             # Take the adversarials generated by attacks that were successful and
             # were selected by the user
-            successful_adversarials = [attack_result[attack_name] for attack_name in selected_attacks if attack_result[attack_name] is not None]
+            successful_adversarials = [attack_result[attack_name]
+                                       for attack_name in selected_attacks if attack_result[attack_name] is not None]
 
             if len(successful_adversarials) > 0:
                 successful_adversarials = torch.stack(successful_adversarials)
-                distances = utils.one_many_adversarial_distance(genuine, successful_adversarials, self.p)
+                distances = utils.one_many_adversarial_distance(
+                    genuine, successful_adversarials, self.p)
 
                 assert distances.shape == (len(successful_adversarials),)
 
                 best_distance_index = torch.argmin(distances)
-            
-                best_adversarials.append(successful_adversarials[best_distance_index])
+
+                best_adversarials.append(
+                    successful_adversarials[best_distance_index])
             else:
                 best_adversarials.append(None)
 
@@ -231,26 +246,30 @@ class AttackComparisonDataset(data.Dataset):
         attack_positions = dict()
         for i in range(len(self.attack_names)):
             attack_positions[i] = 0
-        
+
         attack_positions['failure'] = 0
 
         for genuine, true_label, attack_result in zip(self.genuines, self.true_labels, self.attack_results):
             if attack_result[attack_name] is None:
                 attack_positions['failure'] += 1
             else:
-                attack_result = [(image, adversarial) for image, adversarial in attack_result.items() if adversarial is not None]
+                attack_result = [(image, adversarial) for image, adversarial in attack_result.items(
+                ) if adversarial is not None]
                 # Note: dictionaries don't preserve order, so we convert to OrderedDict
                 attack_result = collections.OrderedDict(attack_result)
-                
+
                 adversarials = torch.stack(list(attack_result.values()))
-                distances = utils.one_many_adversarial_distance(genuine, adversarials, self.p)
+                distances = utils.one_many_adversarial_distance(
+                    genuine, adversarials, self.p)
 
                 assert len(attack_result) == len(distances)
 
-                attack_distance_pairs = list(zip(attack_result.keys(), distances))
+                attack_distance_pairs = list(
+                    zip(attack_result.keys(), distances))
 
                 # Sort by distance in ascending order (lower distance = better)
-                attack_distance_pairs = sorted(attack_distance_pairs, key=lambda x: x[1])
+                attack_distance_pairs = sorted(
+                    attack_distance_pairs, key=lambda x: x[1])
                 sorted_test_names = [x[0] for x in attack_distance_pairs]
 
                 # TODO: Come gestire uguali?
@@ -259,14 +278,15 @@ class AttackComparisonDataset(data.Dataset):
 
                 attack_positions[attack_ranking] += 1
 
-        assert sum(count for count in attack_positions.values()) == len(self.genuines)
+        assert sum(count for count in attack_positions.values()
+                   ) == len(self.genuines)
 
         # Convert absolute numbers to relative
         for key in attack_positions.keys():
             attack_positions[key] /= len(self.genuines)
 
         return attack_positions
-    
+
     def pairwise_comparison(self):
         victory_matrix = dict()
 
@@ -280,8 +300,10 @@ class AttackComparisonDataset(data.Dataset):
             # Note: dictionaries don't preserve order, so we convert to OrderedDict
             attack_result = collections.OrderedDict(attack_result)
 
-            successful_attacks = [name for name in self.attack_names if attack_result[name] is not None]
-            unsuccessful_attacks = [name for name in self.attack_names if attack_result[name] is None]
+            successful_attacks = [
+                name for name in self.attack_names if attack_result[name] is not None]
+            unsuccessful_attacks = [
+                name for name in self.attack_names if attack_result[name] is None]
 
             # Successful attacks always beat unsuccessful attacks
             for successful_attack in successful_attacks:
@@ -289,13 +311,16 @@ class AttackComparisonDataset(data.Dataset):
                     victory_matrix[successful_attack][unsuccessful_attack] += 1
 
             if len(attack_result.values()) > 0:
-                adversarials = [x for x in attack_result.values() if x is not None]
+                adversarials = [
+                    x for x in attack_result.values() if x is not None]
                 adversarials = torch.stack(adversarials)
-                distances = utils.one_many_adversarial_distance(genuine, adversarials, self.p)
+                distances = utils.one_many_adversarial_distance(
+                    genuine, adversarials, self.p)
 
                 assert len(successful_attacks) == len(distances)
 
-                attack_distance_pairs = list(zip(successful_attacks, distances))
+                attack_distance_pairs = list(
+                    zip(successful_attacks, distances))
 
                 for winner_attack, winner_distance in attack_distance_pairs:
                     for loser_attack, loser_distance in attack_distance_pairs:

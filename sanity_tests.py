@@ -6,6 +6,7 @@ import numpy as np
 import detectors
 import torch_utils
 
+
 def test_gradient_estimation(model, estimator_fn, images, *args, output_threshold=None, gradient_threshold=None):
     print('====Gradient Estimation Test=====')
     images = images.clone()
@@ -32,14 +33,20 @@ def test_gradient_estimation(model, estimator_fn, images, *args, output_threshol
     #print('Standard: {}'.format(standard_gradients))
     #print('Estimated: {}'.format(estimated_gradients))
 
-    output_difference = np.average(np.abs(standard_outputs - estimated_outputs))
-    gradient_difference = np.average(np.abs(standard_gradients - estimated_gradients))
+    output_difference = np.average(
+        np.abs(standard_outputs - estimated_outputs))
+    gradient_difference = np.average(
+        np.abs(standard_gradients - estimated_gradients))
 
-    relative_output_difference = output_difference / np.average(np.abs(standard_outputs))
-    relative_gradient_difference = gradient_difference / np.average(np.abs(standard_gradients))
+    relative_output_difference = output_difference / \
+        np.average(np.abs(standard_outputs))
+    relative_gradient_difference = gradient_difference / \
+        np.average(np.abs(standard_gradients))
 
-    print('Output difference: {:.2e} (relative: {:.3f}%)'.format(output_difference, relative_output_difference * 100.0))
-    print('Gradient difference: {:.2e} (relative: {:.3f}%)'.format(gradient_difference, relative_gradient_difference * 100.0))
+    print('Output difference: {:.2e} (relative: {:.3f}%)'.format(
+        output_difference, relative_output_difference * 100.0))
+    print('Gradient difference: {:.2e} (relative: {:.3f}%)'.format(
+        gradient_difference, relative_gradient_difference * 100.0))
 
     if output_threshold is not None:
         assert relative_output_difference <= output_threshold
@@ -47,10 +54,12 @@ def test_gradient_estimation(model, estimator_fn, images, *args, output_threshol
     if gradient_threshold is not None:
         assert relative_gradient_difference <= gradient_threshold
 
+
 def test_detector_output(model, detector, threshold, images, predictions_threshold=None, detector_threshold=None, reject_threshold=None):
     print('====Detector Output Test=====')
     standard_model = detectors.StandardDetectorModel(model, detector)
-    normalised_model = detectors.NormalisedDetectorModel(model, detector, threshold)
+    normalised_model = detectors.NormalisedDetectorModel(
+        model, detector, threshold)
 
     standard_output = standard_model(images).detach().cpu().numpy()
     standard_score = standard_output[:, -1]
@@ -68,18 +77,23 @@ def test_detector_output(model, detector, threshold, images, predictions_thresho
     print('Normalised output: {}'.format(normalised_output))
     print('Detector output: {}'.format(detector_score))
 
-    predictions_difference = np.average(np.abs(standard_predictions - normalised_predictions))
-    relative_predictions_difference = predictions_difference / np.average(np.abs(standard_predictions))
+    predictions_difference = np.average(
+        np.abs(standard_predictions - normalised_predictions))
+    relative_predictions_difference = predictions_difference / \
+        np.average(np.abs(standard_predictions))
 
-    print('Predictions difference: {} (relative: {:.3f}%)'.format(predictions_difference, relative_predictions_difference * 100.0))
+    print('Predictions difference: {} (relative: {:.3f}%)'.format(
+        predictions_difference, relative_predictions_difference * 100.0))
 
     if predictions_threshold is not None:
         assert relative_predictions_difference <= predictions_threshold
 
     score_difference = np.average(np.abs(standard_score - detector_score))
-    relative_score_difference = score_difference / np.average(np.abs(standard_score))
+    relative_score_difference = score_difference / \
+        np.average(np.abs(standard_score))
 
-    print('Score difference: {} (relative: {:.3f}%)'.format(score_difference, relative_score_difference * 100.0))
+    print('Score difference: {} (relative: {:.3f}%)'.format(
+        score_difference, relative_score_difference * 100.0))
 
     if detector_threshold is not None:
         assert relative_score_difference <= detector_threshold
@@ -87,25 +101,32 @@ def test_detector_output(model, detector, threshold, images, predictions_thresho
     standard_accept = standard_score >= threshold
     normalised_accept = normalised_score >= 0
 
-    rejection_difference = np.count_nonzero(np.logical_not(np.equal(standard_accept, normalised_accept)))
+    rejection_difference = np.count_nonzero(
+        np.logical_not(np.equal(standard_accept, normalised_accept)))
     rejection_difference_rate = rejection_difference / len(standard_accept)
 
-    print('Rejection differences: {} (rate: {:.3f}%)'.format(rejection_difference, rejection_difference_rate * 100.0))
+    print('Rejection differences: {} (rate: {:.3f}%)'.format(
+        rejection_difference, rejection_difference_rate * 100.0))
 
     if reject_threshold is not None:
         assert rejection_difference_rate <= reject_threshold
+
 
 def test_model_batch_limiting(model, images, batch_size, predictions_threshold=None):
     print('====Model Batch Limiting Test=====')
     batch_limited_model = torch_utils.BatchLimitedModel(model, batch_size)
 
     standard_predictions = model(images).detach().cpu().numpy()
-    batch_limited_predictions = batch_limited_model(images).detach().cpu().numpy()
+    batch_limited_predictions = batch_limited_model(
+        images).detach().cpu().numpy()
 
-    predictions_difference = np.average(np.abs(standard_predictions - batch_limited_predictions))
-    relative_predictions_difference = predictions_difference / np.average(np.abs(standard_predictions))
+    predictions_difference = np.average(
+        np.abs(standard_predictions - batch_limited_predictions))
+    relative_predictions_difference = predictions_difference / \
+        np.average(np.abs(standard_predictions))
 
-    print('Predictions difference: {} (relative: {:.3f}%)'.format(predictions_difference, relative_predictions_difference * 100.0))
+    print('Predictions difference: {} (relative: {:.3f}%)'.format(
+        predictions_difference, relative_predictions_difference * 100.0))
 
     if predictions_threshold is not None:
         assert relative_predictions_difference <= predictions_threshold
@@ -115,15 +136,19 @@ def test_normalisation(model, images, predictions_threshold=None):
     print('====Normalisation Test=====')
     mean = np.array([0., 0., 0.])
     stdevs = np.array([1., 1., 1.])
-    normalised_model = torch.nn.Sequential(torch_utils.Normalisation(mean, stdevs), model)
+    normalised_model = torch.nn.Sequential(
+        torch_utils.Normalisation(mean, stdevs), model)
 
     standard_predictions = model(images).detach().cpu().numpy()
     normalised_predictions = normalised_model(images).detach().cpu().numpy()
 
-    predictions_difference = np.average(np.abs(standard_predictions - normalised_predictions))
-    relative_predictions_difference = predictions_difference / np.average(np.abs(standard_predictions))
+    predictions_difference = np.average(
+        np.abs(standard_predictions - normalised_predictions))
+    relative_predictions_difference = predictions_difference / \
+        np.average(np.abs(standard_predictions))
 
-    print('Predictions difference: {} (relative: {:.3f}%)'.format(predictions_difference, relative_predictions_difference * 100.0))
+    print('Predictions difference: {} (relative: {:.3f}%)'.format(
+        predictions_difference, relative_predictions_difference * 100.0))
 
     if predictions_threshold is not None:
         assert relative_predictions_difference <= predictions_threshold

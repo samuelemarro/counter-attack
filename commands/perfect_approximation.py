@@ -5,59 +5,72 @@ import numpy as np
 import adversarial_dataset as ad
 import parsing
 
+
 @click.command()
 @click.argument('domain', type=click.Choice(parsing.domains))
 @click.argument('perfect_distance_dataset', type=click.Path(exists=True, file_okay=True, dir_okay=False))
 @click.argument('approximate_distance_dataset', type=click.Path(exists=True, file_okay=True, dir_okay=False))
 @click.option('--log-level', type=click.Choice(parsing.log_levels), default='info', show_default=True,
-    help='The minimum logging level.')
+              help='The minimum logging level.')
 @click.option('--from-perfect-adversarial-dataset', is_flag=True, help='Compute the perfect distance dataset from an adversarial dataset.')
 @click.option('--from-approximate-adversarial-dataset', is_flag=True, help='Compute the approximate distance dataset from an adversarial dataset.')
 def perfect_approximation(**kwargs):
     parsing.set_log_level(kwargs['log_level'])
-    
-    perfect_distance_dataset = parsing.get_dataset(kwargs['domain'], kwargs['perfect_distance_dataset'], allow_standard=False)
+
+    perfect_distance_dataset = parsing.get_dataset(
+        kwargs['domain'], kwargs['perfect_distance_dataset'], allow_standard=False)
 
     if kwargs['from_perfect_adversarial_dataset']:
-        perfect_distance_dataset = perfect_distance_dataset.to_distance_dataset(failure_value=None)
+        perfect_distance_dataset = perfect_distance_dataset.to_distance_dataset(
+            failure_value=None)
     elif isinstance(perfect_distance_dataset, ad.AdversarialDataset):
         raise click.BadArgumentUsage('Expected a distance dataset as perfect distance dataset, got an adversarial dataset. '
-                                        'If this is intentional, use --from-perfect-adversarial-dataset .')
-    
-    approximate_distance_dataset = parsing.get_dataset(kwargs['domain'], kwargs['approximate_distance_dataset'], allow_standard=False)
+                                     'If this is intentional, use --from-perfect-adversarial-dataset .')
+
+    approximate_distance_dataset = parsing.get_dataset(
+        kwargs['domain'], kwargs['approximate_distance_dataset'], allow_standard=False)
 
     if kwargs['from_approximate_adversarial_dataset']:
-        approximate_distance_dataset = approximate_distance_dataset.to_distance_dataset(failure_value=None)
+        approximate_distance_dataset = approximate_distance_dataset.to_distance_dataset(
+            failure_value=None)
     elif isinstance(approximate_distance_dataset, ad.AdversarialDataset):
         raise click.BadArgumentUsage('Expected a distance dataset as approximate distance dataset, got an adversarial dataset. '
-                                        'If this is intentional, use --from-approximate-adversarial-dataset .')
+                                     'If this is intentional, use --from-approximate-adversarial-dataset .')
 
     if len(perfect_distance_dataset) < len(approximate_distance_dataset):
-        raise click.BadArgumentUsage('The perfect distance dataset contains fewer samples than the approximate one.')
+        raise click.BadArgumentUsage(
+            'The perfect distance dataset contains fewer samples than the approximate one.')
 
     absolute_differences = []
     relative_differences = []
 
     for (perfect_genuine, perfect_distance), (approximate_genuine, approximate_distance) in zip(perfect_distance_dataset, approximate_distance_dataset):
         if np.average(np.abs(perfect_genuine - approximate_genuine)) > 1e5:
-            raise click.BadArgumentUsage('Datasets don\'t match (different genuine images).')
+            raise click.BadArgumentUsage(
+                'Datasets don\'t match (different genuine images).')
 
         if approximate_distance is None:
             continue
 
         if approximate_distance < perfect_distance:
-            raise click.BadArgumentUsage('Invalid datasets (approximate is better than perfect).')
+            raise click.BadArgumentUsage(
+                'Invalid datasets (approximate is better than perfect).')
 
         absolute_differences.append(approximate_distance - perfect_distance)
-        relative_differences.append((approximate_distance - perfect_distance) / perfect_distance)
+        relative_differences.append(
+            (approximate_distance - perfect_distance) / perfect_distance)
 
     absolute_differences = np.array(absolute_differences)
     relative_differences = np.array(relative_differences)
 
-    print('Average absolute difference: {:.3e}'.format(np.average(absolute_differences)))
-    print('Average relative difference: {:.2f}%'.format(np.average(relative_differences) * 100.0))
-    print('Minimum absolute difference: {:.3e}'.format(np.min(absolute_differences)))
-    print('Minimum relative difference: {:.2f}%'.format(np.min(relative_differences) * 100.0))
+    print('Average absolute difference: {:.3e}'.format(
+        np.average(absolute_differences)))
+    print('Average relative difference: {:.2f}%'.format(
+        np.average(relative_differences) * 100.0))
+    print('Minimum absolute difference: {:.3e}'.format(
+        np.min(absolute_differences)))
+    print('Minimum relative difference: {:.2f}%'.format(
+        np.min(relative_differences) * 100.0))
     if len(absolute_differences) > 0:
         bins = []
         total = 0

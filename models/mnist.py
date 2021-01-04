@@ -7,6 +7,7 @@ import torch_utils
 
 logger = logging.getLogger(__name__)
 
+
 def mnist_a(masked_relu, num_classes):
     return nn.Sequential(
         nn.Flatten(),
@@ -14,6 +15,7 @@ def mnist_a(masked_relu, num_classes):
         torch_utils.MaskedReLU([100]) if masked_relu else nn.ReLU(),
         nn.Linear(100, num_classes)
     )
+
 
 def mnist_b(masked_relu, num_classes):
     return nn.Sequential(
@@ -25,6 +27,7 @@ def mnist_b(masked_relu, num_classes):
         nn.Linear(24, num_classes)
     )
 
+
 def mnist_c(masked_relu, num_classes):
     return nn.Sequential(
         nn.Conv2d(1, 8, 5, stride=4, padding=0),
@@ -32,6 +35,7 @@ def mnist_c(masked_relu, num_classes):
         nn.Flatten(),
         nn.Linear(288, num_classes)
     )
+
 
 def mnist(architecture, masked_relu, num_classes=10, pretrained=None):
     if pretrained:
@@ -44,6 +48,7 @@ def mnist(architecture, masked_relu, num_classes=10, pretrained=None):
     elif architecture == 'c':
         model = mnist_c(masked_relu, num_classes)
     else:
-        raise ValueError(f'Architecture "{architecture}" not supported for MNIST.')
-    
+        raise ValueError(
+            f'Architecture "{architecture}" not supported for MNIST.')
+
     return model

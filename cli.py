@@ -10,6 +10,7 @@ import click
 
 import commands
 
+
 @click.group()
 def main():
     pass
@@ -21,7 +22,7 @@ def main():
 # TODO: get_dataset -> parse_dataset e simili
 # TODO: Nell'adversarial training, non si ha modo di dire all'attacco di usare --adversarial-eps
 #       O si toglie l'opzione, o, devo trovare un modo per permettere l'override
-#       In alternativa si può lasciare così dove l'attacco è best-effort ma si rifiutano quelli oltre --adversarial-eps 
+#       In alternativa si può lasciare così dove l'attacco è best-effort ma si rifiutano quelli oltre --adversarial-eps
 
 # TODO: Eseguire gli addestramenti adversarial e RS
 # TODO: Aggiungere start e stop ai parametri degli adversarial dataset
@@ -29,6 +30,7 @@ def main():
 # TODO: Passare a formattazione nuova?
 
 # TODO: Rimuovere sanity_test e svhn
+
 
 main.add_command(commands.accuracy)
 main.add_command(commands.attack)
@@ -45,6 +47,7 @@ main.add_command(commands.train_approximator)
 main.add_command(commands.train_classifier)
 main.add_command(commands.tune_mip)
 
-if __name__  == '__main__':
-    logging.basicConfig(level=logging.INFO, format='%(name)s:%(levelname)s: %(message)s')
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO,
+                        format='%(name)s:%(levelname)s: %(message)s')
     main()

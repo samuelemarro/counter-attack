@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 
 # TODO: Testare MaxPool e BatchNorm
 
+
 def module_to_mip(module):
     from julia import MIPVerify
 
@@ -58,7 +59,7 @@ def module_to_mip(module):
     elif isinstance(module, torch_utils.Normalisation):
         mean = np.squeeze(to_numpy(module.mean))
         std = np.squeeze(to_numpy(module.std))
-        
+
         # TODO: Capire qual è la forma adeguata
         if len(mean.shape) == 0:
             mean = [mean.item()]
@@ -74,13 +75,17 @@ def module_to_mip(module):
         # Remember: PyTorch is height-first
 
         if not all(x == 1 for x in module.dilation):
-            raise ValueError(f'MIP only supports (1, 1)-style dilation. Received: {module.dilation}.')
+            raise ValueError(
+                f'MIP only supports (1, 1)-style dilation. Received: {module.dilation}.')
         if not all(x == 0 for x in module.output_padding):
-            raise ValueError(f'MIP does not support output padding. Received: {module.output_padding}.')
+            raise ValueError(
+                f'MIP does not support output padding. Received: {module.output_padding}.')
         if module.groups != 1:
-            raise ValueError(f'MIP only supports convolutions with groups=1. Received: {module.groups}')
+            raise ValueError(
+                f'MIP only supports convolutions with groups=1. Received: {module.groups}')
         if len(set(module.stride)) > 1:
-            raise ValueError(f'MIP only supports striding along all dimensions with the same value. Received: {module.stride}')
+            raise ValueError(
+                f'MIP only supports striding along all dimensions with the same value. Received: {module.stride}')
 
         if isinstance(module.stride, tuple):
             stride = module.stride[0]
@@ -100,9 +105,11 @@ def module_to_mip(module):
         # L'immagine (H, W) filtrata (senza padding) dal filtro (K_H, K_W)
         # avrà dimensione (H - K_H + 1, W - K_W + 1)
     else:
-        raise NotImplementedError(f'Unsupported module "{type(module).__name__}".')
+        raise NotImplementedError(
+            f'Unsupported module "{type(module).__name__}".')
 
     return converted
+
 
 def sequential_to_mip(sequential):
     from julia import MIPVerify
@@ -117,6 +124,7 @@ def sequential_to_mip(sequential):
 
 # TODO: Retry system (restart n times with higher correction factor)
 # Il test su x9 falliva con correction_factor=1, ricontrollare ora che è 1.25
+
 
 class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     _pyjulia_installed = False
@@ -139,8 +147,8 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
         if tolerance == 0:
             logger.warn('MIP\'s tolerance is set to 0. Given the possible numerical errors,'
-            ' it is likely that MIP\'s adversarials will be considered unsuccessful by Torch\'s'
-            ' model.')
+                        ' it is likely that MIP\'s adversarials will be considered unsuccessful by Torch\'s'
+                        ' model.')
 
         self.tolerance = tolerance
 
@@ -157,13 +165,13 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
         for key, value in tightening_overrides.items():
             tightening_kwargs[key] = value
-        
+
         from julia import Gurobi
         self.solver = Gurobi.GurobiSolver(OutputFlag=1, **gurobi_kwargs)
         # TODO: Capire bene come funziona Gurobi.Env()
         self.tightening_solver = Gurobi.GurobiSolver(Gurobi.Env(),
-                                                    OutputFlag=0,
-                                                    **tightening_kwargs)
+                                                     OutputFlag=0,
+                                                     **tightening_kwargs)
 
     def mip_attack(self, image, label, starting_point=None):
         from julia import MIPVerify
@@ -179,30 +187,33 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             perturbation = MIPVerify.UnrestrictedPerturbationFamily()
         else:
             if not np.isposinf(self.p):
-                raise NotImplementedError('Starting point is only supported for the Linf norm.')
+                raise NotImplementedError(
+                    'Starting point is only supported for the Linf norm.')
 
-            pre_distance = np.linalg.norm((image - starting_point).flatten(), ord=np.inf).item()
+            pre_distance = np.linalg.norm(
+                (image - starting_point).flatten(), ord=np.inf).item()
             pre_distance *= self.correction_factor
-            perturbation = MIPVerify.LInfNormBoundedPerturbationFamily(pre_distance)
+            perturbation = MIPVerify.LInfNormBoundedPerturbationFamily(
+                pre_distance)
 
             starting_point = starting_point.transpose([1, 2, 0])
             starting_point = np.expand_dims(starting_point, 0)
 
-        
         image = image.transpose([1, 2, 0])
         image = np.expand_dims(image, 0)
-        
-        adversarial_result = MIPVerify.find_adversarial_example(self.mip_model,
-                                    image, target_label, self.solver, norm_order=self.p,
-                                    tolerance=self.tolerance, invert_target_selection=not self.targeted,
-                                    tightening_solver=self.tightening_solver, pp=perturbation)
 
-        adversarial = np.array(JuMP.getvalue(adversarial_result['PerturbedInput']))
+        adversarial_result = MIPVerify.find_adversarial_example(self.mip_model,
+                                                                image, target_label, self.solver, norm_order=self.p,
+                                                                tolerance=self.tolerance, invert_target_selection=not self.targeted,
+                                                                tightening_solver=self.tightening_solver, pp=perturbation)
+
+        adversarial = np.array(JuMP.getvalue(
+            adversarial_result['PerturbedInput']))
 
         elapsed_time = time.clock() - start_time
         adversarial_result['WallClockTime'] = elapsed_time
 
-        #if extra_dimension:
+        # if extra_dimension:
         #    adversarial = np.expand_dims(adversarial, -1)
 
         # Reconvert to channel-first
@@ -220,7 +231,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         for image, label in zip(x, y):
             image = image.detach().cpu().numpy()
             label = label.detach().cpu().numpy().item()
-            
+
             adversarial, _ = self.mip_attack(image, label)
 
             if np.any(np.isnan(adversarial)):
@@ -251,7 +262,8 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             if starting_point is not None:
                 starting_point = starting_point.detach().cpu().numpy()
 
-            adversarial, adversarial_result = self.mip_attack(image, label, starting_point)
+            adversarial, adversarial_result = self.mip_attack(
+                image, label, starting_point)
             if np.any(np.isnan(adversarial)):
                 adversarial = None
             else:

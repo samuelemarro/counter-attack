@@ -11,6 +11,7 @@ import utils
 import logging
 logger = logging.getLogger(__name__)
 
+
 def split_batch(x, minibatch_size):
     num_minibatches = int(np.ceil(x.shape[0] / float(minibatch_size)))
 
@@ -23,6 +24,7 @@ def split_batch(x, minibatch_size):
         minibatches.append(x[minibatch_begin:minibatch_end])
 
     return minibatches
+
 
 class BatchLimitedModel(nn.Module):
     def __init__(self, wrapped_model, batch_size):
@@ -42,11 +44,14 @@ class BatchLimitedModel(nn.Module):
 
         return outputs
 
+
 class Normalisation(nn.Module):
     def __init__(self, mean, std, num_channels=3):
         super().__init__()
-        self.mean = torch.from_numpy(np.array(mean).reshape((num_channels, 1, 1)))
-        self.std = torch.from_numpy(np.array(std).reshape((num_channels, 1, 1)))
+        self.mean = torch.from_numpy(
+            np.array(mean).reshape((num_channels, 1, 1)))
+        self.std = torch.from_numpy(
+            np.array(std).reshape((num_channels, 1, 1)))
 
     def forward(self, input):
         mean = self.mean.to(input)
@@ -54,6 +59,8 @@ class Normalisation(nn.Module):
         return (input - mean) / std
 
 # Modular version of torch.squeeze()
+
+
 class Squeeze(nn.Module):
     def __init__(self, dim=None):
         super().__init__()
@@ -69,17 +76,21 @@ class Squeeze(nn.Module):
 
 # A ReLU module where some ReLU calls are replaced with fixed behaviour
 # (zero or linear)
+
+
 class MaskedReLU(nn.Module):
     def __init__(self, mask_shape):
         super().__init__()
-        self.always_linear = nn.Parameter(torch.zeros(mask_shape, dtype=torch.bool), requires_grad=False)
-        self.always_zero = nn.Parameter(torch.zeros(mask_shape, dtype=torch.bool), requires_grad=False)
+        self.always_linear = nn.Parameter(torch.zeros(
+            mask_shape, dtype=torch.bool), requires_grad=False)
+        self.always_zero = nn.Parameter(torch.zeros(
+            mask_shape, dtype=torch.bool), requires_grad=False)
 
     def forward(self, x):
         # Note: We do not use actual masking because
         # that would require using boolean indexing, which
         # causes a CUDA synchronization (causing major slowdowns)
-        
+
         output = torch.relu(x)
 
         # always_zero masking
@@ -90,6 +101,7 @@ class MaskedReLU(nn.Module):
 
         return output
 
+
 class ReLUCounter(nn.ReLU):
     def __init__(self):
         super().__init__()
@@ -98,8 +110,10 @@ class ReLUCounter(nn.ReLU):
 
     def forward(self, x):
         if self.positive_counter is None:
-            self.positive_counter = torch.zeros(x.shape[1:], dtype=torch.long, device=x.device)
-            self.negative_counter = torch.zeros(x.shape[1:], dtype=torch.long, device=x.device)
+            self.positive_counter = torch.zeros(
+                x.shape[1:], dtype=torch.long, device=x.device)
+            self.negative_counter = torch.zeros(
+                x.shape[1:], dtype=torch.long, device=x.device)
 
         positive = (x > 0).long().sum(dim=0)
         negative = (x < 0).long().sum(dim=0)
@@ -109,19 +123,23 @@ class ReLUCounter(nn.ReLU):
 
         return torch.relu(x)
 
+
 def conv_to_matrix(conv, image_shape, output_shape, device):
-    identity = torch.eye(np.prod(image_shape).item()).reshape([-1] + list(image_shape)).to(device)
+    identity = torch.eye(np.prod(image_shape).item()).reshape(
+        [-1] + list(image_shape)).to(device)
     output = F.conv2d(identity, conv.weight, None, conv.stride, conv.padding)
     W = output.reshape(-1, np.prod(output_shape).item())
     # In theory W should be transposed, but the algorithm requires it to be left as it is
-    b = torch.stack([torch.ones(output_shape[1:], device=device) * bi for bi in conv.bias])
+    b = torch.stack(
+        [torch.ones(output_shape[1:], device=device) * bi for bi in conv.bias])
     #b = b.reshape(-1, np.prod(output_shape[1:]).item())
     b = b.reshape(-1)
-    #print(b.shape)
-    #print(conv.bias.shape)
-    #print('===')
-    
+    # print(b.shape)
+    # print(conv.bias.shape)
+    # print('===')
+
     return W, b
+
 
 def _interval_arithmetic(lb, ub, W, b):
     W_max = torch.maximum(W, torch.tensor(0.0).to(W))
@@ -131,20 +149,29 @@ def _interval_arithmetic(lb, ub, W, b):
     return new_lb, new_ub
 
 # Assumes shapes of m, m, Bxmxn, n
+
+
 def _interval_arithmetic_batch(lb, ub, W, b):
     W_max = torch.maximum(W, torch.tensor(0.0).to(W))
     W_min = torch.minimum(W, torch.tensor(0.0).to(W))
-    new_lb = torch.einsum("m,bmn->bn", lb, W_max) + torch.einsum("m,bmn->bn", ub, W_min) + b
-    new_ub = torch.einsum("m,bmn->bn", ub, W_max) + torch.einsum("m,bmn->bn", lb, W_min) + b
+    new_lb = torch.einsum("m,bmn->bn", lb, W_max) + \
+        torch.einsum("m,bmn->bn", ub, W_min) + b
+    new_ub = torch.einsum("m,bmn->bn", ub, W_max) + \
+        torch.einsum("m,bmn->bn", lb, W_min) + b
     return new_lb, new_ub
 
 # Assumes shapes of Bxm, Bxm, Bxmxn, Bxn
+
+
 def _interval_arithmetic_all_batch(lb, ub, W, b):
     W_max = torch.maximum(W, torch.tensor(0.0).to(W))
     W_min = torch.minimum(W, torch.tensor(0.0).to(W))
-    new_lb = torch.einsum("bm,bmn->bn", lb, W_max) + torch.einsum("bm,bmn->bn", ub, W_min) + b
-    new_ub = torch.einsum("bm,bmn->bn", ub, W_max) + torch.einsum("bm,bmn->bn", lb, W_min) + b
+    new_lb = torch.einsum("bm,bmn->bn", lb, W_max) + \
+        torch.einsum("bm,bmn->bn", ub, W_min) + b
+    new_ub = torch.einsum("bm,bmn->bn", ub, W_max) + \
+        torch.einsum("bm,bmn->bn", lb, W_min) + b
     return new_lb, new_ub
+
 
 def _compute_bounds_n_layers(n, lbs, ubs, Ws, biases):
     # print(n, len(lbs))
@@ -175,25 +202,27 @@ def _compute_bounds_n_layers(n, lbs, ubs, Ws, biases):
     # Compute W_A and W_NA
     out_dim = W.shape[-1]
     active_mask_unexpanded = (lb > 0).float()
-    
-    #active_mask = torch.tile(torch.unsqueeze(active_mask_unexpanded, 2), [1, 1, out_dim]) # This should be B x y x p
-    active_mask = torch.unsqueeze(active_mask_unexpanded, 2).expand([-1, -1, out_dim]) # This should be B x y x p
+
+    # active_mask = torch.tile(torch.unsqueeze(active_mask_unexpanded, 2), [1, 1, out_dim]) # This should be B x y x p
+    active_mask = torch.unsqueeze(active_mask_unexpanded, 2).expand(
+        [-1, -1, out_dim])  # This should be B x y x p
 
     nonactive_mask = 1.0 - active_mask
     #print('W: ', W.shape)
     #print('active_mask: ', active_mask.shape)
-    W_A = torch.mul(W, active_mask) # B x y x p
-    W_NA = torch.mul(W, nonactive_mask) # B x y x p
+    W_A = torch.mul(W, active_mask)  # B x y x p
+    W_NA = torch.mul(W, nonactive_mask)  # B x y x p
 
     # Compute bounds from previous layer
     if len(lb.shape) == 2:
         prev_layer_bounds = _interval_arithmetic_all_batch(lb, ub, W_NA, b)
     else:
-        prev_layer_bounds = _interval_arithmetic_batch(lb, ub, W_NA, b) # TODO: Quando avviene?
+        prev_layer_bounds = _interval_arithmetic_batch(
+            lb, ub, W_NA, b)  # TODO: Quando avviene?
 
     # Compute new products
-    W_prod = torch.einsum('my,byp->bmp', W_prev, W_A) # b x m x p
-    b_prod = torch.einsum('y,byp->bp', b_prev, W_A) # b x p
+    W_prod = torch.einsum('my,byp->bmp', W_prev, W_A)  # b x m x p
+    b_prod = torch.einsum('y,byp->bp', b_prev, W_A)  # b x p
 
     #print('W_prod: ', W_prod.shape)
     #print('b_prod: ', b_prod.shape)
@@ -203,8 +232,10 @@ def _compute_bounds_n_layers(n, lbs, ubs, Ws, biases):
     Ws_new = [W_prod] + Ws[2:]
     biases_new = [b_prod] + biases[2:]
 
-    deeper_bounds = _compute_bounds_n_layers(n-1, lbs_new, ubs_new, Ws_new, biases_new)
+    deeper_bounds = _compute_bounds_n_layers(
+        n-1, lbs_new, ubs_new, Ws_new, biases_new)
     return (prev_layer_bounds[0] + deeper_bounds[0], prev_layer_bounds[1] + deeper_bounds[1])
+
 
 def model_to_rs_sequence(model, input_shape, device):
     layers = unpack_sequential(model)
@@ -220,16 +251,19 @@ def model_to_rs_sequence(model, input_shape, device):
             before_conv_shape = placeholder.shape[1:]
             placeholder = layer(placeholder)
             after_conv_shape = placeholder.shape[1:]
-            W, b = conv_to_matrix(layer, before_conv_shape, after_conv_shape, device)
+            W, b = conv_to_matrix(layer, before_conv_shape,
+                                  after_conv_shape, device)
             new_layers.append((W, b))
         elif isinstance(layer, nn.Linear):
             placeholder = layer(placeholder)
             new_layers.append((layer.weight.T, layer.bias))
         else:
-            raise NotImplementedError(f'Unsupported layer {type(layer).__name__}.')
+            raise NotImplementedError(
+                f'Unsupported layer {type(layer).__name__}.')
 
     #print('New layers: ', [type(l).__name__ for l in new_layers])
     return new_layers
+
 
 def rs_loss(model, x, epsilon, input_min=0, input_max=1):
     layers = model_to_rs_sequence(model, x.shape[1:], x.device)
@@ -260,7 +294,8 @@ def rs_loss(model, x, epsilon, input_min=0, input_max=1):
 
     for layer in layers:
         if isinstance(layer, Normalisation):
-            raise RuntimeError('More than one normalisation in the Sequential.')
+            raise RuntimeError(
+                'More than one normalisation in the Sequential.')
         elif isinstance(layer, nn.ReLU):
             lower = F.relu(lower)
             upper = F.relu(upper)
@@ -276,19 +311,22 @@ def rs_loss(model, x, epsilon, input_min=0, input_max=1):
 
             if len(post_relu_lowers) != layer_index:
                 raise RuntimeError('There aren\'t as many Linear/Conv2D layers as ReLU layers. '
-                                    'Check the architecture of the model.')
+                                   'Check the architecture of the model.')
 
-            lower, upper = _compute_bounds_n_layers(layer_index, post_relu_lowers, post_relu_uppers, Ws, bs)
+            lower, upper = _compute_bounds_n_layers(
+                layer_index, post_relu_lowers, post_relu_uppers, Ws, bs)
             #print(layer_index, ': ',  lower)
             # Il segno è corretto?
-            total_loss -= torch.mean(torch.sum(torch.tanh(1 + lower * upper), -1))
-        elif not isinstance(layer, nn.Flatten): # Flatten is ignored
+            total_loss -= torch.mean(torch.sum(torch.tanh(1 +
+                                                          lower * upper), -1))
+        elif not isinstance(layer, nn.Flatten):  # Flatten is ignored
             raise NotImplementedError('Unsupported layer')
 
     #print('Total loss:', total_loss)
     return total_loss
 
 # For adversarial training, we don't replace genuines with failed adversarial samples
+
 
 def train(model, train_loader, optimiser, loss_function, max_epochs, device, val_loader=None, l1_regularization=0, rs_regularization=0, rs_eps=0, rs_minibatch=None, early_stopping=None, attack=None, attack_ratio=0.5, attack_p=None, attack_eps=None):
     if early_stopping is not None:
@@ -303,15 +341,18 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
         for x, target in train_loader:
             x = x.to(device)
             target = target.to(device)
-            
+
             if attack is not None:
-                indices = np.random.choice(list(range(len(x))), int(len(x) * attack_ratio))
+                indices = np.random.choice(
+                    list(range(len(x))), int(len(x) * attack_ratio))
                 adversarial_x = x[indices]
                 adversarial_targets = target[indices]
 
-                adversarials = attack.perturb(adversarial_x, y=adversarial_targets).detach()
+                adversarials = attack.perturb(
+                    adversarial_x, y=adversarial_targets).detach()
 
-                adversarials = utils.remove_failed(model, adversarial_x, adversarial_targets, adversarials, False, p=attack_p, eps=attack_eps)
+                adversarials = utils.remove_failed(
+                    model, adversarial_x, adversarial_targets, adversarials, False, p=attack_p, eps=attack_eps)
 
                 for i, index in enumerate(indices):
                     if adversarials[i] is not None:
@@ -335,9 +376,10 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
                     rs.backward()
                 else:
                     for minibatch in split_batch(x, rs_minibatch):
-                        rs = rs_loss(model, minibatch, epsilon=rs_eps) * rs_regularization
+                        rs = rs_loss(model, minibatch,
+                                     epsilon=rs_eps) * rs_regularization
                         rs.backward()
-            
+
             optimiser.step()
 
         if val_loader is not None:
@@ -355,18 +397,22 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
                     if l1_regularization != 0:
                         for group in optimiser.param_groups:
                             for p in group['params']:
-                                val_loss += torch.sum(torch.abs(p)) * l1_regularization
+                                val_loss += torch.sum(torch.abs(p)) * \
+                                    l1_regularization
 
                     if rs_regularization != 0:
                         if rs_minibatch is None:
-                            rs = rs_loss(model, x, epsilon=rs_eps) * rs_regularization
+                            rs = rs_loss(model, x, epsilon=rs_eps) * \
+                                rs_regularization
                             val_loss += rs
                         else:
                             for minibatch in split_batch(x, rs_minibatch):
-                                rs = rs_loss(model, minibatch, epsilon=rs_eps) * rs_regularization
+                                rs = rs_loss(model, minibatch,
+                                             epsilon=rs_eps) * rs_regularization
                                 val_loss += rs
 
-            iterator.set_description('Training | Validation Loss: {:.3e}'.format(val_loss.cpu().detach().item()))
+            iterator.set_description('Training | Validation Loss: {:.3e}'.format(
+                val_loss.cpu().detach().item()))
 
             if early_stopping is not None:
                 early_stopping(val_loss, model)
@@ -391,6 +437,7 @@ def unpack_sequential(module):
 
     return layers
 
+
 class StartStopDataset(torch.utils.data.Dataset):
     def __init__(self, dataset, start=None, stop=None):
         if start is None:
@@ -401,7 +448,8 @@ class StartStopDataset(torch.utils.data.Dataset):
         if start < 0:
             raise ValueError('start must be at least 0.')
         if stop > len(dataset):
-            raise ValueError('stop must be smaller than or equal to the dataset size.')
+            raise ValueError(
+                'stop must be smaller than or equal to the dataset size.')
         if stop <= start:
             raise ValueError('stop must be strictly larger than start.')
 
@@ -413,7 +461,8 @@ class StartStopDataset(torch.utils.data.Dataset):
         if isinstance(idx, slice):
             if self.start + idx.stop > self.stop:
                 raise ValueError('Slice stop is bigger than dataset stop.')
-            slice_ = slice(self.start + idx.start, self.start + idx.stop, idx.step)
+            slice_ = slice(self.start + idx.start,
+                           self.start + idx.stop, idx.step)
             return self.dataset[slice_]
         else:
             return self.dataset[self.start + idx]
@@ -421,21 +470,24 @@ class StartStopDataset(torch.utils.data.Dataset):
     def __len__(self):
         return self.stop - self.start
 
+
 class IndexedDataset(torch.utils.data.Dataset):
     def __init__(self, dataset, indices):
         assert len(indices) <= len(dataset)
         assert max(indices) < len(dataset)
         self.dataset = dataset
         self.indices = indices
-        
+
     def __getitem__(self, idx):
         return self.dataset[self.indices[idx]]
 
     def __len__(self):
         return len(self.indices)
 
+
 class EarlyStopping:
     """Early stops the training if validation loss doesn't improve after a given patience."""
+
     def __init__(self, patience, delta=0):
         """
         Args:
@@ -450,6 +502,7 @@ class EarlyStopping:
         self.val_loss_min = np.Inf
         self.delta = delta
         self.best_state_dict = None
+
     def __call__(self, val_loss, model):
         score = -val_loss
 
@@ -469,6 +522,7 @@ class EarlyStopping:
         '''Saves model when validation loss decreases.'''
         self.best_state_dict = model.state_dict()
         self.val_loss_min = val_loss
+
 
 def split_dataset(original_dataset, val_split, shuffle=True):
     dataset_size = len(original_dataset)

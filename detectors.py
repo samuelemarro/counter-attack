@@ -7,6 +7,7 @@ import utils
 
 logger = logging.getLogger(__name__)
 
+
 class Detector(torch.nn.Module):
     def __init__(self):
         super().__init__()
@@ -16,6 +17,7 @@ class Detector(torch.nn.Module):
 
 # TODO: Come si deve comportare CA in caso di fallimento???
 
+
 class CounterAttackDetector(Detector):
     def __init__(self, attack, model, p):
         super().__init__()
@@ -24,34 +26,38 @@ class CounterAttackDetector(Detector):
         self.p = p
 
     def forward(self, x):
-        x = x.detach().clone() # Importante, altrimenti rischia di portare i gradienti dell'attacco fuori dal suo contesto
+        # Importante, altrimenti rischia di portare i gradienti dell'attacco fuori dal suo contesto
+        x = x.detach().clone()
         with torch.enable_grad():
             # Nota l'assenza di y=
             adversarials = self.attack.perturb(x).detach()
         adversarials = adversarials.detach()
 
         assert len(adversarials) == len(x)
-        
+
         distances = utils.adversarial_distance(x, adversarials, self.p)
 
         assert len(distances) == len(x)
 
         labels = utils.get_labels(self.model, x)
-        successful = utils.misclassified(self.model, adversarials, labels, False)
+        successful = utils.misclassified(
+            self.model, adversarials, labels, False)
 
         # TODO: Testare
         # Comportamento attuale: Accetta quando fallisci (dà problemi perché uso inf)
         # distances[~successful] = np.inf
         distances[~successful] = 10000
-        
+
         # Distanza alta = bassa probabilità che sia un adversarial
         return -distances
+
 
 class StandardDetectorModel(torch.nn.Module):
     """
     Appends the detector store to each prediction,
     adding a "rejected" class.
     """
+
     def __init__(self, model, detector):
         super().__init__()
         self.model = model
@@ -60,17 +66,19 @@ class StandardDetectorModel(torch.nn.Module):
     def forward(self, x):
         predictions = self.model(x)
         scores = self.detector(x)
-        
+
         assert scores.shape == (len(x),)
 
         scores = scores.unsqueeze(1)
 
         final_predictions = torch.cat([predictions, scores], 1)
-        
+
         assert len(final_predictions) == len(x)
-        assert final_predictions.shape == (x.shape[0], predictions.shape[1] + 1)
+        assert final_predictions.shape == (
+            x.shape[0], predictions.shape[1] + 1)
 
         return final_predictions
+
 
 class NormalisedDetectorModel(torch.nn.Module):
     """
@@ -81,7 +89,7 @@ class NormalisedDetectorModel(torch.nn.Module):
 
     def __init__(self, model, detector, threshold):
         """Initialises the NormalisedDetectorModel
-        
+
         Parameters
         ----------
         model : torch.nn.Module
@@ -115,11 +123,13 @@ class NormalisedDetectorModel(torch.nn.Module):
         scores = scores.unsqueeze(1)
 
         final_predictions = torch.cat([predictions, scores], 1)
-        
+
         assert len(final_predictions) == len(x)
-        assert final_predictions.shape == (x.shape[0], predictions.shape[1] + 1)
+        assert final_predictions.shape == (
+            x.shape[0], predictions.shape[1] + 1)
 
         return final_predictions
+
 
 class DetectorPool(Detector):
     def __init__(self, detectors, p):
@@ -128,7 +138,8 @@ class DetectorPool(Detector):
         self.p = p
 
     def forward(self, x):
-        detector_scores = torch.stack([detector(x) for detector in self.detectors])
+        detector_scores = torch.stack([detector(x)
+                                       for detector in self.detectors])
 
         assert detector_scores.shape == (len(self.detectors), len(x))
 

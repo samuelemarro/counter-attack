@@ -7,6 +7,7 @@ import torch
 import utils
 # Nota: Aggiorna eps se ha una distanza più bassa (non solo se ha successo)
 
+
 class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     def __init__(self, predict, evade_detector, ord, attack, unsqueeze, targeted=False, min_eps=0, max_eps=1, eps_initial_search_steps=9, eps_binary_search_steps=9):
         super().__init__(predict, None, None, None)
@@ -51,17 +52,19 @@ class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.La
         # Initialization
         if y is None:
             y = self._get_predicted_label(x)
-        
+
         best_adversarials = x.clone()
         N = x.shape[0]
 
         eps_lower_bound = torch.ones((N,), device=x.device) * self.min_eps
         eps_upper_bound = torch.ones((N,), device=x.device) * self.max_eps
-        best_distances = torch.ones((N), device=x.device) * torch.finfo(x.dtype).max
+        best_distances = torch.ones(
+            (N), device=x.device) * torch.finfo(x.dtype).max
 
         initial_search_eps = eps_upper_bound.clone()
         for _ in range(self.eps_initial_search_steps):
-            adversarials = self.perturb_standard(x, y, initial_search_eps).detach()
+            adversarials = self.perturb_standard(
+                x, y, initial_search_eps).detach()
             adversarial_outputs = self.predict(adversarials).detach()
             successful = self.successful(adversarial_outputs, y)
 
@@ -70,11 +73,14 @@ class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.La
 
             replace = successful & better_distances
 
-            best_adversarials = utils.fast_boolean_choice(best_adversarials, adversarials, replace)
-            best_distances = utils.fast_boolean_choice(best_distances, distances, replace)
+            best_adversarials = utils.fast_boolean_choice(
+                best_adversarials, adversarials, replace)
+            best_distances = utils.fast_boolean_choice(
+                best_distances, distances, replace)
 
             # Success: Reduce the upper bound
-            eps_upper_bound = utils.fast_boolean_choice(eps_upper_bound, initial_search_eps, successful)
+            eps_upper_bound = utils.fast_boolean_choice(
+                eps_upper_bound, initial_search_eps, successful)
 
             # Halve eps, regardless of the success
             initial_search_eps = initial_search_eps / 2
@@ -89,14 +95,18 @@ class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.La
             better_distances = distances < best_distances
             replace = successful & better_distances
 
-            best_adversarials = utils.fast_boolean_choice(best_adversarials, adversarials, replace)
-            best_distances = utils.fast_boolean_choice(best_distances, distances, replace)
+            best_adversarials = utils.fast_boolean_choice(
+                best_adversarials, adversarials, replace)
+            best_distances = utils.fast_boolean_choice(
+                best_distances, distances, replace)
 
             # Success: Reduce the upper bound
-            eps_upper_bound = utils.fast_boolean_choice(eps_upper_bound, eps, successful)
+            eps_upper_bound = utils.fast_boolean_choice(
+                eps_upper_bound, eps, successful)
 
             # Failure: Increase the lower bound
-            eps_lower_bound = utils.fast_boolean_choice(eps_lower_bound, eps, ~successful)
+            eps_lower_bound = utils.fast_boolean_choice(
+                eps_lower_bound, eps, ~successful)
 
         assert best_adversarials.shape == x.shape
 

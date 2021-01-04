@@ -29,17 +29,20 @@ architecture = args.architecture
 pre_attack = args.pre_attack
 count = args.count
 
+
 def custom_accuracy(domain, architecture, path):
-    model = parsing.get_model(domain, architecture, path, True, False, load_weights=True)
+    model = parsing.get_model(domain, architecture,
+                              path, True, False, load_weights=True)
     model.eval()
 
     dataset = parsing.get_dataset(domain, 'std:test')
 
     dataloader = torch.utils.data.DataLoader(dataset, 50, shuffle=False)
-    
+
     accuracy = tests.accuracy(model, dataloader, 'cuda')
 
     return accuracy
+
 
 def parse_number(number):
     try:
@@ -50,8 +53,11 @@ def parse_number(number):
         except ValueError:
             return number
 
+
 def tune_mip(domain, architecture, path, pre_path, gurobi_path, p):
-    os.system(f'python cli.py tune-mip {domain} {architecture} std:test {p} {gurobi_path} --state-dict-path {path} --pre-adversarial-dataset {pre_path}')
+    os.system(
+        f'python cli.py tune-mip {domain} {architecture} std:test {p} {gurobi_path} --state-dict-path {path} --pre-adversarial-dataset {pre_path}')
+
 
 def read_gurobi_file(gurobi_path):
     with open(gurobi_path, 'r') as f:
@@ -66,6 +72,7 @@ def read_gurobi_file(gurobi_path):
 
     return parameters
 
+
 def create_cfg_file(parameters, save_path):
     with open('attack_configurations/mip_1th_240b_0t_7200s.cfg', 'r') as f:
         cfg = json.load(f)
@@ -73,6 +80,7 @@ def create_cfg_file(parameters, save_path):
         cfg['mip']['all_domains']['all_distances']['all_types'][key] = value
     with open(save_path, 'w') as f:
         json.dump(cfg, f, indent=4)
+
 
 target_path = f'trained-models/best-classifiers/{domain}-{architecture}.pth'
 
@@ -100,14 +108,16 @@ if not Path(target_path).exists():
 attack_path = f'adversarial_tests/{pre_attack}-{domain}-{architecture}-{count}-linf.zip'
 
 if not Path(attack_path).exists():
-    os.system(f'python cli.py attack {domain} {architecture} std:test {pre_attack} linf --stop {count} --state-dict-path {target_path}  --save-to {attack_path}')
+    os.system(
+        f'python cli.py attack {domain} {architecture} std:test {pre_attack} linf --stop {count} --state-dict-path {target_path}  --save-to {attack_path}')
 
 cfg_path = f'attack_configurations/architecture_specific/mip_1th_240b_0t_7200s_{domain}-{architecture}.cfg'
 cfg_f3_path = f'attack_configurations/architecture_specific/mip_1th_240b_0t_7200s_{domain}-{architecture}_f3.cfg'
 gurobi_path = f'gurobi-parameter-sets/{domain}-{architecture}.prm'
 
 if not Path(gurobi_path).exists():
-    tune_mip(domain, architecture, target_path, attack_path, gurobi_path, 'linf')
+    tune_mip(domain, architecture, target_path,
+             attack_path, gurobi_path, 'linf')
 
 if not Path(cfg_path).exists():
     parameters = read_gurobi_file(gurobi_path)
@@ -133,7 +143,8 @@ if Path(cfg_f3_path).exists() and not Path(mip_f3_path).exists():
     print('Running standard tuned set with MIPFocus = 3')
     os.system(f'python cli.py mip {domain} {architecture} std:test linf --stop {count} --attack-config-file {cfg_f3_path} --state-dict-path {target_path} --pre-adversarial-dataset {attack_path} --save-to {mip_f3_path}')
 
-print('Accuracy: {:.2f}%'.format(custom_accuracy(domain, architecture, target_path) * 100.0))
+print('Accuracy: {:.2f}%'.format(custom_accuracy(
+    domain, architecture, target_path) * 100.0))
 
 mip_results = utils.load_zip(mip_path)
 print('Standard Convergence:')

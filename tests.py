@@ -7,6 +7,7 @@ import adversarial_dataset
 
 # TODO: A volte attack_config è prima di generation_kwargs, a volte dopo
 
+
 def accuracy(model, loader, device):
     correct_count = 0
     total_count = 0
@@ -25,6 +26,7 @@ def accuracy(model, loader, device):
 
     return correct_count / total_count
 
+
 def attack_test(model, attack, loader, p, misclassification_policy, device, generation_kwargs, attack_configuration, start, stop, defended_model, blind_trust=False):
     assert not attack.targeted
     model.to(device)
@@ -36,11 +38,12 @@ def attack_test(model, attack, loader, p, misclassification_policy, device, gene
     for images, true_labels in tqdm(loader, desc='Attack Test'):
         images = images.to(device)
         true_labels = true_labels.to(device)
-        
+
         assert len(images) == len(true_labels)
 
-        images, true_labels, labels = utils.apply_misclassification_policy(model, images, true_labels, misclassification_policy)
-        
+        images, true_labels, labels = utils.apply_misclassification_policy(
+            model, images, true_labels, misclassification_policy)
+
         adversarials = attack.perturb(images, y=labels).detach()
         assert adversarials.shape == images.shape
 
@@ -48,9 +51,11 @@ def attack_test(model, attack, loader, p, misclassification_policy, device, gene
             adversarials = list(adversarials)
         else:
             if defended_model is None:
-                adversarials = utils.remove_failed(model, images, labels, adversarials, False)
+                adversarials = utils.remove_failed(
+                    model, images, labels, adversarials, False)
             else:
-                adversarials = utils.remove_failed(defended_model, images, labels, adversarials, True)
+                adversarials = utils.remove_failed(
+                    defended_model, images, labels, adversarials, True)
 
         # Move to CPU
         images = images.cpu()
@@ -63,11 +68,11 @@ def attack_test(model, attack, loader, p, misclassification_policy, device, gene
         all_true_labels += list(true_labels)
         all_adversarials += list(adversarials)
 
-    
     assert len(all_images) == len(all_true_labels)
     assert len(all_images) == len(all_adversarials)
 
     return adversarial_dataset.AdversarialDataset(all_images, all_true_labels, all_adversarials, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs)
+
 
 def mip_test(model, attack, loader, p, misclassification_policy, device, generation_kwargs, attack_configuration, start, stop, pre_adversarial_dataset=None):
     assert not attack.targeted
@@ -83,10 +88,11 @@ def mip_test(model, attack, loader, p, misclassification_policy, device, generat
     for images, true_labels in tqdm(loader, desc='MIP Test'):
         images = images.to(device)
         true_labels = true_labels.to(device)
-        
+
         assert len(images) == len(true_labels)
 
-        images, true_labels, labels = utils.apply_misclassification_policy(model, images, true_labels, misclassification_policy)
+        images, true_labels, labels = utils.apply_misclassification_policy(
+            model, images, true_labels, misclassification_policy)
 
         if pre_adversarial_dataset is None:
             pre_images = None
@@ -96,13 +102,16 @@ def mip_test(model, attack, loader, p, misclassification_policy, device, generat
             count = len(images)
             #pre_images = pre_adversarial_dataset.genuines[offset:offset+count]
             #pre_adversarials = pre_adversarial_dataset.adversarials[offset:offset+count]
-            matching_indices = pre_adversarial_dataset.index_of_genuines(images)
+            matching_indices = pre_adversarial_dataset.index_of_genuines(
+                images)
             if any(i == -1 for i in matching_indices):
                 raise RuntimeError('Could not find a matching element in the pre-adversarial dataset '
                                    'for a genuine. Are you sure that you are using the correct '
                                    'pre-adversarial set?')
-            pre_images = [pre_adversarial_dataset.genuines[i] for i in matching_indices]
-            pre_adversarials = [pre_adversarial_dataset.adversarials[i] for i in matching_indices]
+            pre_images = [pre_adversarial_dataset.genuines[i]
+                          for i in matching_indices]
+            pre_adversarials = [pre_adversarial_dataset.adversarials[i]
+                                for i in matching_indices]
 
             assert len(pre_images) == len(images)
             assert len(pre_adversarials) == len(images)
@@ -113,13 +122,15 @@ def mip_test(model, attack, loader, p, misclassification_policy, device, generat
                     pre_adversarials[i] = pre_adversarials[i].to(device)
 
             # Check that the images are the same
-            all_match = all([torch.max(torch.abs(image - pre_image)) < 1e-6 for image, pre_image in zip(images, pre_images)])
+            all_match = all([torch.max(torch.abs(image - pre_image))
+                             < 1e-6 for image, pre_image in zip(images, pre_images)])
 
             if not all_match:
                 raise RuntimeError('The pre-adversarials refer to different genuines. '
                                    'This can slow down MIP at best and make it fail at worst. '
                                    'Are you sure that you are using the correct pre-adversarial dataset?')
-        adversarials, lower_bounds, upper_bounds, solve_times = attack.perturb_advanced(images, y=labels, starting_points=pre_adversarials)
+        adversarials, lower_bounds, upper_bounds, solve_times = attack.perturb_advanced(
+            images, y=labels, starting_points=pre_adversarials)
         assert len(adversarials) == len(images)
         assert len(adversarials) == len(lower_bounds)
         assert len(adversarials) == len(upper_bounds)
@@ -135,7 +146,7 @@ def mip_test(model, attack, loader, p, misclassification_policy, device, generat
         all_lower_bounds += list(lower_bounds)
         all_upper_bounds += list(upper_bounds)
         all_solve_times += list(solve_times)
-    
+
     assert len(all_images) == len(all_true_labels)
     assert len(all_images) == len(all_adversarials)
     assert len(all_images) == len(all_lower_bounds)
@@ -144,9 +155,11 @@ def mip_test(model, attack, loader, p, misclassification_policy, device, generat
 
     return adversarial_dataset.MIPDataset(all_images, all_true_labels, all_adversarials, all_lower_bounds, all_upper_bounds, all_solve_times, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs)
 
+
 def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p, misclassification_policy, device, attack_configuration, start, stop, generation_kwargs):
     assert all(not attack.targeted for attack in attacks)
-    assert all(attack.predict == defended_model.predict for attack, defended_model in zip(attacks, defended_models))
+    assert all(attack.predict == defended_model.predict for attack,
+               defended_model in zip(attacks, defended_models))
 
     model.to(device)
 
@@ -164,7 +177,8 @@ def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p
         images = images.to(device)
         true_labels = true_labels.to(device)
 
-        images, true_labels, labels = utils.apply_misclassification_policy(model, images, true_labels, misclassification_policy)
+        images, true_labels, labels = utils.apply_misclassification_policy(
+            model, images, true_labels, misclassification_policy)
 
         attack_results = [dict() for _ in range(len(images))]
 
@@ -174,12 +188,13 @@ def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p
 
             assert adversarials.shape == images.shape
 
-            adversarials = utils.remove_failed(defended_model, images, labels, adversarials, True)
+            adversarials = utils.remove_failed(
+                defended_model, images, labels, adversarials, True)
 
             for i in range(len(images)):
                 # Move to CPU and save
                 attack_results[i][test_name] = adversarials[i].cpu()
-            
+
         images = images.cpu()
         labels = labels.cpu()
 
@@ -191,7 +206,8 @@ def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p
     assert len(all_attack_results) == len(all_images)
 
     return adversarial_dataset.AttackComparisonDataset(all_images, all_true_labels, test_names, all_attack_results, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs)
-        
+
+
 def multiple_attack_test(model, attack_names, attacks, loader, p, misclassification_policy, device, attack_configuration, start, stop, generation_kwargs):
     assert all(not attack.targeted for attack in attacks)
 
@@ -206,8 +222,9 @@ def multiple_attack_test(model, attack_names, attacks, loader, p, misclassificat
     for images, true_labels in tqdm(loader, desc='Multiple Attack Test'):
         images = images.to(device)
         true_labels = true_labels.to(device)
-        
-        images, true_labels, labels = utils.apply_misclassification_policy(model, images, true_labels, misclassification_policy)
+
+        images, true_labels, labels = utils.apply_misclassification_policy(
+            model, images, true_labels, misclassification_policy)
 
         attack_results = [dict() for _ in range(len(images))]
 
@@ -216,8 +233,9 @@ def multiple_attack_test(model, attack_names, attacks, loader, p, misclassificat
             adversarials = attack.perturb(images, y=labels).detach()
 
             assert adversarials.shape == images.shape
-            
-            adversarials = utils.remove_failed(model, images, labels, adversarials, False)
+
+            adversarials = utils.remove_failed(
+                model, images, labels, adversarials, False)
 
             for i in range(len(images)):
                 # Move to CPU and save

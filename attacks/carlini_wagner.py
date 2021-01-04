@@ -160,13 +160,14 @@ class CarliniWagnerLinfAttack(attacks.Attack, attacks.LabelMixin):
 
                 if self.return_best:
                     distances = torch.max(
-                                torch.abs(
-                                    x - adversarials
-                                    ).flatten(1),
-                                dim=1)[0]
+                        torch.abs(
+                            x - adversarials
+                        ).flatten(1),
+                        dim=1)[0]
                     better_distance = distances < best_distances
 
-                    best_adversarials = utils.fast_boolean_choice(best_adversarials, adversarials, better_distance)
+                    best_adversarials = utils.fast_boolean_choice(
+                        best_adversarials, adversarials, better_distance)
                 else:
                     best_adversarials = adversarials
 
@@ -238,26 +239,26 @@ class CarliniWagnerLinfAttack(attacks.Attack, attacks.LabelMixin):
             linf_lower = linf_distances < taus[active]
 
             utils.replace_active(linf_distances,
-                           taus,
-                           active,
-                           linf_lower & successful)
+                                 taus,
+                                 active,
+                                 linf_lower & successful)
 
             # Save the remaining adversarials
             if self.return_best:
                 better_distance = linf_distances < best_distances[active]
                 utils.replace_active(adversarials,
-                               best_adversarials,
-                               active,
-                               successful & better_distance)
+                                     best_adversarials,
+                                     active,
+                                     successful & better_distance)
                 utils.replace_active(linf_distances,
-                               best_distances,
-                               active,
-                               successful & better_distance)
+                                     best_distances,
+                                     active,
+                                     successful & better_distance)
             else:
                 utils.replace_active(adversarials,
-                               best_adversarials,
-                               active,
-                               successful)
+                                     best_adversarials,
+                                     active,
+                                     successful)
 
             taus *= self.tau_factor
 

@@ -6,6 +6,7 @@ import utils
 
 # TODO: Ora sono tutti sempre attivi, passare a fast_boolean_choice?
 
+
 class UniformNoiseAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     def __init__(self, predict, p, targeted, eps=0.3, count=100, clip_min=0, clip_max=1, stochastic_consistency=False):
         super().__init__(predict, None, clip_min, clip_max)
@@ -45,23 +46,28 @@ class UniformNoiseAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixi
 
         for _ in range(self.count):
             if self.stochastic_consistency:
-                noise = generator.batch_generate(tensor_ids[active].cpu(), x[active])
+                noise = generator.batch_generate(
+                    tensor_ids[active].cpu(), x[active])
             else:
                 noise = torch.rand(x.shape, device=x.device)
 
             scaled_noise = (noise * 2 - 1) * self.eps
-            adversarials = torch.clamp(x + scaled_noise, min=self.clip_min, max=self.clip_max)[active]
-            
+            adversarials = torch.clamp(
+                x + scaled_noise, min=self.clip_min, max=self.clip_max)[active]
+
             outputs = self.predict(adversarials)
 
             successful = self.successful(outputs, y[active])
 
-            distances = utils.adversarial_distance(x[active], adversarials, self.p)
+            distances = utils.adversarial_distance(
+                x[active], adversarials, self.p)
             better_distance = distances < best_distances[active]
 
-            utils.replace_active(adversarials.detach(), best_adversarials, active, successful & better_distance)
-            utils.replace_active(distances.detach(), best_distances, active, successful & better_distance)
-            
+            utils.replace_active(adversarials.detach(
+            ), best_adversarials, active, successful & better_distance)
+            utils.replace_active(
+                distances.detach(), best_distances, active, successful & better_distance)
+
             if not active.any():
                 break
 

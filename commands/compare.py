@@ -10,6 +10,7 @@ import utils
 
 logger = logging.getLogger(__name__)
 
+
 @click.command()
 @click.argument('domain', type=click.Choice(parsing.domains))
 @click.argument('architecture', type=click.Choice(parsing.architectures))
@@ -17,33 +18,33 @@ logger = logging.getLogger(__name__)
 @click.argument('attacks', callback=parsing.ParameterList(parsing.supported_attacks))
 @click.argument('p', type=click.Choice(parsing.distances), callback=parsing.validate_lp_distance)
 @click.option('--state-dict-path', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None,
-    help='The path to the state-dict file of the model. If None, a pretrained model will be used (if available).')
+              help='The path to the state-dict file of the model. If None, a pretrained model will be used (if available).')
 @click.option('--masked-relu', is_flag=True,
-    help='If passed, all ReLU layers will be converted to MaskedReLU layers.')
+              help='If passed, all ReLU layers will be converted to MaskedReLU layers.')
 @click.option('--batch-size', type=click.IntRange(1), default=50, show_default=True,
-    help='The batch size of the dataset.')
+              help='The batch size of the dataset.')
 @click.option('--device', default='cuda', show_default=True, help='The device where the model will be executed.')
 @click.option('--cpu-threads', type=click.IntRange(1, None, False), default=None,
-    help='The number of PyTorch CPU threads. If unspecified, the default '
-          'number is used (usually the number of cores).')
+              help='The number of PyTorch CPU threads. If unspecified, the default '
+              'number is used (usually the number of cores).')
 @click.option('--attack-config-file', type=click.Path(exists=True, file_okay=True, dir_okay=False),
-    default='default_attack_configuration.cfg', show_default=True, help='The path to the file containing the '
-    'attack configuration.')
+              default='default_attack_configuration.cfg', show_default=True, help='The path to the file containing the '
+              'attack configuration.')
 @click.option('--misclassification-policy', type=click.Choice(parsing.misclassification_policies),
-    default='remove', show_default=True, help='The policy that will be applied to deal with '
-    'misclassified images.')
+              default='remove', show_default=True, help='The policy that will be applied to deal with '
+              'misclassified images.')
 @click.option('--start', type=click.IntRange(0, None), default=0,
-    help='The first index (inclusive) of the dataset that will be used.')
+              help='The first index (inclusive) of the dataset that will be used.')
 @click.option('--stop', type=click.IntRange(0, None), default=None,
-    help='The last index (exclusive) of the dataset that will be used. If unspecified, defaults to '
-         'the dataset size.')
+              help='The last index (exclusive) of the dataset that will be used. If unspecified, defaults to '
+              'the dataset size.')
 @click.option('--save-to', type=click.Path(exists=False, file_okay=True, dir_okay=False),
-    help='The path to the file where the test results will be saved (as a dataset). If unspecified, '
-         'no dataset is saved.')
+              help='The path to the file where the test results will be saved (as a dataset). If unspecified, '
+              'no dataset is saved.')
 @click.option('--seed', type=int, default=None,
-    help='The seed for random generation. If unspecified, the current time is used as seed.')
+              help='The seed for random generation. If unspecified, the current time is used as seed.')
 @click.option('--log-level', type=click.Choice(parsing.log_levels), default='info', show_default=True,
-    help='The minimum logging level.')
+              help='The minimum logging level.')
 def compare(**kwargs):
     parsing.set_log_level(kwargs['log_level'])
 
@@ -53,11 +54,14 @@ def compare(**kwargs):
     if kwargs['seed'] is not None:
         torch.manual_seed(kwargs['seed'])
 
-    model = parsing.get_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'], True, kwargs['masked_relu'], load_weights=True)
+    model = parsing.get_model(kwargs['domain'], kwargs['architecture'],
+                              kwargs['state_dict_path'], True, kwargs['masked_relu'], load_weights=True)
     model.eval()
 
-    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], dataset_edges=(kwargs['start'], kwargs['stop']))
-    dataloader = torch.utils.data.DataLoader(dataset, kwargs['batch_size'], shuffle=False)
+    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], dataset_edges=(
+        kwargs['start'], kwargs['stop']))
+    dataloader = torch.utils.data.DataLoader(
+        dataset, kwargs['batch_size'], shuffle=False)
 
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
 
@@ -67,10 +71,12 @@ def compare(**kwargs):
     attacks = []
 
     for attack_name in attack_names:
-        attack = parsing.get_attack(attack_name, kwargs['domain'], p, 'standard', model, attack_config)
+        attack = parsing.get_attack(
+            attack_name, kwargs['domain'], p, 'standard', model, attack_config)
         attacks.append(attack)
 
-    result_dataset = tests.multiple_attack_test(model, attack_names, attacks, dataloader, p, kwargs['misclassification_policy'], kwargs['device'], attack_config, dataset.start, dataset.stop, kwargs)
+    result_dataset = tests.multiple_attack_test(model, attack_names, attacks, dataloader, p,
+                                                kwargs['misclassification_policy'], kwargs['device'], attack_config, dataset.start, dataset.stop, kwargs)
 
     print('===Standard Result===')
     complete_pool = result_dataset.simulate_pooling(attack_names)
@@ -82,7 +88,8 @@ def compare(**kwargs):
 
     for attack_name in attack_names:
         other_attack_names = [x for x in attack_names if x != attack_name]
-        pool_adversarial_dataset = result_dataset.simulate_pooling(other_attack_names)
+        pool_adversarial_dataset = result_dataset.simulate_pooling(
+            other_attack_names)
 
         print(f'Without {attack_name}:')
 
@@ -107,27 +114,35 @@ def compare(**kwargs):
         print(f'==Pool of size {n}==')
         print()
 
-        n_size_sets = [subset for subset in attack_powerset if len(subset) == n]
-        n_size_pools = [result_dataset.simulate_pooling(subset) for subset in n_size_sets]
+        n_size_sets = [
+            subset for subset in attack_powerset if len(subset) == n]
+        n_size_pools = [result_dataset.simulate_pooling(
+            subset) for subset in n_size_sets]
 
-        attack_success_rates = np.array([x.attack_success_rate for x in n_size_pools])
-        median_distances = np.array([np.median(x.successful_distances) for x in n_size_pools])
-        average_distances = np.array([np.average(x.successful_distances) for x in n_size_pools])
+        attack_success_rates = np.array(
+            [x.attack_success_rate for x in n_size_pools])
+        median_distances = np.array(
+            [np.median(x.successful_distances) for x in n_size_pools])
+        average_distances = np.array(
+            [np.average(x.successful_distances) for x in n_size_pools])
 
         best_by_success_rate = np.argmax(attack_success_rates)
 
-        print(f'Best pool of size {n} by success rate: {n_size_sets[best_by_success_rate]}')
+        print(
+            f'Best pool of size {n} by success rate: {n_size_sets[best_by_success_rate]}')
         n_size_pools[best_by_success_rate].print_stats()
         print()
 
         best_by_median_distance = np.argmin(median_distances)
 
-        print(f'Best pool of size {n} by successful median distance: {n_size_sets[best_by_median_distance]}')
+        print(
+            f'Best pool of size {n} by successful median distance: {n_size_sets[best_by_median_distance]}')
         n_size_pools[best_by_median_distance].print_stats()
         print()
 
         best_by_average_distance = np.argmin(average_distances)
-        print(f'Best pool of size {n} by successful average distance: {n_size_sets[best_by_average_distance]}')
+        print(
+            f'Best pool of size {n} by successful average distance: {n_size_sets[best_by_average_distance]}')
         n_size_pools[best_by_average_distance].print_stats()
         print()
 
@@ -139,9 +154,11 @@ def compare(**kwargs):
         attack_ranking_stats = result_dataset.attack_ranking_stats(attack_name)
 
         for position, rate in [x for x in attack_ranking_stats.items() if x[0] != 'failure']:
-            print('The attack is {}°: {:.2f}%'.format(position + 1, rate * 100.0))
+            print('The attack is {}°: {:.2f}%'.format(
+                position + 1, rate * 100.0))
 
-        print('The attack fails: {:.2f}%'.format(attack_ranking_stats['failure'] * 100.0))
+        print('The attack fails: {:.2f}%'.format(
+            attack_ranking_stats['failure'] * 100.0))
         print()
 
     print()
