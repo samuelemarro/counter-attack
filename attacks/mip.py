@@ -74,13 +74,13 @@ def module_to_mip(module):
         # Remember: PyTorch is height-first
 
         if not all(x == 1 for x in module.dilation):
-            raise ValueError('MIP only supports (1, 1)-style dilation. Received: {}.'.format(module.dilation))
+            raise ValueError(f'MIP only supports (1, 1)-style dilation. Received: {module.dilation}.')
         if not all(x == 0 for x in module.output_padding):
-            raise ValueError('MIP does not support output padding. Received: {}.'.format(module.output_padding))
+            raise ValueError(f'MIP does not support output padding. Received: {module.output_padding}.')
         if module.groups != 1:
-            raise ValueError('MIP only supports convolutions with groups=1. Received: {}'.format(module.groups))
+            raise ValueError(f'MIP only supports convolutions with groups=1. Received: {module.groups}')
         if len(set(module.stride)) > 1:
-            raise ValueError('MIP only supports striding along all dimensions with the same value. Received: {}'.format(module.stride))
+            raise ValueError(f'MIP only supports striding along all dimensions with the same value. Received: {module.stride}')
 
         if isinstance(module.stride, tuple):
             stride = module.stride[0]
@@ -100,7 +100,7 @@ def module_to_mip(module):
         # L'immagine (H, W) filtrata (senza padding) dal filtro (K_H, K_W)
         # avrà dimensione (H - K_H + 1, W - K_W + 1)
     else:
-        raise NotImplementedError('Unsupported module "{}".'.format(type(module).__name__))
+        raise NotImplementedError(f'Unsupported module "{type(module).__name__}".')
 
     return converted
 

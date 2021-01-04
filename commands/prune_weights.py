@@ -37,6 +37,6 @@ def prune_weights(**kwargs):
             prunable_parameters += len(torch.nonzero(below_threshold))
             p[below_threshold] = 0.0
 
-    logger.info('Pruned {} out of {} parameters.'.format(prunable_parameters, all_parameters))
+    logger.info(f'Pruned {prunable_parameters} out of {all_parameters} parameters.')
 
     torch.save(model.state_dict(), kwargs['save_to'])

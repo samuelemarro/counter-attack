@@ -86,7 +86,7 @@ def compare(**kwargs):
         other_attack_names = [x for x in attack_names if x != attack_name]
         pool_adversarial_dataset = result_dataset.simulate_pooling(other_attack_names)
 
-        print('Without {}:'.format(attack_name))
+        print(f'Without {attack_name}:')
 
         pool_adversarial_dataset.print_stats()
         print()
@@ -95,7 +95,7 @@ def compare(**kwargs):
 
     print('===Pool Stats===')
     for attack_set in attack_powerset:
-        print('Pool {}:'.format(attack_set))
+        print(f'Pool {attack_set}:')
 
         pool_adversarial_dataset = result_dataset.simulate_pooling(attack_set)
         pool_adversarial_dataset.print_stats()
@@ -106,7 +106,7 @@ def compare(**kwargs):
     print()
 
     for n in range(1, len(attack_names) + 1):
-        print('==Pool of size {}=='.format(n))
+        print(f'==Pool of size {n}==')
         print()
 
         n_size_sets = [subset for subset in attack_powerset if len(subset) == n]
@@ -118,25 +118,25 @@ def compare(**kwargs):
 
         best_by_success_rate = np.argmax(attack_success_rates)
 
-        print('Best pool of size {} by success rate: {}'.format(n, n_size_sets[best_by_success_rate]))
+        print(f'Best pool of size {n} by success rate: {n_size_sets[best_by_success_rate]}')
         n_size_pools[best_by_success_rate].print_stats()
         print()
 
         best_by_median_distance = np.argmin(median_distances)
 
-        print('Best pool of size {} by successful median distance: {}'.format(n, n_size_sets[best_by_median_distance]))
+        print(f'Best pool of size {n} by successful median distance: {n_size_sets[best_by_median_distance]}')
         n_size_pools[best_by_median_distance].print_stats()
         print()
 
         best_by_average_distance = np.argmin(average_distances)
-        print('Best pool of size {} by successful average distance: {}'.format(n, n_size_sets[best_by_average_distance]))
+        print(f'Best pool of size {n} by successful average distance: {n_size_sets[best_by_average_distance]}')
         n_size_pools[best_by_average_distance].print_stats()
         print()
 
     print('===Attack Ranking Stats===')
 
     for attack_name in attack_names:
-        print('Attack {}:'.format(attack_name))
+        print(f'Attack {attack_name}:')
 
         attack_ranking_stats = result_dataset.attack_ranking_stats(attack_name)
 

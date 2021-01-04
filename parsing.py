@@ -94,7 +94,7 @@ def get_model(domain, architecture, state_dict_path, apply_normalisation, masked
     elif domain == 'mnist':
         model = models.mnist(architecture, masked_relu, pretrained=pretrained, num_classes=num_classes)
     else:
-        raise NotImplementedError('Unsupported domain {}.'.format(domain))
+        raise NotImplementedError(f'Unsupported domain {domain}.')
 
     if apply_normalisation:
         # CIFAR10:
@@ -115,14 +115,14 @@ def get_model(domain, architecture, state_dict_path, apply_normalisation, masked
             std = np.array([0.3081])
             num_channels = 1
         else:
-            raise NotImplementedError('Unsupported normalisation for domain {}.'.format(domain))
+            raise NotImplementedError(f'Unsupported normalisation for domain {domain}.')
 
         normalisation = torch_utils.Normalisation(mean, std, num_channels=num_channels)
         model = torch.nn.Sequential(normalisation, model)
 
     # Nota: Questo fa sì che i modelli vengano salvati come modello con normalisation
     if load_weights and state_dict_path is not None:
-        logger.info('Loading weights from {}'.format(state_dict_path))
+        logger.info(f'Loading weights from {state_dict_path}')
         model.load_state_dict(torch.load(state_dict_path))
 
     return model
@@ -156,7 +156,7 @@ def get_dataset(domain, dataset, allow_standard=True, start=None, stop=None, ext
         try:
             matched_dataset = utils.load_zip(dataset)
         except:
-            raise RuntimeError('Could not find a standard dataset or a dataset file "{}".'.format(dataset))
+            raise RuntimeError(f'Could not find a standard dataset or a dataset file "{dataset}".')
 
     if (start is not None and start != 0) or stop is not None:
         matched_dataset = torch_utils.StartStopDataset(matched_dataset, start=start, stop=stop)
@@ -172,7 +172,7 @@ def get_optimiser(optimiser_name, learnable_parameters, options):
             learnable_parameters, lr=options['learning_rate'], momentum=options['sgd_momentum'],
             dampening=options['sgd_dampening'], weight_decay=options['weight_decay'], nesterov=options['sgd_nesterov'])
     else:
-        raise ValueError('Unsupported optimiser "{}".'.format(optimiser_name))
+        raise ValueError(f'Unsupported optimiser "{optimiser_name}".')
 
     return optimiser
 
@@ -186,13 +186,11 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
     elif np.isposinf(p):
         metric = 'linf'
     else:
-        raise NotImplementedError('Unsupported metric "l{}"'.format(p))
+        raise NotImplementedError(f'Unsupported metric "l{p}"')
 
     kwargs = attack_config.get_arguments(attack_name, domain, metric, attack_type)
 
-    logger.debug('Preparing attack "{}", domain "{}", distance metric "{}", type "{}" with kwargs: {}'.format(
-        attack_name, domain, metric, attack_type, kwargs 
-    ))
+    logger.debug(f'Preparing attack "{attack_name}", domain "{domain}", distance metric "{metric}", type "{attack_type}" with kwargs: {kwargs}')
 
     if attack_type == 'evasion' and defended_model is None:
         raise ValueError('Evasion attacks require a defended model.')
@@ -206,7 +204,7 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
     if domain in ['cifar10', 'mnist', 'svhn']:
         num_classes = 10
     else:
-        raise NotImplementedError('Unsupported domain "{}".'.format(domain))
+        raise NotImplementedError(f'Unsupported domain "{domain}".')
 
     evade_detector = (attack_type == 'evasion')
 
@@ -216,13 +214,13 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
     kwargs.pop('enable_binary_search', None)
 
     if binary_search:
-        logger.debug('Enabling binary search for "{}".'.format(attack_name))
+        logger.debug(f'Enabling binary search for "{attack_name}".')
         # Remove standard arguments
         kwargs.pop('eps', None)
         if attack_name not in attacks_with_binary_search:
-            raise NotImplementedError('Attack {} does not support binary search.'.format(attack_name))
+            raise NotImplementedError(f'Attack {attack_name} does not support binary search.')
     elif attack_name in attacks_with_binary_search:
-        logger.warning('Binary search for attack "{}" is disabled in the configuration file, despite being supported.'.format(attack_name))
+        logger.warning(f'Binary search for attack "{attack_name}" is disabled in the configuration file, despite being supported.')
 
     # Pop binary search arguments
     min_eps = kwargs.pop('min_eps', None)
@@ -245,7 +243,7 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
         elif metric == 'linf':
             attack = advertorch.attacks.LinfBasicIterativeAttack(target_model, targeted=evade_detector, **kwargs)
         else:
-            raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, metric))
+            raise NotImplementedError(f'Unsupported attack "{attack_name}" for "{metric}".')
     elif attack_name == 'brendel':
         attack = attacks.BrendelBethgeAttack(target_model, p, **kwargs)
     elif attack_name == 'carlini':
@@ -254,7 +252,7 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
         elif metric == 'linf':
             attack = attacks.CarliniWagnerLinfAttack(target_model, num_classes, targeted=evade_detector, return_best=return_best, **kwargs)
         else:
-            raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, metric))
+            raise NotImplementedError(f'Unsupported attack "{attack_name}" for "{metric}".')
     elif attack_name == 'deepfool':
         attack = attacks.DeepFoolAttack(target_model, p, **kwargs)
     elif attack_name == 'fast_gradient':
@@ -264,7 +262,7 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
         elif metric == 'linf':
             attack = advertorch.attacks.FGSM(target_model, targeted=evade_detector, **kwargs)
         else:
-            raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, metric))
+            raise NotImplementedError(f'Unsupported attack "{attack_name}" for "{metric}".')
     elif attack_name == 'mip':
         if attack_type == 'evasion':
             raise NotImplementedError('MIP does not support evasion.')
@@ -275,11 +273,11 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
         elif metric == 'linf':
             attack = advertorch.attacks.LinfPGDAttack(target_model, targeted=evade_detector, **kwargs)
         else:
-            raise NotImplementedError('Unsupported attack "{}" for "{}".'.format(attack_name, metric))
+            raise NotImplementedError(f'Unsupported attack "{attack_name}" for "{metric}".')
     elif attack_name == 'uniform':
          attack = attacks.UniformNoiseAttack(target_model, p, targeted=evade_detector, **kwargs)
     else:
-        raise NotImplementedError('Unsupported attack "{}".'.format(attack_name))
+        raise NotImplementedError(f'Unsupported attack "{attack_name}".')
 
     if 'stochastic_consistency' in kwargs and kwargs['stochastic_consistency']:
         logger.warn('Stochastic consistency is deprecated.')
@@ -291,7 +289,7 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
         elif attack_name in ['fast_gradient', 'uniform']:
             unsqueeze = True
         else:
-            raise ValueError('Unsupported binary search attack "{}"'.format(attack_name))
+            raise ValueError(f'Unsupported binary search attack "{attack_name}"')
 
         binary_search_kwargs = dict()
         if min_eps is not None:
@@ -324,7 +322,7 @@ def get_attack_pool(attack_names, domain, p, attack_type, model, attack_config, 
     else:
         target_model = model
 
-    logger.debug('Preparing attack pool for "{}" of type "{}" containing {} (with defended model: {}).'.format(p, attack_type, attack_names, defended_model is not None))
+    logger.debug(f'Preparing attack pool for "{p}" of type "{attack_type}" containing {attack_names} (with defended model: {defended_model is not None}).')
 
     attack_pool = []
     for attack_name in attack_names:
@@ -336,7 +334,7 @@ def get_attack_pool(attack_names, domain, p, attack_type, model, attack_config, 
         return attacks.AttackPool(target_model, evade_detector, attack_pool, p)
 
 def get_detector(attack_name, domain, p, attack_type, model, attack_config, device, use_substitute=False, substitute_state_dict_path=None):
-    logger.debug('Preparing detector for "{}" of type "{}" with attack "{}".'.format(p, attack_type, attack_name))
+    logger.debug(f'Preparing detector for "{p}" of type "{attack_type}" with attack "{attack_name}".')
 
     model.to(device)
 
@@ -344,7 +342,7 @@ def get_detector(attack_name, domain, p, attack_type, model, attack_config, devi
         assert substitute_state_dict_path is not None
 
     if attack_type != 'defense':
-        logger.warning('You are using an attack of type "{}" for a detector. Is this intentional?'.format(attack_type))
+        logger.warning(f'You are using an attack of type "{attack_type}" for a detector. Is this intentional?')
 
     attack = get_attack(attack_name, domain, p, attack_type, model, attack_config, defended_model=None)
     assert attack.predict == model
@@ -366,7 +364,7 @@ def get_detector_pool(attack_names, domain, p, attack_type, model, attack_config
     if use_substitute:
         assert len(substitute_state_dict_paths) == len(attack_names)
 
-    logger.debug('Preparing detector pool for "{}" of type "{}" containing {}.'.format(p, attack_type, attack_names))
+    logger.debug(f'Preparing detector pool for "{p}" of type "{attack_type}" containing {attack_names}.')
     
     detector_pool = []
 
@@ -391,7 +389,7 @@ def validate_lp_distance(ctx, param, value):
     elif value is None:
         return None
     else:
-        raise NotImplementedError('Unsupported distance metric "{}."'.format(value))
+        raise NotImplementedError(f'Unsupported distance metric "{value}".')
 
 class ParameterList:
     def __init__(self, allowed_values=None, cast_to=None):
@@ -414,7 +412,7 @@ class ParameterList:
         if self.allowed_values is not None:
             for parameter in parameter_list:
                 if parameter not in self.allowed_values:
-                    raise click.BadParameter('Unrecognised value "{}".'.format(parameter))
+                    raise click.BadParameter(f'Unrecognised value "{parameter}".')
 
         if self.cast_to is not None:
             parameter_list = [self.cast_to(parameter) for parameter in parameter_list]

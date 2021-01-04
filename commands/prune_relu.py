@@ -107,7 +107,7 @@ def prune_relu(**kwargs):
 
     num_samples = 0
 
-    for images, labels in dataloader:
+    for images, _ in dataloader:
         images = images.to(device)
         num_samples += len(images)
         counter_model(images)
@@ -116,6 +116,6 @@ def prune_relu(**kwargs):
 
     converted_model, total_relus, replaced_relus = recursive_converter(counter_model, num_samples_threshold)
 
-    print('Replaced {} ReLUs out of {}.'.format(replaced_relus, total_relus))
+    print(f'Replaced {replaced_relus} ReLUs out of {total_relus}.')
 
     torch.save(converted_model.state_dict(), kwargs['save_to'])

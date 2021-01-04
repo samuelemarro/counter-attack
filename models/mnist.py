@@ -45,6 +45,6 @@ def mnist(architecture, masked_relu, num_classes=10, pretrained=None):
     elif architecture == 'c':
         model = mnist_c(masked_relu, num_classes)
     else:
-        raise ValueError('Architecture "{}" not supported for MNIST.'.format(architecture))
+        raise ValueError(f'Architecture "{architecture}" not supported for MNIST.')
     
     return model

@@ -221,7 +221,7 @@ def cifar10(architecture, masked_relu, n_channel=128, num_classes=10, pretrained
     elif architecture == 'x11':
         model = cifar10_x11(masked_relu, num_classes)
     else:
-        raise ValueError('Architecture "{}" not supported for CIFAR10.'.format(architecture))
+        raise ValueError(f'Architecture "{architecture}" not supported for CIFAR10.')
 
     if pretrained:
         # TODO: Organizzare file

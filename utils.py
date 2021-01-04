@@ -51,7 +51,7 @@ class AttackConfig:
         def load_kwargs(new_kwargs):
             for key, value in new_kwargs.items():
                 if key in kwargs.keys():
-                    logger.debug('Overriding value "{}" by replacing {} with {}.'.format(key, kwargs[key], value))
+                    logger.debug(f'Overriding key "{key}" by replacing {kwargs[key]} with {value}.')
                 kwargs[key] = value
 
         def loop_across_dict(current_dict, ramifications):
@@ -232,8 +232,8 @@ def show_images(images, adversarials, limit=None, model=None):
         adversarial_title = 'Adversarial'
 
         if model is not None:
-            image_title += ' (label: {})'.format(label)
-            adversarial_title += ' (label: {})'.format(adversarial_label)
+            image_title += f' (label: {label})'
+            adversarial_title += f' (label: {adversarial_label})'
 
         if image.shape[0] == 1:
             plt.style.use('grayscale')
@@ -252,8 +252,8 @@ def show_images(images, adversarials, limit=None, model=None):
         axes[0, 2].title.set_text('Difference')
         axes[0, 2].imshow(difference, norm=normalisation)
 
-        print('L2 norm: {}'.format(np.linalg.norm(difference.flatten())))
-        print('LInf norm: {}'.format(np.max(difference)))
+        print(f'L2 norm: {np.linalg.norm(difference.flatten())}')
+        print(f'LInf norm: {np.max(difference)}')
 
         plt.show()
 

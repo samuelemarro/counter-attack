@@ -20,8 +20,8 @@ class SVHN(nn.Module):
         self.classifier = nn.Sequential(
             nn.Linear(n_channel, num_classes)
         )
-        logger.debug('SVHN features: {}'.format(self.features))
-        logger.debug('SVHN classifier: {}'.format(self.classifier))
+        logger.debug(f'SVHN features: {self.features}')
+        logger.debug(f'SVHN classifier: {self.classifier}')
 
     def forward(self, x):
         x = self.features(x)

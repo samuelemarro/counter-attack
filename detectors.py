@@ -94,7 +94,7 @@ class NormalisedDetectorModel(torch.nn.Module):
             rejected.
         """
         super().__init__()
-        logger.debug('Creating detector with threshold {}.'.format(threshold))
+        logger.debug(f'Creating detector with threshold {threshold}.')
         self.model = model
         self.detector = detector
         self.threshold = threshold

@@ -14,8 +14,6 @@ import commands
 def main():
     pass
 
-# TODO: Scaricare da un server con un nome porta a una violazione dell'anonimato?
-
 # TODO: consistent_random deve anche prendere in considerazione il seed impostato
 # Obiettivo: Arrivare a modelli Sequential MNIST, CIFAR10 e SVHN che possano essere attaccati da MIP
 # Nota: MIP supporta le skip-connections
@@ -29,6 +27,8 @@ def main():
 # TODO: Aggiungere start e stop ai parametri degli adversarial dataset
 # TODO: Linf, L2 -> inf, 2
 # TODO: Passare a formattazione nuova?
+
+# TODO: Rimuovere sanity_test e svhn
 
 main.add_command(commands.accuracy)
 main.add_command(commands.attack)

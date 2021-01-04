@@ -100,7 +100,7 @@ def attack_matrix(**kwargs):
 
             evasion_attack = parsing.get_attack(evasion_attack_name, kwargs['domain'], kwargs['p'], 'evasion', model, attack_config, defended_model=defended_model)
 
-            test_name = '{} vs {}'.format(evasion_attack_name, counter_attack_name)
+            test_name = f'{evasion_attack_name} vs {counter_attack_name}'
 
             test_names.append(test_name)
             evasion_attacks.append(evasion_attack)
@@ -111,7 +111,7 @@ def attack_matrix(**kwargs):
     logger.info('Tests:\n{}'.format('\n'.join(test_names)))
 
     for test_name in test_names:
-        print('Test "{}":'.format(test_name))
+        print(f'Test "{test_name}":')
         adversarial_dataset = evasion_dataset.to_adversarial_dataset(test_name)
         adversarial_dataset.print_stats()
 

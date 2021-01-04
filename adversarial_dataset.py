@@ -106,8 +106,8 @@ class AdversarialDataset(data.Dataset):
         average_distance = np.average(distances)
 
         print('Success Rate: {:.2f}%'.format(success_rate * 100.0))
-        print('Median Successful Distance: {}'.format(median_distance))
-        print('Average Successful Distance: {}'.format(average_distance))
+        print(f'Median Successful Distance: {median_distance}')
+        print(f'Average Successful Distance: {average_distance}')
 
 class MIPDataset(data.Dataset):
     def __init__(self, genuines, true_labels, adversarials, lower_bounds, upper_bounds, solve_times, p, misclassification_policy, attack_configuration, generation_kwargs):

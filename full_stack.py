@@ -29,8 +29,6 @@ architecture = args.architecture
 pre_attack = args.pre_attack
 count = args.count
 
-# TODO: Usare poi Brendel per ottenere un pre-calcolo migliore
-
 def custom_accuracy(domain, architecture, path):
     model = parsing.get_model(domain, architecture, path, True, False, load_weights=True)
     model.eval()
@@ -115,8 +113,8 @@ if not Path(cfg_path).exists():
     parameters = read_gurobi_file(gurobi_path)
     create_cfg_file(parameters, cfg_path)
 
-mip_path = f'mip_results/{domain}-{architecture}-{count}.zip'
-mip_f3_path = f'mip_results/{domain}-{architecture}-{count}-f3.zip'
+mip_path = f'mip_results/{domain}-{architecture}-{pre_attack}-{count}.zip'
+mip_f3_path = f'mip_results/{domain}-{architecture}-{pre_attack}-{count}-f3.zip'
 
 if not Path(cfg_f3_path).exists():
     with open(cfg_path, 'r') as f:

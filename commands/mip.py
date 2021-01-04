@@ -81,7 +81,7 @@ def mip(**kwargs):
     elif np.isposinf(p):
         metric = 'linf'
     else:
-        raise NotImplementedError('Unsupported metric "l{}"'.format(p))
+        raise NotImplementedError(f'Unsupported metric "l{p}"')
 
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
     attack_kwargs = attack_config.get_arguments('mip', kwargs['domain'], metric, 'standard')
