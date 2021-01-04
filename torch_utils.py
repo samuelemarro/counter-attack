@@ -327,7 +327,6 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
 
             optimiser.zero_grad()
             loss.backward()
-            start_time = datetime.now()
             # RS Regularization uses a high amount of GPU memory, so we use .backward()
             # for each minibatch
             if rs_regularization != 0:

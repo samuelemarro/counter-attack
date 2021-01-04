@@ -40,7 +40,7 @@ def accuracy(**kwargs):
     model = parsing.get_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'], True, kwargs['masked_relu'], load_weights=True)
     model.eval()
 
-    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], start=kwargs['start'], stop=kwargs['stop'])
+    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], dataset_edges=(kwargs['start'], kwargs['stop']))
 
     if kwargs['from_adversarial_dataset']:
         dataset = dataset.to_adversarial_training_dataset()

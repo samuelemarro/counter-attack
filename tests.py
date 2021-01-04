@@ -5,6 +5,8 @@ import detectors
 import utils
 import adversarial_dataset
 
+# TODO: A volte attack_config è prima di generation_kwargs, a volte dopo
+
 def accuracy(model, loader, device):
     correct_count = 0
     total_count = 0
@@ -23,7 +25,7 @@ def accuracy(model, loader, device):
 
     return correct_count / total_count
 
-def attack_test(model, attack, loader, p, misclassification_policy, device, generation_kwargs, attack_configuration, defended_model, blind_trust=False):
+def attack_test(model, attack, loader, p, misclassification_policy, device, generation_kwargs, attack_configuration, start, stop, defended_model, blind_trust=False):
     assert not attack.targeted
     model.to(device)
 
@@ -65,9 +67,9 @@ def attack_test(model, attack, loader, p, misclassification_policy, device, gene
     assert len(all_images) == len(all_true_labels)
     assert len(all_images) == len(all_adversarials)
 
-    return adversarial_dataset.AdversarialDataset(all_images, all_true_labels, all_adversarials, p, misclassification_policy, attack_configuration, generation_kwargs)
+    return adversarial_dataset.AdversarialDataset(all_images, all_true_labels, all_adversarials, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs)
 
-def mip_test(model, attack, loader, p, misclassification_policy, device, generation_kwargs, attack_configuration, pre_adversarial_dataset=None):
+def mip_test(model, attack, loader, p, misclassification_policy, device, generation_kwargs, attack_configuration, start, stop, pre_adversarial_dataset=None):
     assert not attack.targeted
     model.to(device)
 
@@ -140,9 +142,9 @@ def mip_test(model, attack, loader, p, misclassification_policy, device, generat
     assert len(all_images) == len(all_upper_bounds)
     assert len(all_images) == len(all_solve_times)
 
-    return adversarial_dataset.MIPDataset(all_images, all_true_labels, all_adversarials, all_lower_bounds, all_upper_bounds, all_solve_times, p, misclassification_policy, attack_configuration, generation_kwargs)
+    return adversarial_dataset.MIPDataset(all_images, all_true_labels, all_adversarials, all_lower_bounds, all_upper_bounds, all_solve_times, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs)
 
-def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p, misclassification_policy, device, attack_configuration, generation_kwargs):
+def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p, misclassification_policy, device, attack_configuration, start, stop, generation_kwargs):
     assert all(not attack.targeted for attack in attacks)
     assert all(attack.predict == defended_model.predict for attack, defended_model in zip(attacks, defended_models))
 
@@ -188,9 +190,9 @@ def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p
     assert len(all_true_labels) == len(all_images)
     assert len(all_attack_results) == len(all_images)
 
-    return adversarial_dataset.AttackComparisonDataset(all_images, all_true_labels, test_names, all_attack_results, p, misclassification_policy, attack_configuration, generation_kwargs)
+    return adversarial_dataset.AttackComparisonDataset(all_images, all_true_labels, test_names, all_attack_results, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs)
         
-def multiple_attack_test(model, attack_names, attacks, loader, p, misclassification_policy, device, attack_configuration, generation_kwargs):
+def multiple_attack_test(model, attack_names, attacks, loader, p, misclassification_policy, device, attack_configuration, start, stop, generation_kwargs):
     assert all(not attack.targeted for attack in attacks)
 
     model.to(device)
@@ -234,4 +236,4 @@ def multiple_attack_test(model, attack_names, attacks, loader, p, misclassificat
     assert len(all_true_labels) == len(all_images)
     assert len(all_attack_results) == len(all_images)
 
-    return adversarial_dataset.AttackComparisonDataset(all_images, all_true_labels, attack_names, all_attack_results, p, misclassification_policy, attack_configuration, generation_kwargs)
+    return adversarial_dataset.AttackComparisonDataset(all_images, all_true_labels, attack_names, all_attack_results, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs)

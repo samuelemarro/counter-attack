@@ -64,7 +64,7 @@ def attack_matrix(**kwargs):
     model.eval()
     model.to(kwargs['device'])
 
-    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], start=kwargs['start'], stop=kwargs['stop'])
+    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], dataset_edges=(kwargs['start'], kwargs['stop']))
     dataloader = torch.utils.data.DataLoader(dataset, kwargs['batch_size'], shuffle=False)
 
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
@@ -106,7 +106,7 @@ def attack_matrix(**kwargs):
             evasion_attacks.append(evasion_attack)
             defended_models.append(defended_model)
 
-    evasion_dataset = tests.multiple_evasion_test(model, test_names, evasion_attacks, defended_models, dataloader, p, kwargs['misclassification_policy'], kwargs['device'], attack_config, kwargs)
+    evasion_dataset = tests.multiple_evasion_test(model, test_names, evasion_attacks, defended_models, dataloader, p, kwargs['misclassification_policy'], kwargs['device'], attack_config, dataset.start, dataset.stop, kwargs)
 
     logger.info('Tests:\n{}'.format('\n'.join(test_names)))
 

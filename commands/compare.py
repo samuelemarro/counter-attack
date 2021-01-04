@@ -56,7 +56,7 @@ def compare(**kwargs):
     model = parsing.get_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'], True, kwargs['masked_relu'], load_weights=True)
     model.eval()
 
-    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], start=kwargs['start'], stop=kwargs['stop'])
+    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], dataset_edges=(kwargs['start'], kwargs['stop']))
     dataloader = torch.utils.data.DataLoader(dataset, kwargs['batch_size'], shuffle=False)
 
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
@@ -70,9 +70,7 @@ def compare(**kwargs):
         attack = parsing.get_attack(attack_name, kwargs['domain'], p, 'standard', model, attack_config)
         attacks.append(attack)
 
-    result_dataset = tests.multiple_attack_test(model, attack_names, attacks, dataloader, p, kwargs['misclassification_policy'], kwargs['device'], attack_config, kwargs)
-    
-    #adversarial_dataset = tests.attack_test(model, attack_pool, dataloader, p, kwargs['misclassification_policy'], kwargs['device'], attack_config, kwargs, None)
+    result_dataset = tests.multiple_attack_test(model, attack_names, attacks, dataloader, p, kwargs['misclassification_policy'], kwargs['device'], attack_config, dataset.start, dataset.stop, kwargs)
 
     print('===Standard Result===')
     complete_pool = result_dataset.simulate_pooling(attack_names)

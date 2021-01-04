@@ -100,7 +100,7 @@ def prune_relu(**kwargs):
         logger.warn('By using a threshold smaller than 0.5, a lot of unstable ReLUs will be treated as stable. '
                     'Is this intentional?')
 
-    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], start=kwargs['start'], stop=kwargs['stop'])
+    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], dataset_edges=(kwargs['start'], kwargs['stop']))
     dataloader = torch.utils.data.DataLoader(dataset, kwargs['batch_size'], shuffle=False)
 
     counter_model = recursive_counter(model)

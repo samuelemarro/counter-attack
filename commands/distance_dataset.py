@@ -9,6 +9,8 @@ import parsing
 import tests
 import utils
 
+# TODO: Fix distance-dataset, add start and stop to DistanceDataset
+
 logger = logging.getLogger(__name__)
 
 @click.command()
@@ -72,21 +74,22 @@ def distance_dataset(**kwargs):
     distances = []
 
     if kwargs['from_genuine'] is not None:
-        genuine_dataset = parsing.get_dataset(kwargs['domain'], kwargs['from_genuine'], start=kwargs['start'], stop=kwargs['stop'])
+        genuine_dataset = parsing.get_dataset(kwargs['domain'], kwargs['from_genuine'], dataset_edges=(kwargs['start'], kwargs['stop']))
         genuine_loader = torch.utils.data.DataLoader(genuine_dataset, kwargs['batch_size'], shuffle=False)
-        genuine_result_dataset = tests.attack_test(model, attack_pool, genuine_loader, p, kwargs['misclassification_policy'], kwargs['device'], attack_config, kwargs, None)
+        genuine_result_dataset = tests.attack_test(model, attack_pool, genuine_loader, p, kwargs['misclassification_policy'], kwargs['device'], attack_config, genuine_dataset.start, genuine_dataset.stop, kwargs, None)
 
         images += list(genuine_result_dataset.genuines)
         distances += list(genuine_result_dataset.distances)
 
     if kwargs['from_adversarial'] is not None:
-        adversarial_dataset = parsing.get_dataset(kwargs['domain'], kwargs['from_adversarial'], allow_standard=False, start=kwargs['start'], stop=kwargs['stop'])
+        adversarial_dataset = parsing.get_dataset(kwargs['domain'], kwargs['from_adversarial'], allow_standard=False, dataset_edges=(kwargs['start'], kwargs['stop']))
 
+        adv_start, adv_stop = adversarial_dataset.start, adversarial_dataset.stop
         # Get the labels for the adversarial samples
         adversarial_dataset = utils.create_label_dataset(model, adversarial_dataset.adversarials, kwargs['batch_size'])
 
         adversarial_loader = torch.utils.data.DataLoader(adversarial_dataset, kwargs['batch_size'], shuffle=False)
-        adversarial_result_dataset = tests.attack_test(model, attack_pool, adversarial_loader, p, False, kwargs['device'], attack_config, kwargs, None)
+        adversarial_result_dataset = tests.attack_test(model, attack_pool, adversarial_loader, p, False, kwargs['device'], attack_config, adv_start, adv_stop, kwargs, None)
 
         images += list(adversarial_result_dataset.genuines)
         distances += list(adversarial_result_dataset.distances)

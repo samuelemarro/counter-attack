@@ -68,7 +68,7 @@ def evasion(**kwargs):
     model.eval()
     model.to(kwargs['device'])
 
-    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], start=kwargs['start'], stop=kwargs['stop'])
+    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], dataset_edges=(kwargs['start'], kwargs['stop']))
     dataloader = torch.utils.data.DataLoader(dataset, kwargs['batch_size'], shuffle=False)
 
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
@@ -100,7 +100,7 @@ def evasion(**kwargs):
 
     evasion_pool = parsing.get_attack_pool(kwargs['evasion_attacks'], kwargs['domain'], kwargs['p'], 'evasion', model, attack_config, defended_model=defended_model)
 
-    adversarial_dataset = tests.attack_test(model, evasion_pool, dataloader, p, kwargs['misclassification_policy'], kwargs['device'], attack_config, kwargs, defended_model)
+    adversarial_dataset = tests.attack_test(model, evasion_pool, dataloader, p, kwargs['misclassification_policy'], kwargs['device'], attack_config, dataset.start, dataset.stop, kwargs, defended_model)
     adversarial_dataset.print_stats()
 
     if kwargs['save_to'] is not None:

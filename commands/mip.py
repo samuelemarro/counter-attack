@@ -66,7 +66,7 @@ def mip(**kwargs):
     model = parsing.get_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'], True, kwargs['masked_relu'], load_weights=True)
     model.eval()
 
-    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], start=kwargs['start'], stop=kwargs['stop'])
+    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], dataset_edges=(kwargs['start'], kwargs['stop']))
     dataloader = torch.utils.data.DataLoader(dataset, kwargs['batch_size'], shuffle=False)
 
     if kwargs['pre_adversarial_dataset'] is None:
@@ -89,7 +89,7 @@ def mip(**kwargs):
     attack = attacks.MIPAttack(model, p, False, **attack_kwargs)
     
     mip_dataset = tests.mip_test(model, attack, dataloader, p, kwargs['misclassification_policy'], kwargs['device'], attack_config, kwargs,
-                                 pre_adversarial_dataset=pre_adversarial_dataset)
+                                start=dataset.start, stop=dataset.stop, pre_adversarial_dataset=pre_adversarial_dataset)
     mip_dataset.print_stats()
 
     if kwargs['save_to'] is not None:

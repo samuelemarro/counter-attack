@@ -63,7 +63,7 @@ def attack(**kwargs):
     model = parsing.get_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'], True, kwargs['masked_relu'], load_weights=True)
     model.eval()
 
-    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], start=kwargs['start'], stop=kwargs['stop'])
+    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], dataset_edges=(kwargs['start'], kwargs['stop']))
     dataloader = torch.utils.data.DataLoader(dataset, kwargs['batch_size'], shuffle=False)
 
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
@@ -77,7 +77,7 @@ def attack(**kwargs):
     if kwargs['blind_trust']:
         logger.warn('Blind trust is activated. This means that the success of the attack will NOT be checked.')
     
-    adversarial_dataset = tests.attack_test(model, attack_pool, dataloader, p, kwargs['misclassification_policy'], kwargs['device'], attack_config, kwargs, None, blind_trust=kwargs['blind_trust'])
+    adversarial_dataset = tests.attack_test(model, attack_pool, dataloader, p, kwargs['misclassification_policy'], kwargs['device'], kwargs, attack_config, dataset.start, dataset.stop, None, blind_trust=kwargs['blind_trust'])
     adversarial_dataset.print_stats()
 
     if kwargs['save_to'] is not None:
