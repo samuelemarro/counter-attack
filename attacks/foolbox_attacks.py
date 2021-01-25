@@ -19,7 +19,7 @@ class FoolboxAttackWrapper(advertorch.attacks.LabelMixin):
     def __call__(self, *args, **kwargs):
         return self.perturb(*args, **kwargs)
 
-    def perturb(self, x, y=None):
+    def perturb(self, x, y=None, **kwargs):
         x, y = self._verify_and_process_inputs(x, y)
 
         # Initialization
@@ -32,7 +32,7 @@ class FoolboxAttackWrapper(advertorch.attacks.LabelMixin):
             criterion = fb.criteria.Misclassification(y)
 
         # Returns adv, clipped_adv, success
-        return self.foolbox_attack(self.foolbox_model, x, criterion, epsilons=None)[1]
+        return self.foolbox_attack(self.foolbox_model, x, criterion, epsilons=None, **kwargs)[1]
 
 
 class EpsilonFoolboxAttackWrapper(FoolboxAttackWrapper):
@@ -41,7 +41,7 @@ class EpsilonFoolboxAttackWrapper(FoolboxAttackWrapper):
                          clip_min=clip_min, clip_max=clip_max)
         self.eps = None
 
-    def perturb(self, x, y=None):
+    def perturb(self, x, y=None, **kwargs):
         x, y = self._verify_and_process_inputs(x, y)
 
         # Initialization
@@ -49,7 +49,7 @@ class EpsilonFoolboxAttackWrapper(FoolboxAttackWrapper):
             y = self._get_predicted_label(x)
 
         # Returns adv, clipped_adv, success
-        return self.foolbox_attack(self.foolbox_model, x, y, epsilons=self.eps)[1]
+        return self.foolbox_attack(self.foolbox_model, x, y, epsilons=self.eps, **kwargs)[1]
 
 
 class BrendelBethgeAttack(FoolboxAttackWrapper):

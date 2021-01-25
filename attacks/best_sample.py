@@ -75,7 +75,7 @@ class BestSampleAttack(attacks.Attack, attacks.LabelMixin):
         self.p = p
         self.targeted = targeted
 
-    def perturb(self, x, y=None):
+    def perturb(self, x, y=None, **kwargs):
         x, y = self._verify_and_process_inputs(x, y)
 
         # Initialization
@@ -86,7 +86,7 @@ class BestSampleAttack(attacks.Attack, attacks.LabelMixin):
         tracker = BestSampleTracker(x, y, self.p, self.targeted)
         self.wrapped_model.tracker = tracker
 
-        last_adversarials = self.inner_attack(x, y=y)
+        last_adversarials = self.inner_attack(x, y=y, **kwargs)
 
         # In case the last adversarials were not tested
         self.wrapped_model(last_adversarials)

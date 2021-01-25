@@ -31,6 +31,16 @@ def main():
 
 # TODO: Rimuovere sanity_test e svhn
 
+# TODO: Quando non trova il sample di partenza (a causa di bound troppo stretti), fa 7200 secondi sprecati.
+# Contemporaneamente, usare dei bound troppo larghi rallenta incredibilmente l'esecuzione
+# Nota che il fatto che anche se la soluzione è infeasible non è detto che MIP non riesca a trovare uno start
+# Avrei perciò un'idea: se ci fosse un modo per sapere molto velocemente se MIP riesce a trovare uno start, potrei usare
+# un bound minuscolo e crescere da lì
+# Problema #2: nella maggior parte dei casi, sembra che una volta trovato il valore giusto, faccia comunque pena.
+
+# TODO: Devo rimettere il supporto per i cached models in modo che possa evitare tutto il tempo di rebuild. Come non detto, basta mettere rebuild=False
+
+
 
 main.add_command(commands.accuracy)
 main.add_command(commands.attack)

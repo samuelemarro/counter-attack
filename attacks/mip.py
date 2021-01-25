@@ -129,7 +129,7 @@ def sequential_to_mip(sequential):
 class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     _pyjulia_installed = False
 
-    def __init__(self, predict, p, targeted, tolerance=1e-6, clip_min=0, clip_max=1, correction_factor=1.25, tightening_overrides=dict(), **gurobi_kwargs):
+    def __init__(self, predict, p, targeted, tolerance=1e-6, clip_min=0, clip_max=1, initial_correction_factor=1.05, attempts=3, correction_factor_growth=1.5, tightening_overrides=dict(), **gurobi_kwargs):
         super().__init__(predict, None, clip_min, clip_max)
         if p in [1, 2, float('inf')]:
             self.p = p
@@ -143,7 +143,9 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
         self.mip_model = sequential_to_mip(predict)
         self.targeted = targeted
-        self.correction_factor = correction_factor
+        self.initial_correction_factor = initial_correction_factor
+        self.attempts = attempts
+        self.correction_factor_growth = correction_factor_growth
 
         if tolerance == 0:
             logger.warn('MIP\'s tolerance is set to 0. Given the possible numerical errors,'
@@ -173,9 +175,8 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                                                      OutputFlag=0,
                                                      **tightening_kwargs)
 
-    def mip_attack(self, image, label, starting_point=None):
+    def perform_attempt(self, image, label, starting_point=None, correction_factor=None):
         from julia import MIPVerify
-
         from julia import JuMP
 
         start_time = time.clock()
@@ -192,7 +193,10 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
             pre_distance = np.linalg.norm(
                 (image - starting_point).flatten(), ord=np.inf).item()
-            pre_distance *= self.correction_factor
+
+            #print('Original pre-distance: ', pre_distance)
+            #('Genuine label (1-indexed): ', target_label)
+            pre_distance *= correction_factor
             perturbation = MIPVerify.LInfNormBoundedPerturbationFamily(
                 pre_distance)
 
@@ -202,10 +206,18 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         image = image.transpose([1, 2, 0])
         image = np.expand_dims(image, 0)
 
-        adversarial_result = MIPVerify.find_adversarial_example(self.mip_model,
+        """adversarial_result = MIPVerify.find_adversarial_example(self.mip_model,
                                                                 image, target_label, self.solver, norm_order=self.p,
                                                                 tolerance=self.tolerance, invert_target_selection=not self.targeted,
-                                                                tightening_solver=self.tightening_solver, pp=perturbation)
+                                                                tightening_solver=self.tightening_solver, pp=perturbation)"""
+        from julia import Main
+        Main.include('mip_interface.jl')
+        
+        adversarial_result = Main.find_adversarial_example(self.mip_model,
+                                    image, target_label, self.solver, norm_order=self.p,
+                                    tolerance=self.tolerance, invert_target_selection=not self.targeted,
+                                    tightening_solver=self.tightening_solver, rebuild=True, pp=perturbation,
+                                    starting_point=starting_point)
 
         adversarial = np.array(JuMP.getvalue(
             adversarial_result['PerturbedInput']))
@@ -221,6 +233,23 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
         # Remove the batch dimension
         adversarial = adversarial.squeeze(axis=0)
+        return adversarial, adversarial_result
+
+    def mip_attack(self, image, label, starting_point=None):
+        from julia import JuMP
+        
+        correction_factor = self.initial_correction_factor
+
+        upper = np.nan
+        attempts = 0
+
+        while np.isnan(upper) and attempts < self.attempts:
+            attempts += 1
+            adversarial, adversarial_result = self.perform_attempt(image, label, starting_point=starting_point, correction_factor=correction_factor)
+            upper = JuMP.getobjectivevalue(adversarial_result['Model'])
+
+            correction_factor *= self.correction_factor_growth
+
         return adversarial, adversarial_result
 
     def perturb(self, x, y=None):
@@ -260,6 +289,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             label = label.detach().cpu().numpy().item()
 
             if starting_point is not None:
+                #print('PyTorch Starting point label (1-indexed): ', utils.get_labels(self.predict, torch.unsqueeze(starting_point, dim=0))[0] + 1)
                 starting_point = starting_point.detach().cpu().numpy()
 
             adversarial, adversarial_result = self.mip_attack(

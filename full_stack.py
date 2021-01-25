@@ -105,11 +105,13 @@ if not Path(target_path).exists():
 
     os.system(f'copy {best_path} {target_path}'.replace('/', '\\'))
 
-attack_path = f'adversarial_tests/{pre_attack}-{domain}-{architecture}-{count}-linf.zip'
+pre_attack_formatted = '_'.join(pre_attack.replace('[', '').replace(' ', '').replace(']', '').split(',')) if ',' in pre_attack else pre_attack
+attack_path = f'adversarial_tests/{pre_attack_formatted}-{domain}-{architecture}-{count}-linf.zip'
 
+# Nota: Uso una batch size piccola per sicurezza
 if not Path(attack_path).exists():
     os.system(
-        f'python cli.py attack {domain} {architecture} std:test {pre_attack} linf --stop {count} --state-dict-path {target_path}  --save-to {attack_path}')
+        f'python cli.py attack {domain} {architecture} std:test "{pre_attack}" linf --stop {count} --state-dict-path {target_path}  --save-to {attack_path} --batch-size 10 --device cpu')
 
 cfg_path = f'attack_configurations/architecture_specific/mip_1th_240b_0t_7200s_{domain}-{architecture}.cfg'
 cfg_f3_path = f'attack_configurations/architecture_specific/mip_1th_240b_0t_7200s_{domain}-{architecture}_f3.cfg'
@@ -123,8 +125,8 @@ if not Path(cfg_path).exists():
     parameters = read_gurobi_file(gurobi_path)
     create_cfg_file(parameters, cfg_path)
 
-mip_path = f'mip_results/{domain}-{architecture}-{pre_attack}-{count}.zip'
-mip_f3_path = f'mip_results/{domain}-{architecture}-{pre_attack}-{count}-f3.zip'
+mip_path = f'mip_results/{domain}-{architecture}-{pre_attack_formatted}-{count}.zip'
+mip_f3_path = f'mip_results/{domain}-{architecture}-{pre_attack_formatted}-{count}-f3.zip'
 
 if not Path(cfg_f3_path).exists():
     with open(cfg_path, 'r') as f:
