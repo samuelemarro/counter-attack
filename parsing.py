@@ -280,11 +280,12 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
         attack = attacks.BrendelBethgeAttack(target_model, p, **kwargs)
     elif attack_name == 'carlini':
         if metric == 'l2':
+            # TODO: Testare
             attack = attacks.CarliniWagnerL2Attack(
                 target_model, num_classes, targeted=evade_detector, **kwargs)
         elif metric == 'linf':
-            attack = attacks.CarliniWagnerLinfAttack(
-                target_model, num_classes, targeted=evade_detector, return_best=return_best, **kwargs)
+            attack = attacks.get_carlini_linf_attack(target_model, num_classes,
+                targeted=evade_detector, return_best=return_best, **kwargs)
         else:
             raise NotImplementedError(
                 f'Unsupported attack "{attack_name}" for "{metric}".')

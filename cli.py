@@ -38,8 +38,9 @@ def main():
 # un bound minuscolo e crescere da lì
 # Problema #2: nella maggior parte dei casi, sembra che una volta trovato il valore giusto, faccia comunque pena.
 
-# TODO: Devo rimettere il supporto per i cached models in modo che possa evitare tutto il tempo di rebuild. Come non detto, basta mettere rebuild=False
-
+# TODO: Si può migliorare l'inizializzazione delle variabili in mip_interface.jl? Non sono sicuro che abbia eliminato tutte
+# le variabili
+# TODO: Devo abbandonare l'idea di sapere subito se un tempo è feasible? Se è così, devo permettere di passare un tempo diverso di esplorazione
 
 
 main.add_command(commands.accuracy)

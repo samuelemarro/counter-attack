@@ -21,6 +21,8 @@ parser.add_argument('domain')
 parser.add_argument('architecture')
 parser.add_argument('pre_attack')
 parser.add_argument('count', type=int)
+parser.add_argument('--state-dict', default=None)
+parser.add_argument('--state-dict-name', default=None)
 
 args = parser.parse_args()
 
@@ -28,6 +30,11 @@ domain = args.domain
 architecture = args.architecture
 pre_attack = args.pre_attack
 count = args.count
+passed_state_dict = args.state_dict
+state_dict_name = args.state_dict_name
+
+if passed_state_dict is not None:
+    assert state_dict_name is not None
 
 
 def custom_accuracy(domain, architecture, path):
@@ -81,32 +88,37 @@ def create_cfg_file(parameters, save_path):
     with open(save_path, 'w') as f:
         json.dump(cfg, f, indent=4)
 
-
-target_path = f'trained-models/best-classifiers/{domain}-{architecture}.pth'
-
 parsing.set_log_level('info')
 
-if not Path(target_path).exists():
-    os.system(f'train-classifier {domain} {architecture}')
-
-    best_accuracy = -np.inf
-    best_es = None
-
-    for es in [5, 10, 25, 50, 100]:
-        path = f'trained-models/classifiers/{domain}-{architecture}-es{es}-ftr-1000.pth'
-        accuracy = custom_accuracy(domain, architecture, path)
-        if accuracy > best_accuracy:
-            best_accuracy = accuracy
-            best_es = es
-
-    print(f'Best ES: {best_es} (accuracy: {best_accuracy * 100.0}%)')
-
-    best_path = f'trained-models/classifiers/{domain}-{architecture}-es{best_es}-ftr-1000.pth'
-
-    os.system(f'copy {best_path} {target_path}'.replace('/', '\\'))
-
 pre_attack_formatted = '_'.join(pre_attack.replace('[', '').replace(' ', '').replace(']', '').split(',')) if ',' in pre_attack else pre_attack
-attack_path = f'adversarial_tests/{pre_attack_formatted}-{domain}-{architecture}-{count}-linf.zip'
+
+if passed_state_dict is None:
+    target_path = f'trained-models/best-classifiers/{domain}-{architecture}.pth'
+
+    if not Path(target_path).exists():
+        os.system(f'train-classifier {domain} {architecture}')
+
+        best_accuracy = -np.inf
+        best_es = None
+
+        for es in [5, 10, 25, 50, 100]:
+            path = f'trained-models/classifiers/{domain}-{architecture}-es{es}-ftr-1000.pth'
+            accuracy = custom_accuracy(domain, architecture, path)
+            if accuracy > best_accuracy:
+                best_accuracy = accuracy
+                best_es = es
+
+        print(f'Best ES: {best_es} (accuracy: {best_accuracy * 100.0}%)')
+
+        best_path = f'trained-models/classifiers/{domain}-{architecture}-es{best_es}-ftr-1000.pth'
+
+        os.system(f'copy {best_path} {target_path}'.replace('/', '\\'))
+
+    attack_path = f'adversarial_tests/{pre_attack_formatted}-{domain}-{architecture}-{count}-linf.zip'
+else:
+    target_path = passed_state_dict
+    attack_path = f'adversarial_tests/{pre_attack_formatted}-{domain}-{architecture}-{count}-{state_dict_name}-linf.zip'
+    
 
 # Nota: Uso una batch size piccola per sicurezza
 if not Path(attack_path).exists():
@@ -125,8 +137,12 @@ if not Path(cfg_path).exists():
     parameters = read_gurobi_file(gurobi_path)
     create_cfg_file(parameters, cfg_path)
 
-mip_path = f'mip_results/{domain}-{architecture}-{pre_attack_formatted}-{count}.zip'
-mip_f3_path = f'mip_results/{domain}-{architecture}-{pre_attack_formatted}-{count}-f3.zip'
+if passed_state_dict is None:
+    mip_path = f'mip_results/{domain}-{architecture}-{pre_attack_formatted}-{count}.zip'
+    mip_f3_path = f'mip_results/{domain}-{architecture}-{pre_attack_formatted}-{count}-f3.zip'
+else:
+    mip_path = f'mip_results/{domain}-{architecture}-{pre_attack_formatted}-{state_dict_name}-{count}.zip'
+    mip_f3_path = f'mip_results/{domain}-{architecture}-{pre_attack_formatted}-{state_dict_name}-{count}-f3.zip'
 
 if not Path(cfg_f3_path).exists():
     with open(cfg_path, 'r') as f:

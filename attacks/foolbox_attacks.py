@@ -4,6 +4,9 @@ from typing_extensions import Literal
 import advertorch
 import foolbox as fb
 import numpy as np
+import torch
+
+import utils
 
 
 class FoolboxAttackWrapper(advertorch.attacks.LabelMixin):
@@ -19,6 +22,14 @@ class FoolboxAttackWrapper(advertorch.attacks.LabelMixin):
     def __call__(self, *args, **kwargs):
         return self.perturb(*args, **kwargs)
 
+    def get_criterion(self, y):
+        if self.targeted:
+            criterion = fb.criteria.TargetedMisclassification(y)
+        else:
+            criterion = fb.criteria.Misclassification(y)
+
+        return criterion
+
     def perturb(self, x, y=None, **kwargs):
         x, y = self._verify_and_process_inputs(x, y)
 
@@ -26,10 +37,7 @@ class FoolboxAttackWrapper(advertorch.attacks.LabelMixin):
         if y is None:
             y = self._get_predicted_label(x)
 
-        if self.targeted:
-            criterion = fb.criteria.TargetedMisclassification(y)
-        else:
-            criterion = fb.criteria.Misclassification(y)
+        criterion = self.get_criterion(y)
 
         # Returns adv, clipped_adv, success
         return self.foolbox_attack(self.foolbox_model, x, criterion, epsilons=None, **kwargs)[1]
@@ -95,8 +103,40 @@ class BrendelBethgeAttack(FoolboxAttackWrapper):
         else:
             raise NotImplementedError('Unsupported metric.')
 
+        self.torch_model = model
+
         super().__init__(model, foolbox_attack, targeted,
                          clip_min=clip_min, clip_max=clip_max)
+
+    def perturb(self, x, y=None, starting_points=None):
+        x, y = self._verify_and_process_inputs(x, y)
+        # Foolbox's implementation of Brendel&Bethge requires all starting points to be successful
+        # adversarials. Since that is not always the case, we use Brendel&Bethge's init_attack
+        # to initialize the unsuccessful starting_points
+        if starting_points is not None:
+            same_label = torch.eq(torch.argmax(self.foolbox_model(starting_points), dim=1), y)
+
+            # fallback is equal to ~successful
+            if self.targeted:
+                fallback = ~same_label
+            else:
+                fallback = same_label
+
+            if fallback.any():
+                criterion = self.get_criterion(y)
+
+                if self.foolbox_attack.init_attack is None:
+                    # BrendelBethge's default init_attack is LinearSearchBlendedUniformNoiseAttack
+                    # with default parameters.
+                    init_attack = fb.attacks.LinearSearchBlendedUniformNoiseAttack()
+                else:
+                    init_attack = self.foolbox_attack.init_attack
+
+                fallback_adversarials = init_attack(self.foolbox_model, x, criterion, epsilons=None)[1]
+
+                starting_points[fallback] = fallback_adversarials[fallback]
+
+        return super().perturb(x, y=y, starting_points=starting_points)
 
 
 class DeepFoolAttack(FoolboxAttackWrapper):
@@ -123,12 +163,10 @@ class DeepFoolAttack(FoolboxAttackWrapper):
         # DeepFool is untargeted
         super().__init__(model, foolbox_attack, False, clip_min=clip_min, clip_max=clip_max)
 
-
 class CarliniWagnerL2Attack(FoolboxAttackWrapper):
     def __init__(
         self,
         model,
-        p,
         clip_min=0,
         clip_max=1,
         targeted=False,
@@ -149,3 +187,27 @@ class CarliniWagnerL2Attack(FoolboxAttackWrapper):
 
         super().__init__(model, foolbox_attack, targeted,
                          clip_min=clip_min, clip_max=clip_max)
+
+
+# This attack is implemented to provide the default Brendel&Bethge behaviour
+# in case the initialization from an AttackPool fails.
+
+class LinearSearchBlendedUniformNoiseAttack(FoolboxAttackWrapper):
+    def __init__(
+        self,
+        model,
+        clip_min=0,
+        clip_max=1,
+        targeted=False,
+        distance = None,
+        directions: int = 1000,
+        steps: int = 1000
+    ):
+
+        foolbox_attack = fb.attacks.LinearSearchBlendedUniformNoiseAttack(
+            distance=distance,
+            directions=directions,
+            steps=steps
+        )
+
+        super().__init__(model, foolbox_attack, targeted=targeted, clip_min=clip_min, clip_max=clip_max)

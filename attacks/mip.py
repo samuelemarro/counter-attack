@@ -129,7 +129,10 @@ def sequential_to_mip(sequential):
 class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     _pyjulia_installed = False
 
-    def __init__(self, predict, p, targeted, tolerance=1e-6, clip_min=0, clip_max=1, initial_correction_factor=1.05, attempts=3, correction_factor_growth=1.5, tightening_overrides=dict(), **gurobi_kwargs):
+    def __init__(self, predict, p, targeted, tolerance=1e-6, clip_min=0,
+                clip_max=1, initial_correction_factor=1.05, attempts=3,
+                correction_factor_growth=1.5, retry_absolute_gap=1e-5,
+                tightening_overrides=dict(), **gurobi_kwargs):
         super().__init__(predict, None, clip_min, clip_max)
         if p in [1, 2, float('inf')]:
             self.p = p
@@ -144,8 +147,9 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         self.mip_model = sequential_to_mip(predict)
         self.targeted = targeted
         self.initial_correction_factor = initial_correction_factor
-        self.attempts = attempts
+        self.max_attempts = attempts
         self.correction_factor_growth = correction_factor_growth
+        self.retry_absolute_gap = retry_absolute_gap
 
         if tolerance == 0:
             logger.warn('MIP\'s tolerance is set to 0. Given the possible numerical errors,'
@@ -175,7 +179,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                                                      OutputFlag=0,
                                                      **tightening_kwargs)
 
-    def perform_attempt(self, image, label, starting_point=None, correction_factor=None):
+    def perform_attempt(self, image, label, starting_point=None, perturbation_size=None):
         from julia import MIPVerify
         from julia import JuMP
 
@@ -184,22 +188,17 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         # Julia is 1-indexed
         target_label = label + 1
 
-        if starting_point is None:
+        if perturbation_size is None:
+            logger.debug(f'No starting point provided, using unbounded perturbation.')
             perturbation = MIPVerify.UnrestrictedPerturbationFamily()
         else:
             if not np.isposinf(self.p):
                 raise NotImplementedError(
-                    'Starting point is only supported for the Linf norm.')
-
-            pre_distance = np.linalg.norm(
-                (image - starting_point).flatten(), ord=np.inf).item()
-
-            #print('Original pre-distance: ', pre_distance)
-            #('Genuine label (1-indexed): ', target_label)
-            pre_distance *= correction_factor
+                    'Perturbation size is only supported for the Linf norm.')
             perturbation = MIPVerify.LInfNormBoundedPerturbationFamily(
-                pre_distance)
+                perturbation_size)
 
+        if starting_point is not None:
             starting_point = starting_point.transpose([1, 2, 0])
             starting_point = np.expand_dims(starting_point, 0)
 
@@ -216,7 +215,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         adversarial_result = Main.find_adversarial_example(self.mip_model,
                                     image, target_label, self.solver, norm_order=self.p,
                                     tolerance=self.tolerance, invert_target_selection=not self.targeted,
-                                    tightening_solver=self.tightening_solver, rebuild=True, pp=perturbation,
+                                    tightening_solver=self.tightening_solver, rebuild=False, pp=perturbation,
                                     starting_point=starting_point)
 
         adversarial = np.array(JuMP.getvalue(
@@ -235,20 +234,45 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         adversarial = adversarial.squeeze(axis=0)
         return adversarial, adversarial_result
 
-    def mip_attack(self, image, label, starting_point=None):
+    def mip_attack(self, image, label, heuristic_starting_point=None):
         from julia import JuMP
-        
-        correction_factor = self.initial_correction_factor
 
+        starting_point = heuristic_starting_point
+        perturbation_size = None
         upper = np.nan
+        lower = 0
         attempts = 0
 
-        while np.isnan(upper) and attempts < self.attempts:
-            attempts += 1
-            adversarial, adversarial_result = self.perform_attempt(image, label, starting_point=starting_point, correction_factor=correction_factor)
-            upper = JuMP.getobjectivevalue(adversarial_result['Model'])
+        # Initialized by heuristic
+        if starting_point is not None:
+            perturbation_size = np.linalg.norm(
+                    (image - starting_point).flatten(), ord=np.inf).item()
 
-            correction_factor *= self.correction_factor_growth
+            perturbation_size *= self.initial_correction_factor
+
+            while np.isnan(upper) and attempts < self.max_attempts:
+                attempts += 1
+                logger.debug(f'Attempt #{attempts} (feasibility).')
+                adversarial, adversarial_result = self.perform_attempt(image, label, starting_point=starting_point, perturbation_size=perturbation_size)
+                upper = JuMP.getobjectivevalue(adversarial_result['Model'])
+                lower = JuMP.getobjectivebound(adversarial_result['Model'])
+
+                if np.isnan(upper):
+                    # MIP failed to find a feasible solution, relax the perturbation size constraint
+                    perturbation_size *= self.correction_factor_growth
+
+            if not np.isnan(upper):
+                starting_point = adversarial
+
+        while ((upper - lower) > self.retry_absolute_gap or np.isnan(upper)) and attempts < self.max_attempts:
+            attempts += 1
+            logger.debug(f'Attempt #{attempts} (optimality)')
+            adversarial, adversarial_result = self.perform_attempt(image, label, starting_point=starting_point, perturbation_size=perturbation_size)
+            upper = JuMP.getobjectivevalue(adversarial_result['Model'])
+            lower = JuMP.getobjectivebound(adversarial_result['Model'])
+
+            if not np.isnan(upper):
+                starting_point = adversarial
 
         return adversarial, adversarial_result
 
@@ -293,7 +317,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                 starting_point = starting_point.detach().cpu().numpy()
 
             adversarial, adversarial_result = self.mip_attack(
-                image, label, starting_point)
+                image, label, heuristic_starting_point=starting_point)
             if np.any(np.isnan(adversarial)):
                 adversarial = None
             else:

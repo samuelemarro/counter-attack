@@ -118,8 +118,9 @@ def tune_mip(**kwargs):
                            'Are you sure that you\'re using the correct pre-adversarial dataset?')
 
     # Implicitly build the MIP model
+    # TODO: Non ha senso avere un sistema di retry
     _, adversarial_result = attack.mip_attack(
-        image, label, starting_point=pre_adversarial)
+        image, label, heuristic_starting_point=pre_adversarial)
 
     jump_model = adversarial_result['Model']
 

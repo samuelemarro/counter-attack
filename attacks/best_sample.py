@@ -31,7 +31,7 @@ class BestSampleWrapper(nn.Module):
         self.training = model.training
         self.tracker = None
 
-    def __call__(self, x):
+    def forward(self, x):
         if self.tracker is None:
             raise RuntimeError('No best sample tracker set.')
 

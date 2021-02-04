@@ -157,11 +157,11 @@ class MIPDataset(data.Dataset):
               np.median(successful_absolute_differences))
         print('Average Successful Absolute Differences: ',
               np.average(successful_absolute_differences))
-        print('Convergence stats: ', self.convergence_stats)
+        print('Convergence stats:\b', '\n'.join(self.convergence_stats))
 
     @property
     def convergence_stats(self):
-        return zip(self.solve_times, self.absolute_differences)
+        return list(zip(self.solve_times, self.absolute_differences))
 
 
 class AdversarialDistanceDataset(data.Dataset):

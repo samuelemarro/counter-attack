@@ -4,6 +4,10 @@ using ConditionalJuMP
 import MathProgBase
 using Memento
 
+function all_variables(model::Model)
+    return Variable.(model, 1:model.numCols)
+end
+
 function find_adversarial_example(
     nn::NeuralNet,
     input::Array{<:Real},
@@ -74,6 +78,10 @@ function find_adversarial_example(
                 ),
             )
             m = d[:Model]
+
+            for variable in all_variables(m)
+                JuMP.setvalue(variable, NaN)
+            end
 
             if ~isnothing(starting_point)
                 for i in CartesianIndices(size(input))

@@ -45,7 +45,7 @@ logger = logging.getLogger(__name__)
               help='Random rotation (in degrees) in range (-value, +value).')
 @click.option('--translation', type=float, default=0, show_default=True,
               help='Random horizontal and vertical translation in range (-value * image_size, +value * image_size).')
-@click.option('--adversarial-training', type=click.Choice(parsing.supported_attacks), default=None,
+@click.option('--adversarial-training', callback=parsing.ParameterList(parsing.supported_attacks), default=None,
               help='The adversarial attack that will be used to compute the adversarials. '
               'If unspecified, disables adversarial training. Requires specifying --adversarial-ratio, --adversarial-p '
               'and --adversarial-eps.')
@@ -144,7 +144,7 @@ def train_classifier(**kwargs):
         attack_config = utils.read_attack_config_file(
             kwargs['adversarial_cfg_file'])
 
-        adversarial_attack = parsing.get_attack(
+        adversarial_attack = parsing.get_attack_pool(
             kwargs['adversarial_training'], kwargs['domain'], kwargs['adversarial_p'], 'training', model, attack_config)
 
     if kwargs['rs_regularization'] != 0 and kwargs['rs_eps'] is None:
