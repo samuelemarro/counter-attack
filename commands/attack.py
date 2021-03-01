@@ -65,7 +65,7 @@ def attack(**kwargs):
                               kwargs['state_dict_path'], True, kwargs['masked_relu'], load_weights=True)
     model.eval()
 
-    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], dataset_edges=(
+    dataset = parsing.parse_dataset(kwargs['domain'], kwargs['dataset'], dataset_edges=(
         kwargs['start'], kwargs['stop']))
     dataloader = torch.utils.data.DataLoader(
         dataset, kwargs['batch_size'], shuffle=False)
@@ -74,7 +74,7 @@ def attack(**kwargs):
 
     attack_type = 'defense' if kwargs['as_defense'] else 'standard'
 
-    attack_pool = parsing.get_attack_pool(
+    attack_pool = parsing.parse_attack_pool(
         kwargs['attacks'], kwargs['domain'], kwargs['p'], attack_type, model, attack_config)
 
     p = kwargs['p']

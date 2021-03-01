@@ -179,9 +179,6 @@ class AdversarialDistanceDataset(data.Dataset):
     def __len__(self):
         return len(self.images)
 
-# TODO: attack_names è troppo specifico, serve un nome più generale
-
-
 class AttackComparisonDataset(data.Dataset):
     def __init__(self, genuines, true_labels, attack_names, attack_results, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs):
         assert len(genuines) == len(true_labels)

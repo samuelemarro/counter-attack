@@ -71,7 +71,7 @@ def evasion(**kwargs):
     model.eval()
     model.to(kwargs['device'])
 
-    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], dataset_edges=(
+    dataset = parsing.parse_dataset(kwargs['domain'], kwargs['dataset'], dataset_edges=(
         kwargs['start'], kwargs['stop']))
     dataloader = torch.utils.data.DataLoader(
         dataset, kwargs['batch_size'], shuffle=False)
@@ -91,7 +91,7 @@ def evasion(**kwargs):
         raise click.BadArgumentUsage(
             'substitute_state_dict_paths must be as many values as the number of counter attacks.')
 
-    detector = parsing.get_detector_pool(counter_attack_names,
+    detector = parsing.parse_detector_pool(counter_attack_names,
                                          kwargs['domain'],
                                          kwargs['p'],
                                          'defense',
@@ -104,7 +104,7 @@ def evasion(**kwargs):
     defended_model = detectors.NormalisedDetectorModel(
         model, detector, kwargs['rejection_threshold'])
 
-    evasion_pool = parsing.get_attack_pool(
+    evasion_pool = parsing.parse_attack_pool(
         kwargs['evasion_attacks'], kwargs['domain'], kwargs['p'], 'evasion', model, attack_config, defended_model=defended_model)
 
     adversarial_dataset = tests.attack_test(

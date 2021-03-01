@@ -58,7 +58,7 @@ def compare(**kwargs):
                               kwargs['state_dict_path'], True, kwargs['masked_relu'], load_weights=True)
     model.eval()
 
-    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], dataset_edges=(
+    dataset = parsing.parse_dataset(kwargs['domain'], kwargs['dataset'], dataset_edges=(
         kwargs['start'], kwargs['stop']))
     dataloader = torch.utils.data.DataLoader(
         dataset, kwargs['batch_size'], shuffle=False)
@@ -71,7 +71,7 @@ def compare(**kwargs):
     attacks = []
 
     for attack_name in attack_names:
-        attack = parsing.get_attack(
+        attack = parsing.parse_attack(
             attack_name, kwargs['domain'], p, 'standard', model, attack_config)
         attacks.append(attack)
 

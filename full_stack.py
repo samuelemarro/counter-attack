@@ -50,7 +50,7 @@ def custom_accuracy(domain, architecture, path):
                               path, True, masked_relu, load_weights=True)
     model.eval()
 
-    dataset = parsing.get_dataset(domain, 'std:test')
+    dataset = parsing.parse_dataset(domain, 'std:test')
 
     dataloader = torch.utils.data.DataLoader(dataset, 50, shuffle=False)
 

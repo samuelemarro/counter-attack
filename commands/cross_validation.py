@@ -66,7 +66,7 @@ def cross_validation(**kwargs):
     model.eval()
     model.to(kwargs['device'])
 
-    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], dataset_edges=(
+    dataset = parsing.parse_dataset(kwargs['domain'], kwargs['dataset'], dataset_edges=(
         kwargs['start'], kwargs['stop']))
     dataloader = torch.utils.data.DataLoader(
         dataset, kwargs['batch_size'], shuffle=False)
@@ -112,13 +112,13 @@ def cross_validation(**kwargs):
 
         rejection_threshold = rejection_thresholds[i]
 
-        detector = parsing.get_detector_pool(counter_attack_names, kwargs['domain'], kwargs['p'], 'standard', model, attack_config, kwargs['device'],
+        detector = parsing.parse_detector_pool(counter_attack_names, kwargs['domain'], kwargs['p'], 'standard', model, attack_config, kwargs['device'],
                                              use_substitute=True, substitute_state_dict_paths=ca_substitute_state_dict_paths)
 
         defended_model = detectors.NormalisedDetectorModel(
             model, detector, rejection_threshold)
 
-        evasion_attack = parsing.get_attack(
+        evasion_attack = parsing.parse_attack(
             evasion_attack_name, kwargs['domain'], kwargs['p'], 'evasion', model, attack_config, defended_model=defended_model)
 
         test_name = f'{evasion_attack_name} vs {counter_attack_names}'

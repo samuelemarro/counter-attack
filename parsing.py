@@ -139,7 +139,7 @@ def get_model(domain, architecture, state_dict_path, apply_normalisation, masked
     return model
 
 
-def get_dataset(domain, dataset, allow_standard=True, dataset_edges=None, extra_transforms=[]):
+def parse_dataset(domain, dataset, allow_standard=True, dataset_edges=None, extra_transforms=[]):
     matched_dataset = None
     tensor_transform = torchvision.transforms.ToTensor()
     transform = torchvision.transforms.Compose(
@@ -187,7 +187,7 @@ def get_dataset(domain, dataset, allow_standard=True, dataset_edges=None, extra_
     return matched_dataset
 
 
-def get_optimiser(optimiser_name, learnable_parameters, options):
+def parse_optimiser(optimiser_name, learnable_parameters, options):
     if optimiser_name == 'adam':
         optimiser = torch.optim.Adam(
             learnable_parameters, lr=options['learning_rate'], betas=options['adam_betas'], weight_decay=options['weight_decay'], eps=options['adam_epsilon'], amsgrad=options['adam_amsgrad'])
@@ -204,7 +204,7 @@ def get_optimiser(optimiser_name, learnable_parameters, options):
 # http://bengio.abracadoudou.com/publications/pdf/kurakin_2017_iclr_physical.pdf
 
 
-def get_attack(attack_name, domain, p, attack_type, model, attack_config, defended_model=None):
+def parse_attack(attack_name, domain, p, attack_type, model, attack_config, defended_model=None):
     # Convert the float value to its standard name
     if p == 2:
         metric = 'l2'
@@ -367,7 +367,7 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
     return attack
 
 
-def get_attack_pool(attack_names, domain, p, attack_type, model, attack_config, defended_model=None):
+def parse_attack_pool(attack_names, domain, p, attack_type, model, attack_config, defended_model=None):
     evade_detector = (attack_type == 'evasion')
 
     if evade_detector:
@@ -380,7 +380,7 @@ def get_attack_pool(attack_names, domain, p, attack_type, model, attack_config, 
 
     attack_pool = []
     for attack_name in attack_names:
-        attack_pool.append(get_attack(attack_name, domain, p, attack_type,
+        attack_pool.append(parse_attack(attack_name, domain, p, attack_type,
                                       model, attack_config, defended_model=defended_model))
 
     if len(attack_pool) == 1:
@@ -389,7 +389,7 @@ def get_attack_pool(attack_names, domain, p, attack_type, model, attack_config, 
         return attacks.AttackPool(target_model, evade_detector, attack_pool, p)
 
 
-def get_detector(attack_name, domain, p, attack_type, model, attack_config, device, use_substitute=False, substitute_state_dict_path=None):
+def parse_detector(attack_name, domain, p, attack_type, model, attack_config, device, use_substitute=False, substitute_state_dict_path=None):
     logger.debug(
         f'Preparing detector for "{p}" of type "{attack_type}" with attack "{attack_name}".')
 
@@ -402,7 +402,7 @@ def get_detector(attack_name, domain, p, attack_type, model, attack_config, devi
         logger.warning(
             f'You are using an attack of type "{attack_type}" for a detector. Is this intentional?')
 
-    attack = get_attack(attack_name, domain, p, attack_type,
+    attack = parse_attack(attack_name, domain, p, attack_type,
                         model, attack_config, defended_model=None)
     assert attack.predict == model
     detector = detectors.CounterAttackDetector(attack, model, p)
@@ -423,7 +423,7 @@ def get_detector(attack_name, domain, p, attack_type, model, attack_config, devi
     return detector
 
 
-def get_detector_pool(attack_names, domain, p, attack_type, model, attack_config, device, use_substitute=False, substitute_state_dict_paths=None):
+def parse_detector_pool(attack_names, domain, p, attack_type, model, attack_config, device, use_substitute=False, substitute_state_dict_paths=None):
     if use_substitute:
         assert len(substitute_state_dict_paths) == len(attack_names)
 
@@ -437,7 +437,7 @@ def get_detector_pool(attack_names, domain, p, attack_type, model, attack_config
         if use_substitute:
             substitute_state_dict_path = substitute_state_dict_paths[i]
 
-        detector = get_detector(attack_names[i], domain, p, attack_type, model, attack_config, device,
+        detector = parse_detector(attack_names[i], domain, p, attack_type, model, attack_config, device,
                                 use_substitute=use_substitute, substitute_state_dict_path=substitute_state_dict_path,)
         detector_pool.append(detector)
 

@@ -66,7 +66,7 @@ def attack_matrix(**kwargs):
     model.eval()
     model.to(kwargs['device'])
 
-    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'], dataset_edges=(
+    dataset = parsing.parse_dataset(kwargs['domain'], kwargs['dataset'], dataset_edges=(
         kwargs['start'], kwargs['stop']))
     dataloader = torch.utils.data.DataLoader(
         dataset, kwargs['batch_size'], shuffle=False)
@@ -99,13 +99,13 @@ def attack_matrix(**kwargs):
 
     for evasion_attack_name in attack_names:
         for counter_attack_name, ca_substitute_state_dict_path, rejection_threshold in zip(attack_names, substitute_state_dict_paths, rejection_thresholds):
-            detector = parsing.get_detector(counter_attack_name, kwargs['domain'], kwargs['p'], 'standard', model, attack_config, kwargs['device'],
+            detector = parsing.parse_detector(counter_attack_name, kwargs['domain'], kwargs['p'], 'standard', model, attack_config, kwargs['device'],
                                             use_substitute=True, substitute_state_dict_path=ca_substitute_state_dict_path)
 
             defended_model = detectors.NormalisedDetectorModel(
                 model, detector, rejection_threshold)
 
-            evasion_attack = parsing.get_attack(
+            evasion_attack = parsing.parse_attack(
                 evasion_attack_name, kwargs['domain'], kwargs['p'], 'evasion', model, attack_config, defended_model=defended_model)
 
             test_name = f'{evasion_attack_name} vs {counter_attack_name}'

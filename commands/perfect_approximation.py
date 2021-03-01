@@ -17,7 +17,7 @@ import parsing
 def perfect_approximation(**kwargs):
     parsing.set_log_level(kwargs['log_level'])
 
-    perfect_distance_dataset = parsing.get_dataset(
+    perfect_distance_dataset = parsing.parse_dataset(
         kwargs['domain'], kwargs['perfect_distance_dataset'], allow_standard=False)
 
     if kwargs['from_perfect_adversarial_dataset']:
@@ -27,7 +27,7 @@ def perfect_approximation(**kwargs):
         raise click.BadArgumentUsage('Expected a distance dataset as perfect distance dataset, got an adversarial dataset. '
                                      'If this is intentional, use --from-perfect-adversarial-dataset .')
 
-    approximate_distance_dataset = parsing.get_dataset(
+    approximate_distance_dataset = parsing.parse_dataset(
         kwargs['domain'], kwargs['approximate_distance_dataset'], allow_standard=False)
 
     if kwargs['from_approximate_adversarial_dataset']:

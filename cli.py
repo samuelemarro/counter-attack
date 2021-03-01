@@ -17,7 +17,7 @@ def main():
 
 # TODO: consistent_random deve anche prendere in considerazione il seed impostato
 # TODO: Aggiungere codice che controlla la correttezza del modello caricato da MIP
-# TODO: get_dataset -> parse_dataset e simili
+# TODO: parse_dataset -> parse_dataset e simili
 # TODO: Eseguire gli addestramenti adversarial e RS
 # TODO: Linf, L2 -> inf, 2
 # TODO: Passare a formattazione nuova?

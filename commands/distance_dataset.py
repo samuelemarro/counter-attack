@@ -65,7 +65,7 @@ def distance_dataset(**kwargs):
 
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
 
-    attack_pool = parsing.get_attack_pool(
+    attack_pool = parsing.parse_attack_pool(
         kwargs['attacks'], kwargs['domain'], kwargs['p'], 'standard', model, attack_config)
 
     p = kwargs['p']
@@ -78,7 +78,7 @@ def distance_dataset(**kwargs):
     distances = []
 
     if kwargs['from_genuine'] is not None:
-        genuine_dataset = parsing.get_dataset(
+        genuine_dataset = parsing.parse_dataset(
             kwargs['domain'], kwargs['from_genuine'], dataset_edges=(kwargs['start'], kwargs['stop']))
         genuine_loader = torch.utils.data.DataLoader(
             genuine_dataset, kwargs['batch_size'], shuffle=False)
@@ -89,7 +89,7 @@ def distance_dataset(**kwargs):
         distances += list(genuine_result_dataset.distances)
 
     if kwargs['from_adversarial'] is not None:
-        adversarial_dataset = parsing.get_dataset(
+        adversarial_dataset = parsing.parse_dataset(
             kwargs['domain'], kwargs['from_adversarial'], allow_standard=False, dataset_edges=(kwargs['start'], kwargs['stop']))
 
         adv_start, adv_stop = adversarial_dataset.start, adversarial_dataset.stop

@@ -102,7 +102,7 @@ def train_classifier(**kwargs):
         extra_transforms.append(torchvision.transforms.RandomAffine(
             kwargs['rotation'], translation))
 
-    train_dataset = parsing.get_dataset(
+    train_dataset = parsing.parse_dataset(
         kwargs['domain'], kwargs['dataset'], extra_transforms=extra_transforms)
     val_dataset = None
 
@@ -114,7 +114,7 @@ def train_classifier(**kwargs):
         train_dataset, val_dataset = torch_utils.split_dataset(
             train_dataset, kwargs['validation_split'], shuffle=True)
     elif kwargs['validation_dataset'] is not None:
-        val_dataset = parsing.get_dataset(
+        val_dataset = parsing.parse_dataset(
             kwargs['domain'], kwargs['validation_dataset'])
 
     train_dataloader = torch.utils.data.DataLoader(
@@ -158,7 +158,7 @@ def train_classifier(**kwargs):
         attack_config = utils.read_attack_config_file(
             kwargs['adversarial_cfg_file'])
 
-        adversarial_attack = parsing.get_attack_pool(
+        adversarial_attack = parsing.parse_attack_pool(
             kwargs['adversarial_training'], kwargs['domain'], kwargs['adversarial_p'], 'training', model, attack_config)
 
     if kwargs['rs_regularization'] != 0:
@@ -173,7 +173,7 @@ def train_classifier(**kwargs):
             logger.warning('You are using --rs-start-epoch and --early-stopping together. Is this intentional?')
 
     loss = torch.nn.CrossEntropyLoss()
-    optimiser = parsing.get_optimiser(
+    optimiser = parsing.parse_optimiser(
         kwargs['optimiser'], model.parameters(), kwargs)
 
     torch_utils.train(model, train_dataloader, optimiser, loss, kwargs['epochs'], kwargs['device'],

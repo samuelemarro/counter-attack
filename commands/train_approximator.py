@@ -50,7 +50,7 @@ def train_approximator(**kwargs):
                               True, kwargs['masked_relu'], load_weights=False, as_detector=True)
     model.train()
 
-    train_dataset = parsing.get_dataset(
+    train_dataset = parsing.parse_dataset(
         kwargs['domain'], kwargs['dataset'], allow_standard=False)
     val_dataset = None
 
@@ -65,7 +65,7 @@ def train_approximator(**kwargs):
         train_dataset, val_dataset = torch_utils.split_dataset(
             train_dataset, kwargs['validation_split'], shuffle=True)
     elif kwargs['validation_dataset'] is not None:
-        val_dataset = parsing.get_dataset(
+        val_dataset = parsing.parse_dataset(
             kwargs['domain'], kwargs['validation_dataset'], allow_standard=False)
 
         if kwargs['val_from_adversarial_dataset']:
@@ -90,7 +90,7 @@ def train_approximator(**kwargs):
             kwargs['early_stopping'], delta=kwargs['early_stopping_delta'])
 
     loss = torch.nn.MSELoss()
-    optimiser = parsing.get_optimiser(
+    optimiser = parsing.parse_optimiser(
         kwargs['optimiser'], model.parameters(), kwargs)
 
     torch_utils.train(model, train_dataloader, optimiser, loss, kwargs['epochs'], kwargs['device'],

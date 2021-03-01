@@ -51,7 +51,7 @@ def tune_mip(**kwargs):
                               kwargs['state_dict_path'], True, kwargs['masked_relu'], load_weights=True)
 
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
-    attack = parsing.get_attack(
+    attack = parsing.parse_attack(
         'mip', kwargs['domain'], kwargs['p'], 'standard', model, attack_config)
 
     if kwargs['pre_adversarial_dataset'] is None:
@@ -64,7 +64,7 @@ def tune_mip(**kwargs):
             raise ValueError('The misclassification policy of the pre-adversarial dataset does '
                              'not match the given policy. This can produce incorrent starting points.')
 
-    dataset = parsing.get_dataset(kwargs['domain'], kwargs['dataset'])
+    dataset = parsing.parse_dataset(kwargs['domain'], kwargs['dataset'])
 
     # The misclassification policy "remove" messes with
     # indexing, so we apply it to the genuine dataset too
