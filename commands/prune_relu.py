@@ -45,6 +45,7 @@ def recursive_converter(sequential, num_samples_threshold):
             zero_mask = layer.negative_counter >= num_samples_threshold
             linear_mask = layer.positive_counter >= num_samples_threshold
             assert zero_mask.shape == linear_mask.shape
+            assert not (zero_mask & linear_mask).any()
 
             masked_relu = torch_utils.MaskedReLU(zero_mask.shape)
             masked_relu.always_zero.data = zero_mask

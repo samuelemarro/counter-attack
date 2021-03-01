@@ -1,6 +1,8 @@
+from attacks.wrapper import AdvertorchWrapper
 from attacks.attack_pool import AttackPool
 from attacks.best_sample import BestSampleAttack, BestSampleWrapper
 from attacks.carlini_wagner import CarliniWagnerCPULinfAttack, CarliniWagnerCUDALinfAttack, get_carlini_linf_attack
+from attacks.epsilon_attack import EpsilonAttack
 from attacks.epsilon_binary_search import EpsilonBinarySearchAttack
 from attacks.foolbox_attacks import BrendelBethgeAttack, CarliniWagnerL2Attack, DeepFoolAttack, LinearSearchBlendedUniformNoiseAttack
 from attacks.uniform_noise import UniformNoiseAttack

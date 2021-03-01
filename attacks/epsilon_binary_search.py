@@ -1,23 +1,19 @@
-import copy
-
-import advertorch
-import numpy as np
 import torch
 
+import attacks
 import utils
+
 # Nota: Aggiorna eps se ha una distanza più bassa (non solo se ha successo)
 
+class EpsilonBinarySearchAttack(attacks.AdvertorchWrapper):
+    def __init__(self, inner_attack, ord, targeted=False, min_eps=0, max_eps=1, eps_initial_search_steps=9, eps_binary_search_steps=9):
+        if not (isinstance(inner_attack, attacks.EpsilonAttack) or isinstance(inner_attack, attacks.foolbox_attacks.EpsilonFoolboxAttackWrapper)):
+            raise ValueError('inner_attack must be an EpsilonAttack or an EpsilonFoolboxAttackWrapper')
+        
+        super().__init__(inner_attack)
 
-class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
-    def __init__(self, predict, evade_detector, ord, attack, unsqueeze, targeted=False, min_eps=0, max_eps=1, eps_initial_search_steps=9, eps_binary_search_steps=9):
-        super().__init__(predict, None, None, None)
-
-        self.predict = predict
-        self.evade_detector = evade_detector
         self.ord = ord
-        assert attack.targeted == targeted
-        self.attack = attack
-        self.unsqueeze = unsqueeze
+        assert inner_attack.targeted == targeted
         self.targeted = targeted
         self.min_eps = min_eps
         self.max_eps = max_eps
@@ -26,17 +22,7 @@ class EpsilonBinarySearchAttack(advertorch.attacks.Attack, advertorch.attacks.La
 
     def perturb_standard(self, x, y, eps):
         assert len(x) == len(y)
-        assert len(eps) == len(x)
-
-        # Perform a shallow copy
-        attack = copy.copy(self.attack)
-
-        if self.unsqueeze:
-            eps = eps.unsqueeze(1).unsqueeze(2).unsqueeze(3)
-
-        attack.eps = eps
-
-        return attack(x, y=y)
+        return self.inner_attack(x, y=y, eps=eps)
 
     def successful(self, adversarial_outputs, y):
         adversarial_labels = torch.argmax(adversarial_outputs, dim=1)

@@ -496,8 +496,6 @@ class CarliniWagnerCUDALinfAttack(attacks.Attack, attacks.LabelMixin):
                 if not active.any():
                     break
 
-            
-
             # Give more weight to the output loss
             const *= self.const_factor
 

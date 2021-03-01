@@ -9,7 +9,6 @@ import utils
 
 # Nota: In ogni attacco, per "predict" si intende il modello indifeso
 
-
 class AttackPool(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     def __init__(self, predict, evade_detector, pool_attacks, p, brendel_initialization=True):
         self.predict = predict
@@ -59,13 +58,13 @@ class AttackPool(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         return best_adversarials
 
     def check_brendel(self, attack):
-        if isinstance(attack, attacks.BestSampleAttack):
+        if isinstance(attack, attacks.BestSampleAttack) or isinstance(attack, attacks.AdvertorchWrapper):
             return self.check_brendel(attack.inner_attack)
         # TODO: Controllare anche RandomTarget e KBest?
 
         return isinstance(attack, attacks.BrendelBethgeAttack)
 
-    def perturb(self, x, y=None):
+    def perturb(self, x, y=None, **kwargs):
         x, y = self._verify_and_process_inputs(x, y)
 
         # Initialization
@@ -81,15 +80,15 @@ class AttackPool(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
             brendel_attack = self.pool_attacks[brendel_index]
             pool_attacks_without_brendel = [attack for attack in self.pool_attacks if attack is not brendel_attack]
-            results_without_brendel = torch.stack([attack.perturb(x, y=y).detach() for attack in pool_attacks_without_brendel], 1)
+            results_without_brendel = torch.stack([attack.perturb(x, y=y, **kwargs).detach() for attack in pool_attacks_without_brendel], 1)
             best_without_brendel = self.pick_best(x, y, results_without_brendel)
 
-            brendel_results = brendel_attack.perturb(x, y=y, starting_points=best_without_brendel)
+            brendel_results = brendel_attack.perturb(x, y=y, starting_points=best_without_brendel, **kwargs)
             pool_results = torch.stack([torch.stack([no_brendel_result, brendel_result]) for no_brendel_result, brendel_result in zip(best_without_brendel, brendel_results)])
 
         else:
             pool_results = torch.stack(
-                [attack.perturb(x, y=y).detach() for attack in self.pool_attacks], 1)
+                [attack.perturb(x, y=y, **kwargs).detach() for attack in self.pool_attacks], 1)
         
             assert pool_results.shape[1] == len(self.pool_attacks)
 

@@ -16,16 +16,9 @@ def main():
     pass
 
 # TODO: consistent_random deve anche prendere in considerazione il seed impostato
-# Obiettivo: Arrivare a modelli Sequential MNIST, CIFAR10 e SVHN che possano essere attaccati da MIP
-# Nota: MIP supporta le skip-connections
 # TODO: Aggiungere codice che controlla la correttezza del modello caricato da MIP
 # TODO: get_dataset -> parse_dataset e simili
-# TODO: Nell'adversarial training, non si ha modo di dire all'attacco di usare --adversarial-eps
-#       O si toglie l'opzione, o, devo trovare un modo per permettere l'override
-#       In alternativa si può lasciare così dove l'attacco è best-effort ma si rifiutano quelli oltre --adversarial-eps
-
 # TODO: Eseguire gli addestramenti adversarial e RS
-# TODO: Aggiungere start e stop ai parametri degli adversarial dataset
 # TODO: Linf, L2 -> inf, 2
 # TODO: Passare a formattazione nuova?
 
@@ -42,6 +35,14 @@ def main():
 # le variabili
 # TODO: Devo abbandonare l'idea di sapere subito se un tempo è feasible? Se è così, devo permettere di passare un tempo diverso di esplorazione
 
+
+# TODO: Qual è l'adversarial ratio?
+# TODO: --adversarial-eps-growth-start = 1 dovrebbe non fare nessuna differenza, ma non sono sicuro
+# TODO: Dare un nome di diverso a --adversarial-growth-eps-start?
+
+# TODO: Aggiungere un valore di default di eps che causi errore se non viene overridato
+
+# TODO: Tanto logging
 
 main.add_command(commands.accuracy)
 main.add_command(commands.attack)

@@ -23,6 +23,7 @@ architectures = ['a', 'b', 'c', 'wong_small', 'wong_large', 'small',
                  'x1', 'x2', 'x3', 'x4', 'x5', 'x6', 'x7', 'x8', 'x9', 'x10', 'x11']
 supported_attacks = ['bim', 'carlini', 'brendel',
                      'deepfool', 'fast_gradient', 'mip', 'pgd', 'uniform']
+epsilon_attacks = ['bim', 'fast_gradient', 'pgd', 'uniform']
 attacks_with_binary_search = ['bim', 'fast_gradient', 'pgd', 'uniform']
 targeted_attacks = ['bim', 'carlini', 'brendel', 'fast_gradient', 'mip', 'pgd']
 er_attacks = ['bim', 'carlini', 'pgd', 'uniform']
@@ -65,7 +66,7 @@ training_options = [
                  help='The patience of early stopping. 0 disables early stopping.'),
     click.option('--early-stopping-delta', type=float, default=0, show_default=True,
                  help='The minimum improvement required to reset early stopping\'s patience.'),
-    click.option('--shuffle', type=bool, default=True)
+    click.option('--shuffle', type=bool, default=True, show_default=True)
 ]
 
 
@@ -326,16 +327,20 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
     if 'stochastic_consistency' in kwargs and kwargs['stochastic_consistency']:
         logger.warn('Stochastic consistency is deprecated.')
 
-    # If necessary, wrap the attack in a binary search wrapper
-    if binary_search:
+    # Add support for epsilon
+    if attack_name in epsilon_attacks:
         if attack_name in ['bim', 'pgd']:
             unsqueeze = False
         elif attack_name in ['fast_gradient', 'uniform']:
             unsqueeze = True
         else:
             raise ValueError(
-                f'Unsupported binary search attack "{attack_name}"')
+                f'Unsupported epsilon attack "{attack_name}"')
 
+        attack = attacks.EpsilonAttack(attack, unsqueeze)
+
+    # If necessary, wrap the attack in a binary search wrapper
+    if binary_search:
         binary_search_kwargs = dict()
         if min_eps is not None:
             binary_search_kwargs['min_eps'] = min_eps
@@ -347,13 +352,13 @@ def get_attack(attack_name, domain, p, attack_type, model, attack_config, defend
             binary_search_kwargs['eps_binary_search_steps'] = eps_binary_search_steps
 
         attack = attacks.EpsilonBinarySearchAttack(
-            target_model, evade_detector, p, attack, unsqueeze, targeted=evade_detector, **binary_search_kwargs)
+            attack, p, targeted=evade_detector, **binary_search_kwargs)
 
     # Carlini Linf does not support BestSample
     if return_best and not (attack_name == 'carlini' and np.isposinf(p)):
         suppress_warning = attack_name in fb_binary_search_attacks
         attack = attacks.BestSampleAttack(
-            target_model, attack, p, evade_detector, suppress_warning=suppress_warning)
+            target_model, attack, p, targeted=evade_detector, suppress_warning=suppress_warning)
 
     # Convert targeted evasion attacks into untargeted ones
     if evade_detector and (attack_name in targeted_attacks):

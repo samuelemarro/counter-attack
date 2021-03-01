@@ -39,13 +39,16 @@ logger = logging.getLogger(__name__)
 @click.option('--rs-minibatch', type=click.IntRange(1, None), default=None,
               help='If enabled, the batch will be split into minibatches of size rs_minibatch before being used to '
               'compute the RS loss. This helps to reduce GPU memory usage. Ignored if RS regularization is disabled.')
+@click.option('--rs-start-epoch', type=click.IntRange(1, None), default=1, show_default=True,
+              help='The first epoch (1-indexed) where RS loss is activated. 1 makes RS loss always active. '
+                   'Ignored if RS regularization is disabled.')
 @click.option('--flip', is_flag=True,
               help='Enables random horizontal flipping.')
 @click.option('--rotation', type=float, default=0, show_default=True,
               help='Random rotation (in degrees) in range (-value, +value).')
 @click.option('--translation', type=float, default=0, show_default=True,
               help='Random horizontal and vertical translation in range (-value * image_size, +value * image_size).')
-@click.option('--adversarial-training', callback=parsing.ParameterList(parsing.supported_attacks), default=None,
+@click.option('--adversarial-training', callback=parsing.ParameterList(parsing.epsilon_attacks), default=None,
               help='The adversarial attack that will be used to compute the adversarials. '
               'If unspecified, disables adversarial training. Requires specifying --adversarial-ratio, --adversarial-p '
               'and --adversarial-eps.')
@@ -56,11 +59,17 @@ logger = logging.getLogger(__name__)
 @click.option('--adversarial-ratio', type=float, default=None,
               help='The ratio of samples that are replaced with adversarials. '
               'Ignored if adversarial training is disabled. '
-              'Requird if adversarial training is enabled.')
+              'Required if adversarial training is enabled.')
 @click.option('--adversarial-eps', type=float, default=None,
               help='The maximum perturbation of an adversarial. '
               'Ignored if adversarial training is disabled. '
               'Required if adversarial training is enabled.')
+@click.option('--adversarial-eps-growth-epoch', type=click.IntRange(0, None), default=0,
+              help='If bigger than 0, the adversarial epsilon will grow linearly from --adversarial-eps-growth-start '
+              'to --adversarial-eps, which will be reached at the specified epoch. Ignored if adversarial '
+              'training is disabled.')
+@click.option('--adversarial-eps-growth-start', type=float, default=None,
+              help='The initial value of eps. Ignored if --adversarial-eps-growth-epoch is unspecified.')
 @click.option('--adversarial-cfg-file', type=click.Path(exists=True, file_okay=True, dir_okay=False),
               default='default_attack_configuration.cfg', show_default=True,
               help='The path to the attack configuration file for adversarial training. Ignored if adversarial training is disabled.')
@@ -121,13 +130,9 @@ def train_classifier(**kwargs):
         early_stopping = torch_utils.EarlyStopping(
             kwargs['early_stopping'], delta=kwargs['early_stopping_delta'])
 
-    # TODO: Prendere adversarial_training come 0 = None?
     if kwargs['adversarial_training'] is None:
         adversarial_attack = None
     else:
-        if kwargs['adversarial_training'] == 'mip':
-            raise click.BadOptionUsage(
-                '--adversarial-training', 'adversarial training currently does not support MIP.')
 
         if kwargs['adversarial_ratio'] is None:
             raise click.BadOptionUsage(
@@ -139,7 +144,16 @@ def train_classifier(**kwargs):
 
         if kwargs['adversarial_eps'] is None:
             raise click.BadOptionUsage(
-                '--adversarial-eps', 'Please specify the maximum perturbarion for adversarial training with --adversarial-eps (inf is also allowed).')
+                '--adversarial-eps', 'Please specify the maximum perturbarion norm for adversarial training with --adversarial-eps (inf is also allowed).')
+
+        if kwargs['adversarial_eps_growth_epoch'] > 0:
+            if kwargs['adversarial_eps_growth_start'] is None:
+                raise click.BadOptionUsage(
+                    '--adversarial-eps-growth-start', 'Please specify the initial value for adversarial epsilon growth with --adversarial-eps-growth-start '
+                    '(0 is also allowed).')
+
+            if kwargs['early_stopping'] > 0:
+                logger.warning('You are using --adversarial-eps-growth-epoch and --early-stopping together. Is this intentional?')
 
         attack_config = utils.read_attack_config_file(
             kwargs['adversarial_cfg_file'])
@@ -147,9 +161,16 @@ def train_classifier(**kwargs):
         adversarial_attack = parsing.get_attack_pool(
             kwargs['adversarial_training'], kwargs['domain'], kwargs['adversarial_p'], 'training', model, attack_config)
 
-    if kwargs['rs_regularization'] != 0 and kwargs['rs_eps'] is None:
-        raise click.BadOptionUsage(
-            '--rs-eps', 'Please specify the maximum perturbation for RS loss with --rs-eps.')
+    if kwargs['rs_regularization'] != 0:
+        if kwargs['rs_eps'] is None:
+            raise click.BadOptionUsage(
+                '--rs-eps', 'Please specify the maximum perturbation for RS loss with --rs-eps.')
+        if kwargs['rs_start_epoch'] > kwargs['epochs']:
+            logger.warning('--rs-start-epoch is higher than the number of epochs. This means that RS loss will never be activated. '
+                           'Is this intentional?')
+
+        if kwargs['rs_start_epoch'] > 1 and kwargs['early_stopping'] > 0:
+            logger.warning('You are using --rs-start-epoch and --early-stopping together. Is this intentional?')
 
     loss = torch.nn.CrossEntropyLoss()
     optimiser = parsing.get_optimiser(
@@ -158,9 +179,10 @@ def train_classifier(**kwargs):
     torch_utils.train(model, train_dataloader, optimiser, loss, kwargs['epochs'], kwargs['device'],
                       val_loader=val_dataloader, l1_regularization=kwargs['l1_regularization'],
                       rs_regularization=kwargs['rs_regularization'], rs_eps=kwargs['rs_eps'], rs_minibatch=kwargs['rs_minibatch'],
-                      early_stopping=early_stopping, attack=adversarial_attack,
+                      rs_start_epoch=kwargs['rs_start_epoch'], early_stopping=early_stopping, attack=adversarial_attack,
                       attack_ratio=kwargs['adversarial_ratio'], attack_eps=kwargs['adversarial_eps'],
-                      attack_p=kwargs['adversarial_p'])
+                      attack_p=kwargs['adversarial_p'], attack_eps_growth_epoch=kwargs['adversarial_eps_growth_epoch'],
+                      attack_eps_growth_start=kwargs['adversarial_eps_growth_start'])
 
     save_to = kwargs['save_to']
     pathlib.Path(save_to).parent.mkdir(parents=True, exist_ok=True)

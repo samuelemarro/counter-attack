@@ -94,10 +94,10 @@ class MaskedReLU(nn.Module):
         output = torch.relu(x)
 
         # always_zero masking
-        output = utils.fast_boolean_choice(output, 0, self.always_zero)
+        output = utils.fast_boolean_choice(output, 0, self.always_zero, reshape=False)
 
         # always_linear masking
-        output = utils.fast_boolean_choice(output, x, self.always_linear)
+        output = utils.fast_boolean_choice(output, x, self.always_linear, reshape=False)
 
         return output
 
@@ -328,16 +328,26 @@ def rs_loss(model, x, epsilon, input_min=0, input_max=1):
 # For adversarial training, we don't replace genuines with failed adversarial samples
 
 
-def train(model, train_loader, optimiser, loss_function, max_epochs, device, val_loader=None, l1_regularization=0, rs_regularization=0, rs_eps=0, rs_minibatch=None, early_stopping=None, attack=None, attack_ratio=0.5, attack_p=None, attack_eps=None):
+def train(model, train_loader, optimiser, loss_function, max_epochs, device, val_loader=None,
+          l1_regularization=0, rs_regularization=0, rs_eps=0, rs_minibatch=None, rs_start_epoch=0,
+          early_stopping=None, attack=None, attack_ratio=0.5, attack_p=None, attack_eps=None,
+          attack_eps_growth_epoch=0, attack_eps_growth_start=None):
     if early_stopping is not None:
         if val_loader is None:
             raise ValueError('Early stopping requires a validation loader.')
 
+    # Prepare the epsilon values
+    if attack_eps_growth_epoch == 0:
+        epsilons = [attack_eps] * max_epochs
+    else:
+        epsilons = list(np.linspace(attack_eps_growth_start, attack_eps, num=attack_eps_growth_epoch))
+        epsilons += list([attack_eps] * (max_epochs - attack_eps_growth_epoch))
+
     model.train()
     model.to(device)
-    iterator = tqdm(range(max_epochs), desc='Training')
+    iterator = tqdm(list(enumerate(epsilons)), desc='Training')
 
-    for i in iterator:
+    for epoch, epsilon in iterator:
         for x, target in train_loader:
             x = x.to(device)
             target = target.to(device)
@@ -349,14 +359,14 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
                 adversarial_targets = target[indices]
 
                 adversarials = attack.perturb(
-                    adversarial_x, y=adversarial_targets).detach()
+                    adversarial_x, y=adversarial_targets, eps=epsilon).detach()
 
                 adversarials = utils.remove_failed(
-                    model, adversarial_x, adversarial_targets, adversarials, False, p=attack_p, eps=attack_eps)
+                    model, adversarial_x, adversarial_targets, adversarials, False, p=attack_p, eps=epsilon)
 
-                for i, index in enumerate(indices):
-                    if adversarials[i] is not None:
-                        x[index] = adversarials[i]
+                for j, index in enumerate(indices):
+                    if adversarials[j] is not None:
+                        x[index] = adversarials[j]
             y_pred = model(x)
 
             loss = loss_function(y_pred, target)
@@ -370,7 +380,7 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
             loss.backward()
             # RS Regularization uses a high amount of GPU memory, so we use .backward()
             # for each minibatch
-            if rs_regularization != 0:
+            if rs_regularization != 0 and (epoch + 1) >= rs_start_epoch:
                 if rs_minibatch is None:
                     rs = rs_loss(model, x, epsilon=rs_eps) * rs_regularization
                     rs.backward()

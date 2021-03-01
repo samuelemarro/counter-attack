@@ -46,14 +46,19 @@ def module_to_mip(module):
     elif isinstance(module, nn.ReLU):
         converted = MIPVerify.ReLU()
     elif isinstance(module, torch_utils.MaskedReLU):
-        always_zero = module.always_zero.data
-        always_linear = module.always_linear.data
-        print(torch.sum(always_zero.float()))
-        assert not (always_zero & always_linear).any()
-        mask = torch.zeros_like(always_zero, dtype=float)
+        always_zero = module.always_zero.data.cpu().numpy()
+        always_linear = module.always_linear.data.cpu().numpy()
+        assert not (np.logical_and(always_zero, always_linear)).any()
 
-        mask += always_linear.float()
-        mask -= always_zero.float()
+        always_zero = always_zero.astype(np.float)
+        always_linear = always_linear.astype(np.float)
+
+        mask = np.zeros_like(always_zero)
+
+        mask += always_linear
+        mask -= always_zero
+
+        mask = np.expand_dims(mask.transpose([1, 2, 0]), 0)
 
         converted = MIPVerify.MaskedReLU(mask)
     elif isinstance(module, torch_utils.Normalisation):
@@ -179,6 +184,18 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                                                      OutputFlag=0,
                                                      **tightening_kwargs)
 
+        self._checked_model = False
+
+    def _check_model(self, image, threshold=1e-3):
+        model_device = next(self.predict.parameters()).device
+        torch_output = self.predict(torch.unsqueeze(torch.tensor(image).to(model_device), 0)).detach().cpu().numpy()
+
+        image = image.transpose([1, 2, 0])
+        image = np.expand_dims(image, 0)
+        julia_output = self.mip_model(image)
+
+        return np.max(np.abs(torch_output - julia_output)) <= threshold
+
     def perform_attempt(self, image, label, starting_point=None, perturbation_size=None):
         from julia import MIPVerify
         from julia import JuMP
@@ -211,7 +228,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                                                                 tightening_solver=self.tightening_solver, pp=perturbation)"""
         from julia import Main
         Main.include('mip_interface.jl')
-        
+
         adversarial_result = Main.find_adversarial_example(self.mip_model,
                                     image, target_label, self.solver, norm_order=self.p,
                                     tolerance=self.tolerance, invert_target_selection=not self.targeted,
@@ -235,6 +252,10 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         return adversarial, adversarial_result
 
     def mip_attack(self, image, label, heuristic_starting_point=None):
+        if not self._checked_model:
+            assert self._check_model(image, threshold=1e-3)
+            self._checked_model = True
+
         from julia import JuMP
 
         starting_point = heuristic_starting_point

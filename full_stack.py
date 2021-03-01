@@ -23,6 +23,7 @@ parser.add_argument('pre_attack')
 parser.add_argument('count', type=int)
 parser.add_argument('--state-dict', default=None)
 parser.add_argument('--state-dict-name', default=None)
+parser.add_argument('--masked-relu', action='store_true')
 
 args = parser.parse_args()
 
@@ -32,6 +33,13 @@ pre_attack = args.pre_attack
 count = args.count
 passed_state_dict = args.state_dict
 state_dict_name = args.state_dict_name
+masked_relu = args.masked_relu
+
+if masked_relu:
+    assert passed_state_dict is not None and state_dict_name is not None
+    masked_relu_argument = '--masked-relu'
+else:
+    masked_relu_argument = ''
 
 if passed_state_dict is not None:
     assert state_dict_name is not None
@@ -39,7 +47,7 @@ if passed_state_dict is not None:
 
 def custom_accuracy(domain, architecture, path):
     model = parsing.get_model(domain, architecture,
-                              path, True, False, load_weights=True)
+                              path, True, masked_relu, load_weights=True)
     model.eval()
 
     dataset = parsing.get_dataset(domain, 'std:test')
@@ -63,7 +71,7 @@ def parse_number(number):
 
 def tune_mip(domain, architecture, path, pre_path, gurobi_path, p):
     os.system(
-        f'python cli.py tune-mip {domain} {architecture} std:test {p} {gurobi_path} --state-dict-path {path} --pre-adversarial-dataset {pre_path}')
+        f'python cli.py tune-mip {domain} {architecture} std:test {p} {gurobi_path} --state-dict-path {path} --pre-adversarial-dataset {pre_path} {masked_relu_argument}')
 
 
 def read_gurobi_file(gurobi_path):
@@ -123,7 +131,7 @@ else:
 # Nota: Uso una batch size piccola per sicurezza
 if not Path(attack_path).exists():
     os.system(
-        f'python cli.py attack {domain} {architecture} std:test "{pre_attack}" linf --stop {count} --state-dict-path {target_path}  --save-to {attack_path} --batch-size 10 --device cpu')
+        f'python cli.py attack {domain} {architecture} std:test "{pre_attack}" linf --stop {count} --state-dict-path {target_path}  --save-to {attack_path} --batch-size {min(400, max(10, count))} --device cpu {masked_relu_argument}')
 
 cfg_path = f'attack_configurations/architecture_specific/mip_1th_240b_0t_7200s_{domain}-{architecture}.cfg'
 cfg_f3_path = f'attack_configurations/architecture_specific/mip_1th_240b_0t_7200s_{domain}-{architecture}_f3.cfg'
@@ -155,11 +163,11 @@ if not Path(cfg_f3_path).exists():
 
 if not Path(mip_path).exists():
     print('Running standard tuned set')
-    os.system(f'python cli.py mip {domain} {architecture} std:test linf --stop {count} --attack-config-file {cfg_path} --state-dict-path {target_path} --pre-adversarial-dataset {attack_path} --save-to {mip_path}')
+    os.system(f'python cli.py mip {domain} {architecture} std:test linf --stop {count} --attack-config-file {cfg_path} --state-dict-path {target_path} --pre-adversarial-dataset {attack_path} --save-to {mip_path} {masked_relu_argument}')
 
 if Path(cfg_f3_path).exists() and not Path(mip_f3_path).exists():
     print('Running standard tuned set with MIPFocus = 3')
-    os.system(f'python cli.py mip {domain} {architecture} std:test linf --stop {count} --attack-config-file {cfg_f3_path} --state-dict-path {target_path} --pre-adversarial-dataset {attack_path} --save-to {mip_f3_path}')
+    os.system(f'python cli.py mip {domain} {architecture} std:test linf --stop {count} --attack-config-file {cfg_f3_path} --state-dict-path {target_path} --pre-adversarial-dataset {attack_path} --save-to {mip_f3_path} {masked_relu_argument}')
 
 print('Accuracy: {:.2f}%'.format(custom_accuracy(
     domain, architecture, target_path) * 100.0))

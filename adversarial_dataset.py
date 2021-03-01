@@ -157,7 +157,9 @@ class MIPDataset(data.Dataset):
               np.median(successful_absolute_differences))
         print('Average Successful Absolute Differences: ',
               np.average(successful_absolute_differences))
-        print('Convergence stats:\b', '\n'.join(self.convergence_stats))
+        print('Convergence stats:\n')
+        for solve_time, absolute_difference in self.convergence_stats:
+            print(f'Solve time: {solve_time}, absolute difference: {absolute_difference}')
 
     @property
     def convergence_stats(self):
