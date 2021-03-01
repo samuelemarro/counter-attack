@@ -10,6 +10,7 @@ import utils
 import parsing
 import tests
 import torch_utils
+import training
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +88,7 @@ def train_classifier(**kwargs):
         torch.manual_seed(kwargs['seed'])
 
     load_weights = kwargs['state_dict_path'] is not None
-    model = parsing.get_model(kwargs['domain'], kwargs['architecture'],
+    model = parsing.parse_model(kwargs['domain'], kwargs['architecture'],
                               kwargs['state_dict_path'], True, kwargs['masked_relu'], load_weights=load_weights)
     model.train()
 
@@ -127,7 +128,7 @@ def train_classifier(**kwargs):
 
     early_stopping = None
     if kwargs['early_stopping'] > 0:
-        early_stopping = torch_utils.EarlyStopping(
+        early_stopping = training.EarlyStopping(
             kwargs['early_stopping'], delta=kwargs['early_stopping_delta'])
 
     if kwargs['adversarial_training'] is None:
@@ -176,7 +177,7 @@ def train_classifier(**kwargs):
     optimiser = parsing.parse_optimiser(
         kwargs['optimiser'], model.parameters(), kwargs)
 
-    torch_utils.train(model, train_dataloader, optimiser, loss, kwargs['epochs'], kwargs['device'],
+    training.train(model, train_dataloader, optimiser, loss, kwargs['epochs'], kwargs['device'],
                       val_loader=val_dataloader, l1_regularization=kwargs['l1_regularization'],
                       rs_regularization=kwargs['rs_regularization'], rs_eps=kwargs['rs_eps'], rs_minibatch=kwargs['rs_minibatch'],
                       rs_start_epoch=kwargs['rs_start_epoch'], early_stopping=early_stopping, attack=adversarial_attack,

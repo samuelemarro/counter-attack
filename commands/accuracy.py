@@ -38,7 +38,7 @@ def accuracy(**kwargs):
     if kwargs['cpu_threads'] is not None:
         torch.set_num_threads(kwargs['cpu_threads'])
 
-    model = parsing.get_model(kwargs['domain'], kwargs['architecture'],
+    model = parsing.parse_model(kwargs['domain'], kwargs['architecture'],
                               kwargs['state_dict_path'], True, kwargs['masked_relu'], load_weights=True)
     model.eval()
 

@@ -47,7 +47,7 @@ def tune_mip(**kwargs):
         raise click.BadArgumentUsage(
             'save_to must have a .prm file extension.')
 
-    model = parsing.get_model(kwargs['domain'], kwargs['architecture'],
+    model = parsing.parse_model(kwargs['domain'], kwargs['architecture'],
                               kwargs['state_dict_path'], True, kwargs['masked_relu'], load_weights=True)
 
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])

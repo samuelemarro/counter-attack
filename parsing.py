@@ -4,16 +4,14 @@ import advertorch
 import advertorch.bpda
 import click
 import attacks
-import attacks
 import numpy as np
 import torch
 import torchvision
 
-import attacks
-import cifar10_models
 import detectors
 import models
 import torch_utils
+import training
 import utils
 
 logger = logging.getLogger(__name__)
@@ -82,7 +80,7 @@ def set_log_level(log_level):
     logging.getLogger().setLevel(_log_level_to_number[log_level])
 
 
-def get_model(domain, architecture, state_dict_path, apply_normalisation, masked_relu, load_weights=False, as_detector=False):
+def parse_model(domain, architecture, state_dict_path, apply_normalisation, masked_relu, load_weights=False, as_detector=False):
     if as_detector:
         num_classes = 1
     else:
@@ -181,7 +179,7 @@ def parse_dataset(domain, dataset, allow_standard=True, dataset_edges=None, extr
 
     if dataset_edges is not None:
         start, stop = dataset_edges
-        matched_dataset = torch_utils.StartStopDataset(
+        matched_dataset = training.StartStopDataset(
             matched_dataset, start=start, stop=stop)
 
     return matched_dataset
@@ -408,7 +406,7 @@ def parse_detector(attack_name, domain, p, attack_type, model, attack_config, de
     detector = detectors.CounterAttackDetector(attack, model, p)
 
     if use_substitute:
-        substitute_detector = get_model(
+        substitute_detector = parse_model(
             domain, substitute_state_dict_path, True, load_weights=True, as_detector=True)
 
         # The substitute model returns a [batch_size, 1] matrix, while we need a [batch_size] vector

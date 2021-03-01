@@ -46,7 +46,7 @@ if passed_state_dict is not None:
 
 
 def custom_accuracy(domain, architecture, path):
-    model = parsing.get_model(domain, architecture,
+    model = parsing.parse_model(domain, architecture,
                               path, True, masked_relu, load_weights=True)
     model.eval()
 

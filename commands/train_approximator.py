@@ -46,7 +46,7 @@ def train_approximator(**kwargs):
     if kwargs['seed'] is not None:
         torch.manual_seed(kwargs['seed'])
 
-    model = parsing.get_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'],
+    model = parsing.parse_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'],
                               True, kwargs['masked_relu'], load_weights=False, as_detector=True)
     model.train()
 
@@ -86,14 +86,14 @@ def train_approximator(**kwargs):
 
     early_stopping = None
     if kwargs['early_stopping'] > 0:
-        early_stopping = torch_utils.EarlyStopping(
+        early_stopping = training.EarlyStopping(
             kwargs['early_stopping'], delta=kwargs['early_stopping_delta'])
 
     loss = torch.nn.MSELoss()
     optimiser = parsing.parse_optimiser(
         kwargs['optimiser'], model.parameters(), kwargs)
 
-    torch_utils.train(model, train_dataloader, optimiser, loss, kwargs['epochs'], kwargs['device'],
+    training.train(model, train_dataloader, optimiser, loss, kwargs['epochs'], kwargs['device'],
                       val_loader=val_dataloader, l1_regularization=kwargs['l1_regularization'], early_stopping=early_stopping)
 
     save_to = kwargs['save_to']
