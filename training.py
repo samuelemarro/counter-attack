@@ -243,28 +243,27 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
                 adversarial_x = x[indices]
                 adversarial_targets = target[indices]
 
+                logger.debug('Running adversarial training step with epsilon %s.', epsilon)
                 adversarials = attack.perturb(
                     adversarial_x, y=adversarial_targets, eps=epsilon).detach()
 
                 # In Madry's original paper on adversarial training, the authors do not check
                 # the success of the attack: they just clip the resulting adversarial to the allowed
                 # input range
-
                 adversarials = utils.clip_adversarial(adversarials, adversarial_x, epsilon, input_min=0, input_max=1)
-
-                #adversarials = utils.remove_failed(
-                #    model, adversarial_x, adversarial_targets, adversarials, False, p=attack_p, eps=epsilon)
 
                 for j, index in enumerate(indices):
                     if adversarials[j] is not None:
                         x[index] = adversarials[j]
             y_pred = model(x)
 
+            # Adversarial loss isn't divided by the batch size
             loss = loss_function(y_pred, target)
 
             if l1_regularization != 0:
                 for group in optimiser.param_groups:
                     for p in group['params']:
+                        # L1 loss isn't divided by the batch size
                         loss += torch.sum(torch.abs(p)) * l1_regularization
 
             optimiser.zero_grad()
@@ -277,6 +276,7 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
                     rs.backward()
                 else:
                     for minibatch in split_batch(x, rs_minibatch):
+                        # RS loss isn't divided by the batch size
                         rs = rs_loss(model, minibatch,
                                      epsilon=rs_eps) * rs_regularization
                         rs.backward()
@@ -284,6 +284,7 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
             optimiser.step()
 
         if val_loader is not None:
+            logger.debug('Computing validation loss.')
             val_loss = 0
             with torch.no_grad():
                 #rs_sum = 0
@@ -294,7 +295,7 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
                     y_pred_val = model(x_val)
                     val_loss += loss_function(y_pred_val, target_val)
 
-                    # TODO: In realtà può esssere calcolato una sola volta, anche se così facendo scombina il suo peso relativo
+                    # TODO: In realtà può essere calcolato una sola volta, anche se così facendo scombina il suo peso relativo
                     if l1_regularization != 0:
                         for group in optimiser.param_groups:
                             for p in group['params']:
@@ -319,11 +320,13 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
                 early_stopping(val_loss, model)
 
                 if early_stopping.stop:
+                    logger.debug('Early stop triggered, loading best state dict.')
                     model.load_state_dict(early_stopping.best_state_dict)
                     break
 
         # In case the validation loss did not improve but the training
         # reached the max number of epochs, load the best model
+        # TODO: Non dovrebbe essere a prescindere?
         if early_stopping is not None:
             model.load_state_dict(early_stopping.best_state_dict)
 

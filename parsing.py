@@ -81,6 +81,9 @@ def set_log_level(log_level):
 
 
 def parse_model(domain, architecture, state_dict_path, apply_normalisation, masked_relu, load_weights=False, as_detector=False):
+    logger.debug('Parsing model with %s-%s, state dict at %s, apply_normalisation=%s, ',
+                 'masked_relu=%s, load_weights=%s, as_detector=%s.', domain, architecture,
+                 state_dict_path, apply_normalisation, masked_relu, load_weights, as_detector)
     if as_detector:
         num_classes = 1
     else:
@@ -125,19 +128,23 @@ def parse_model(domain, architecture, state_dict_path, apply_normalisation, mask
             raise NotImplementedError(
                 f'Unsupported normalisation for domain {domain}.')
 
+        logger.debug('Added normalisation (mean=%s, std=%s).', mean, std)
+
         normalisation = torch_utils.Normalisation(
             mean, std, num_channels=num_channels)
         model = torch.nn.Sequential(normalisation, model)
 
     # Nota: Questo fa sì che i modelli vengano salvati come modello con normalisation
     if load_weights and state_dict_path is not None:
-        logger.info(f'Loading weights from {state_dict_path}')
+        logger.info('Loading weights from %s.', state_dict_path)
         model.load_state_dict(torch.load(state_dict_path))
 
     return model
 
 
 def parse_dataset(domain, dataset, allow_standard=True, dataset_edges=None, extra_transforms=[]):
+    logger.debug('Parsing dataset %s-%s (edges=%s) with %s extra transforms.',
+                 domain, dataset, dataset_edges, len(extra_transforms))
     matched_dataset = None
     tensor_transform = torchvision.transforms.ToTensor()
     transform = torchvision.transforms.Compose(
@@ -170,7 +177,8 @@ def parse_dataset(domain, dataset, allow_standard=True, dataset_edges=None, extr
                     './data/mnist', train=False, download=True, transform=transform)
 
     if matched_dataset is None:
-        # No matches found, try to read it as a file path
+        logger.debug('No standard dataset found, interpreting it as a file path.')
+
         try:
             matched_dataset = utils.load_zip(dataset)
         except:
@@ -186,9 +194,12 @@ def parse_dataset(domain, dataset, allow_standard=True, dataset_edges=None, extr
 
 
 def parse_optimiser(optimiser_name, learnable_parameters, options):
+    logger.debug('Parsing optimiser %s with options %s', optimiser_name, options)
     if optimiser_name == 'adam':
         optimiser = torch.optim.Adam(
-            learnable_parameters, lr=options['learning_rate'], betas=options['adam_betas'], weight_decay=options['weight_decay'], eps=options['adam_epsilon'], amsgrad=options['adam_amsgrad'])
+            learnable_parameters, lr=options['learning_rate'],
+            betas=options['adam_betas'], weight_decay=options['weight_decay'],
+            eps=options['adam_epsilon'], amsgrad=options['adam_amsgrad'])
     elif optimiser_name == 'sgd':
         optimiser = torch.optim.SGD(
             learnable_parameters, lr=options['learning_rate'], momentum=options['sgd_momentum'],
@@ -201,8 +212,10 @@ def parse_optimiser(optimiser_name, learnable_parameters, options):
 # Targeted FGSM is introduced in
 # http://bengio.abracadoudou.com/publications/pdf/kurakin_2017_iclr_physical.pdf
 
-
 def parse_attack(attack_name, domain, p, attack_type, model, attack_config, defended_model=None):
+    logger.debug('Parsing %s attack %s-%s (using defended: %s).', attack_type,
+                 attack_name, p, defended_model is not None)
+    
     # Convert the float value to its standard name
     if p == 2:
         metric = 'l2'
@@ -214,8 +227,7 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, defe
     kwargs = attack_config.get_arguments(
         attack_name, domain, metric, attack_type)
 
-    logger.debug(
-        f'Preparing attack "{attack_name}", domain "{domain}", distance metric "{metric}", type "{attack_type}" with kwargs: {kwargs}')
+    logger.debug('Loaded attack kwargs: %s.', kwargs)
 
     if attack_type == 'evasion' and defended_model is None:
         raise ValueError('Evasion attacks require a defended model.')
@@ -240,7 +252,7 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, defe
     kwargs.pop('enable_binary_search', None)
 
     if binary_search:
-        logger.debug(f'Enabling binary search for "{attack_name}".')
+        logger.debug('Enabling binary search for %s.', attack_name)
         # Remove standard arguments
         kwargs.pop('eps', None)
         if attack_name not in attacks_with_binary_search:
@@ -248,7 +260,7 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, defe
                 f'Attack {attack_name} does not support binary search.')
     elif attack_name in attacks_with_binary_search:
         logger.warning(
-            f'Binary search for attack "{attack_name}" is disabled in the configuration file, despite being supported.')
+            'Binary search for attack %s is disabled in the configuration file, despite being supported.', attack_name)
 
     # Pop binary search arguments
     min_eps = kwargs.pop('min_eps', None)
@@ -263,6 +275,7 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, defe
 
     # TODO: Check compatibility between evasion and return_best
     if return_best and not (attack_name == 'carlini' and np.isposinf(p)):
+        logger.debug('Wrapping in BestSampleWrapper.')
         target_model = attacks.BestSampleWrapper(target_model)
 
     if attack_name == 'bim':
@@ -323,7 +336,7 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, defe
         raise NotImplementedError(f'Unsupported attack "{attack_name}".')
 
     if 'stochastic_consistency' in kwargs and kwargs['stochastic_consistency']:
-        logger.warn('Stochastic consistency is deprecated.')
+        logger.warning('Stochastic consistency is deprecated.')
 
     # Add support for epsilon
     if attack_name in epsilon_attacks:
@@ -339,6 +352,7 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, defe
 
     # If necessary, wrap the attack in a binary search wrapper
     if binary_search:
+        logger.debug('Adding binary search.')
         binary_search_kwargs = dict()
         if min_eps is not None:
             binary_search_kwargs['min_eps'] = min_eps
@@ -354,27 +368,28 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, defe
 
     # Carlini Linf does not support BestSample
     if return_best and not (attack_name == 'carlini' and np.isposinf(p)):
+        logger.debug('Finalizing best sample wrapping.')
         suppress_warning = attack_name in fb_binary_search_attacks
         attack = attacks.BestSampleAttack(
             target_model, attack, p, targeted=evade_detector, suppress_warning=suppress_warning)
 
     # Convert targeted evasion attacks into untargeted ones
     if evade_detector and (attack_name in targeted_attacks):
+        logger.debug('Converting targeted to untargeted attack.')
         attack = attacks.KBestTargetEvasionAttack(model, attack)
 
     return attack
 
 
 def parse_attack_pool(attack_names, domain, p, attack_type, model, attack_config, defended_model=None):
+    logger.debug('Parsing %s attack pool %s for %s (using defended: %s).', attack_type,
+                 attack_names, p, defended_model is not None)
     evade_detector = (attack_type == 'evasion')
 
     if evade_detector:
         target_model = defended_model
     else:
         target_model = model
-
-    logger.debug(
-        f'Preparing attack pool for "{p}" of type "{attack_type}" containing {attack_names} (with defended model: {defended_model is not None}).')
 
     attack_pool = []
     for attack_name in attack_names:

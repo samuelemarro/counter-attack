@@ -80,6 +80,7 @@ logger = logging.getLogger(__name__)
               help='The minimum logging level.')
 def train_classifier(**kwargs):
     parsing.set_log_level(kwargs['log_level'])
+    logger.debug('Running train-classifier with kwargs %s', kwargs)
 
     if kwargs['cpu_threads'] is not None:
         torch.set_num_threads(kwargs['cpu_threads'])
@@ -112,9 +113,11 @@ def train_classifier(**kwargs):
             '--validation_split', '--validation_dataset and validation_split are mutually exclusive.')
 
     if kwargs['validation_split'] != 0:
+        logger.debug('Performing a validation split.')
         train_dataset, val_dataset = training.split_dataset(
             train_dataset, kwargs['validation_split'], shuffle=True)
     elif kwargs['validation_dataset'] is not None:
+        logger.debug('Loading an existing validation dataset.')
         val_dataset = parsing.parse_dataset(
             kwargs['domain'], kwargs['validation_dataset'])
 
@@ -128,12 +131,14 @@ def train_classifier(**kwargs):
 
     early_stopping = None
     if kwargs['early_stopping'] > 0:
+        logger.debug('Adding early stopping.')
         early_stopping = training.EarlyStopping(
             kwargs['early_stopping'], delta=kwargs['early_stopping_delta'])
 
     if kwargs['adversarial_training'] is None:
         adversarial_attack = None
     else:
+        logger.debug('Enabling adversarial training.')
 
         if kwargs['adversarial_ratio'] is None:
             raise click.BadOptionUsage(
