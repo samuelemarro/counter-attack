@@ -28,12 +28,8 @@ def main():
 # un bound minuscolo e crescere da lì
 # Problema #2: nella maggior parte dei casi, sembra che una volta trovato il valore giusto, faccia comunque pena.
 
-# TODO: Si può migliorare l'inizializzazione delle variabili in mip_interface.jl? Non sono sicuro che abbia eliminato tutte
-# le variabili
 # TODO: Devo abbandonare l'idea di sapere subito se un tempo è feasible? Se è così, devo permettere di passare un tempo diverso di esplorazione
 
-
-# TODO: Qual è l'adversarial ratio?
 # TODO: --adversarial-eps-growth-start = 1 dovrebbe non fare nessuna differenza, ma non sono sicuro
 # TODO: Dare un nome di diverso a --adversarial-growth-eps-start?
 

@@ -56,8 +56,6 @@ class Normalisation(nn.Module):
         return (input - mean) / std
 
 # Modular version of torch.squeeze()
-
-
 class Squeeze(nn.Module):
     def __init__(self, dim=None):
         super().__init__()
@@ -69,12 +67,8 @@ class Squeeze(nn.Module):
         else:
             return torch.squeeze(x, self.dim)
 
-# TODO: Controlla
-
-# A ReLU module where some ReLU calls are replaced with fixed behaviour
+# A ReLU module where some ReLU calls are replaced with a fixed behaviour
 # (zero or linear)
-
-
 class MaskedReLU(nn.Module):
     def __init__(self, mask_shape):
         super().__init__()
