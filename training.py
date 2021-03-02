@@ -7,6 +7,7 @@ import torch.nn as nn
 from tqdm import tqdm
 
 import torch_utils
+import utils
 
 logger = logging.getLogger(__name__)
 
@@ -90,6 +91,7 @@ def _compute_bounds_n_layers(n, lbs, ubs, Ws, biases):
     active_mask_unexpanded = (lb > 0).float()
 
     # active_mask = torch.tile(torch.unsqueeze(active_mask_unexpanded, 2), [1, 1, out_dim]) # This should be B x y x p
+    print(active_mask_unexpanded.shape)
     active_mask = torch.unsqueeze(active_mask_unexpanded, 2).expand(
         [-1, -1, out_dim])  # This should be B x y x p
 
@@ -201,7 +203,7 @@ def rs_loss(model, x, epsilon, input_min=0, input_max=1):
 
             lower, upper = _compute_bounds_n_layers(
                 layer_index, post_relu_lowers, post_relu_uppers, Ws, bs)
-            #print(layer_index, ': ',  lower)
+
             # Il segno è corretto?
             total_loss -= torch.mean(torch.sum(torch.tanh(1 +
                                                           lower * upper), -1))
@@ -211,8 +213,6 @@ def rs_loss(model, x, epsilon, input_min=0, input_max=1):
     #print('Total loss:', total_loss)
     return total_loss
 
-# For adversarial training, we don't replace genuines with failed adversarial samples
-# TODO: è giusto?
 def train(model, train_loader, optimiser, loss_function, max_epochs, device, val_loader=None,
           l1_regularization=0, rs_regularization=0, rs_eps=0, rs_minibatch=None, rs_start_epoch=0,
           early_stopping=None, attack=None, attack_ratio=0.5, attack_p=None, attack_eps=None,
@@ -246,8 +246,14 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
                 adversarials = attack.perturb(
                     adversarial_x, y=adversarial_targets, eps=epsilon).detach()
 
-                adversarials = utils.remove_failed(
-                    model, adversarial_x, adversarial_targets, adversarials, False, p=attack_p, eps=epsilon)
+                # In Madry's original paper on adversarial training, the authors do not check
+                # the success of the attack: they just clip the resulting adversarial to the allowed
+                # input range
+
+                adversarials = utils.clip_adversarial(adversarials, adversarial_x, epsilon, input_min=0, input_max=1)
+
+                #adversarials = utils.remove_failed(
+                #    model, adversarial_x, adversarial_targets, adversarials, False, p=attack_p, eps=epsilon)
 
                 for j, index in enumerate(indices):
                     if adversarials[j] is not None:
@@ -367,6 +373,20 @@ class IndexedDataset(torch.utils.data.Dataset):
     def __len__(self):
         return len(self.indices)
 
+def split_dataset(original_dataset, val_split, shuffle=True):
+    dataset_size = len(original_dataset)
+    indices = list(range(dataset_size))
+    split_index = int(np.floor(val_split * dataset_size))
+
+    if shuffle:
+        np.random.shuffle(indices)
+
+    val_indices, train_indices = indices[:split_index], indices[split_index:]
+
+    train_dataset = IndexedDataset(original_dataset, train_indices)
+    val_dataset = IndexedDataset(original_dataset, val_indices)
+
+    return train_dataset, val_dataset
 
 class EarlyStopping:
     """Early stops the training if validation loss doesn't improve after a given patience."""

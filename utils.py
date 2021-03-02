@@ -291,6 +291,19 @@ def maybe_stack(tensors, fallback_shape, dtype=torch.float, device='cpu'):
             shape = (0, ) + fallback_shape
         return torch.zeros(shape, dtype=dtype, device=device)
 
+def clip_adversarial(adversarial, genuine, epsilon, input_min=0, input_max=1):
+    assert adversarial.shape == genuine.shape
+
+    clipped_lower = torch.clip(genuine - epsilon, min=input_min, max=input_max)
+    clipped_upper = torch.clip(genuine + epsilon, min=input_min, max=input_max)
+
+    replace_lower = adversarial < clipped_lower
+    replace_upper = adversarial > clipped_upper
+
+    adversarial = fast_boolean_choice(adversarial, clipped_lower, replace_lower, reshape=False)
+    adversarial = fast_boolean_choice(adversarial, clipped_upper, replace_upper, reshape=False)
+
+    return torch.clip(adversarial, min=input_min, max=input_max)
 
 def tensor_md5(tensor):
     tensor = tensor.detach().cpu().numpy()

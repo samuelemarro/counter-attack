@@ -1,10 +1,7 @@
 import advertorch.attacks as attacks
-from advertorch.utils import clamp, calc_l2distsq, replicate_input, tanh_rescale, torch_arctanh, to_one_hot
-
-import numpy as np
+from advertorch.utils import clamp, replicate_input, tanh_rescale, torch_arctanh, to_one_hot
 
 import torch
-import torch.nn as nn
 import torch.optim as optim
 
 import utils

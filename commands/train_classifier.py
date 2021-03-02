@@ -112,7 +112,7 @@ def train_classifier(**kwargs):
             '--validation_split', '--validation_dataset and validation_split are mutually exclusive.')
 
     if kwargs['validation_split'] != 0:
-        train_dataset, val_dataset = torch_utils.split_dataset(
+        train_dataset, val_dataset = training.split_dataset(
             train_dataset, kwargs['validation_split'], shuffle=True)
     elif kwargs['validation_dataset'] is not None:
         val_dataset = parsing.parse_dataset(

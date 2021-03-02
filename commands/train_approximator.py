@@ -6,8 +6,7 @@ import torch
 
 import adversarial_dataset as ad
 import parsing
-import tests
-import torch_utils
+import training
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +61,7 @@ def train_approximator(**kwargs):
 
     val_dataloader = None
     if kwargs['validation_split'] != 0:
-        train_dataset, val_dataset = torch_utils.split_dataset(
+        train_dataset, val_dataset = training.split_dataset(
             train_dataset, kwargs['validation_split'], shuffle=True)
     elif kwargs['validation_dataset'] is not None:
         val_dataset = parsing.parse_dataset(

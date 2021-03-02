@@ -130,18 +130,3 @@ def unpack_sequential(module):
             layers.append(layer)
 
     return layers
-
-def split_dataset(original_dataset, val_split, shuffle=True):
-    dataset_size = len(original_dataset)
-    indices = list(range(dataset_size))
-    split_index = int(np.floor(val_split * dataset_size))
-
-    if shuffle:
-        np.random.shuffle(indices)
-
-    val_indices, train_indices = indices[:split_index], indices[split_index:]
-
-    train_dataset = IndexedDataset(original_dataset, train_indices)
-    val_dataset = IndexedDataset(original_dataset, val_indices)
-
-    return train_dataset, val_dataset
