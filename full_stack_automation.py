@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 # Comuni
 training_attack = 'pgd'
-pre_attack = '[bim, brendel, carlini, pgd, uniform]'
+pre_attack = '"[bim, brendel, carlini, pgd, uniform]"'
 rs_start_epoch_ratio = 0.8
 data_augmentation = True
 learning_rate = 1e-4
@@ -17,8 +17,9 @@ weight_pruning_threshold = 1e-3
 relu_pruning_threshold = 0.9
 
 
-def run_test(domain, architecture):
-    logger.debug('Starting test for %s-%s', domain, architecture)
+def run_test(domain, architecture, test_name):
+    logger.debug('Starting test for %s-%s-%s', domain, architecture,
+                 test_name)
 
     if domain == 'cifar10':
         # Usiamo la configurazione da 2/255
@@ -53,36 +54,61 @@ def run_test(domain, architecture):
 
     # TODO: La data augmentation influenza il valore dei parametri RS?
 
-    standard_state_dict = f'trained-models/robust-classifiers/{domain}-{architecture}-final.pth'
-    weight_pruned_state_dict = f'trained-models/weight-pruned-classifiers/{domain}-{architecture}-final-w.pth'
-    relu_pruned_state_dict = f'trained-models/relu-pruned-classifiers/{domain}-{architecture}-final-wr.pth'
+    if test_name == 'standard':
+        standard_state_dict = f'trained-models/standard-classifiers/{domain}-{architecture}-{test_name}.pth'
+    else:
+        standard_state_dict = f'trained-models/robust-classifiers/{domain}-{architecture}-{test_name}.pth'
+    weight_pruned_state_dict = f'trained-models/weight-pruned-classifiers/{domain}-{architecture}-{test_name}-w.pth'
+    relu_pruned_state_dict = f'trained-models/relu-pruned-classifiers/{domain}-{architecture}-{test_name}-wr.pth'
 
-    state_dict_name = 'final-wr'
-    count = 20
+    count = 5
 
     if not os.path.exists(standard_state_dict):
         logger.debug('Starting adversarial training')
-        os.system(f'python cli.py train-classifier {domain} {architecture} std:train {epochs} {standard_state_dict} --batch-size {batch_size} --learning-rate {learning_rate} {data_augmentation_string} --l1-regularization {l1_regularization} --rs-regularization {rs_regularization} --rs-eps {rs_eps} --adversarial-training {training_attack} --adversarial-p linf --adversarial-ratio {adversarial_ratio} --adversarial-eps {adversarial_eps} --rs-minibatch {rs_batch_size} --rs-start-epoch {rs_start_epoch} --adversarial-eps-growth-start {adversarial_eps_growth_start} --adversarial-eps-growth-epoch {adversarial_eps_growth_epoch}')
-    if not os.path.exists(weight_pruned_state_dict):
-        logger.debug('Starting weight pruning')
-        os.system(f'python cli.py prune-weights {domain} {architecture} {standard_state_dict} {weight_pruned_state_dict} {weight_pruning_threshold}')
-    if not os.path.exists(relu_pruned_state_dict):
-        logger.debug('Starting ReLU pruning')
-        os.system(f'python cli.py prune-relu {domain} {architecture} std:train {weight_pruned_state_dict} {relu_pruned_state_dict} {relu_pruning_threshold}')
+        if test_name == 'standard':
+            os.system(f'python cli.py train-classifier {domain} {architecture} std:train {epochs} {standard_state_dict} --batch-size {batch_size} --learning-rate {learning_rate} {data_augmentation_string}')
+        elif test_name == 'relu':
+            os.system(f'python cli.py train-classifier {domain} {architecture} std:train {epochs} {standard_state_dict} --batch-size {batch_size} --learning-rate {learning_rate} {data_augmentation_string} --l1-regularization {l1_regularization} --rs-regularization {rs_regularization} --rs-eps {rs_eps} --adversarial-training {training_attack} --adversarial-p linf --adversarial-ratio {adversarial_ratio} --adversarial-eps {adversarial_eps} --rs-minibatch {rs_batch_size} --rs-start-epoch {rs_start_epoch} --adversarial-eps-growth-start {adversarial_eps_growth_start} --adversarial-eps-growth-epoch {adversarial_eps_growth_epoch}')
+        elif test_name == 'adversarial':
+            os.system(f'python cli.py train-classifier {domain} {architecture} std:train {epochs} {standard_state_dict} --batch-size {batch_size} --learning-rate {learning_rate} {data_augmentation_string} --adversarial-training {training_attack} --adversarial-p linf --adversarial-ratio {adversarial_ratio} --adversarial-eps {adversarial_eps} --adversarial-eps-growth-start {adversarial_eps_growth_start} --adversarial-eps-growth-epoch {adversarial_eps_growth_epoch}')
+        else:
+            raise RuntimeError()
+    
+    if test_name == 'relu':
+        if not os.path.exists(weight_pruned_state_dict):
+            logger.debug('Starting weight pruning')
+            os.system(f'python cli.py prune-weights {domain} {architecture} {standard_state_dict} {weight_pruned_state_dict} {weight_pruning_threshold}')
+        if not os.path.exists(relu_pruned_state_dict):
+            logger.debug('Starting ReLU pruning')
+            os.system(f'python cli.py prune-relu {domain} {architecture} std:train {weight_pruned_state_dict} {relu_pruned_state_dict} {relu_pruning_threshold}')
 
     logger.debug('Starting full_stack.py')
-    os.system(f'python full_stack.py {domain} {architecture} {pre_attack} {count} --state-dict {relu_pruned_state_dict} --state-dict-name {state_dict_name}')
+
+    if test_name == 'relu':
+        full_stack_path = relu_pruned_state_dict
+        full_stack_name = 'relu-wr'
+    else:
+        full_stack_path = standard_state_dict
+        full_stack_name = test_name
+
+    #os.system(f'python full_stack.py {domain} {architecture} {pre_attack} {count} --state-dict {full_stack_path} --state-dict-name {full_stack_name}')
 
 def main():
-    processes = []
-    for domain in ['mnist', 'cifar10']:
-        for architecture in ['a', 'b', 'c']:
-            p = Process(target=run_test, args=(domain, architecture))
+    process_batch_size = 6
+    process_batches = [[]]
+    for test_name in ['adversarial', 'relu']:
+        for domain in ['mnist', 'cifar10']:
+            for architecture in ['a', 'b', 'c']:
+                p = Process(target=run_test, args=(domain, architecture, test_name))
+                process_batches[-1].append(p)
+                if len(process_batches[-1]) == process_batch_size:
+                    process_batches.append([])
+    
+    for batch in process_batches:
+        for p in batch:
             p.start()
-            processes.append(p)
-
-    for p in processes:
-        p.join()
+        for p in batch:
+            p.join()
 
 if __name__ == '__main__':
     main()

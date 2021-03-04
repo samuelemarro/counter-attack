@@ -135,7 +135,7 @@ def train_classifier(**kwargs):
         early_stopping = training.EarlyStopping(
             kwargs['early_stopping'], delta=kwargs['early_stopping_delta'])
 
-    if kwargs['adversarial_training'] is None:
+    if kwargs['adversarial_training'] == []:
         adversarial_attack = None
     else:
         logger.debug('Enabling adversarial training.')

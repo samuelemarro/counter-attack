@@ -37,6 +37,14 @@ def main():
 
 # TODO: Tanto logging
 
+# TODO: Vedere se si riesce ancora a velocizzare un po' l'adversarial training
+# TODO: Formalizzare full_stack.py
+# TODO: LABEL DEI MISCLASSIFIED (SOPRATTUTTO COME GESTIRLE NELL'ADV.TRAINING)
+
+# TODO: L'addestramento standard è pessimo, usare le reti con best-classifier (provare però con batch size più piccola? Non è il caso, era 50)
+
+# TODO: Ri-eseguire l'addestramento? Guardo quale aveva vinto per ogni categoria e prendo quello
+
 main.add_command(commands.accuracy)
 main.add_command(commands.attack)
 main.add_command(commands.attack_matrix)
