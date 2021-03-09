@@ -11,6 +11,8 @@ logger = logging.getLogger(__name__)
 
 class BestSampleTracker:
     def __init__(self, genuines, labels, p, targeted):
+        assert len(genuines) == len(labels)
+
         genuines = genuines.detach()
         labels = labels.detach()
         self.genuines = genuines
@@ -67,7 +69,7 @@ class BestSampleAttack(attacks.Attack, attacks.LabelMixin):
     def __init__(self, wrapped_model, inner_attack, p, targeted, suppress_warning=False):
         if not suppress_warning:
             if wrapped_model is not inner_attack.predict:
-                logger.warn('BestSampleAttack was passed a model that is different from inner_attack\'s model. '
+                logger.warning('BestSampleAttack was passed a model that is different from inner_attack\'s model. '
                             'Is this intentional?')
 
         self.wrapped_model = wrapped_model

@@ -5,6 +5,7 @@ import torch
 import utils
 
 # TODO: Ora sono tutti sempre attivi, passare a fast_boolean_choice?
+# TODO: Passare a eps passato per parametro (con avviso/errore in caso di None)
 
 
 class UniformNoiseAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):

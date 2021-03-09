@@ -90,7 +90,7 @@ def attack_matrix(**kwargs):
             'substitute_state_dict_paths must be as many values as the number of attacks.')
 
     if any(rejection_threshold > 0 for rejection_threshold in rejection_thresholds):
-        logger.warn('You are using a positive rejection threshold. Since Counter-Attack only outputs nonpositive values, '
+        logger.warning('You are using a positive rejection threshold. Since Counter-Attack only outputs nonpositive values, '
                     'the detector will never reject an example.')
 
     test_names = []

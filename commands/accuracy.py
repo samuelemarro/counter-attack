@@ -53,6 +53,6 @@ def accuracy(**kwargs):
     dataloader = torch.utils.data.DataLoader(
         dataset, kwargs['batch_size'], shuffle=False)
 
-    accuracy = tests.accuracy(model, dataloader, kwargs['device'])
+    model_accuracy = tests.accuracy(model, dataloader, kwargs['device'])
 
-    print('Accuracy: {:.2f}%'.format(accuracy * 100.0))
+    print('Accuracy: {:.2f}%'.format(model_accuracy * 100.0))

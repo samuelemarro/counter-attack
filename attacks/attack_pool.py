@@ -1,8 +1,12 @@
+import logging
+
 import advertorch
 import torch
 
 import attacks
 import utils
+
+logger = logging.getLogger(__name__)
 
 # TODO: Remember to always check the .targeted of what you're working with,
 # as well as if you're using the standard or defended model
@@ -13,9 +17,18 @@ class AttackPool(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     def __init__(self, predict, evade_detector, pool_attacks, p, brendel_initialization=True):
         self.predict = predict
         self.evade_detector = evade_detector
+
         assert all(not attack.targeted for attack in pool_attacks)
         assert all((attack.predict == predict) if hasattr(
             attack, 'predict') else True for attack in pool_attacks)
+        assert len(pool_attacks) > 0
+
+        if len(pool_attacks) > 1:
+            logger.warning('You are creating an AttackPool with only one attack. Is this intentional?')
+
+        logger.debug('Creating attack pool with %s attacks.', len(pool_attacks))
+        logger.debug('Brendel initialization: %s.', brendel_initialization)
+
         self.pool_attacks = pool_attacks
         self.p = p
         self.brendel_initialization = brendel_initialization
@@ -40,7 +53,6 @@ class AttackPool(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
                 distances = utils.one_many_adversarial_distance(
                     original, successful_adversarials, self.p)
-
                 assert distances.shape == (len(successful_adversarials),)
 
                 best_distance_index = torch.argmin(distances)
@@ -49,6 +61,7 @@ class AttackPool(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                     successful_adversarials[best_distance_index])
             else:
                 # All the pool_attacks failed: Return the original
+                logger.debug('All the pool attacks failed.')
                 best_adversarials.append(original)
 
         best_adversarials = torch.stack(best_adversarials)

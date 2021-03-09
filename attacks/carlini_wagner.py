@@ -87,8 +87,13 @@ class CarliniWagnerCPULinfAttack(attacks.Attack, attacks.LabelMixin):
         adversarials = tanh_rescale(
             starting_atanh + modifiers, self.clip_min, self.clip_max)
 
+        assert x.shape == adversarials.shape
+
         outputs = self.predict(adversarials)
+        assert outputs.shape == [adversarials.shape[0], self.num_classes]
+
         y_onehot = to_one_hot(y, self.num_classes).float()
+        assert y_onehot.shape == outputs.shape
 
         real = (y_onehot * outputs).sum(dim=1)
 
@@ -108,9 +113,10 @@ class CarliniWagnerCPULinfAttack(attacks.Attack, attacks.LabelMixin):
 
         penalties = torch.clamp(
             torch.abs(x - adversarials) - taus.view(taus_shape), min=0)
-        loss2 = torch.sum(penalties, dim=image_dimensions)
+        assert penalties.shape == x.shape
 
-        assert loss1.shape == loss2.shape
+        loss2 = torch.sum(penalties, dim=image_dimensions)
+        assert loss2.shape == loss1.shape
 
         loss = loss1 + loss2
         return outputs.detach(), loss
@@ -240,6 +246,8 @@ class CarliniWagnerCPULinfAttack(attacks.Attack, attacks.LabelMixin):
             linf_distances = torch.max(
                 torch.abs(adversarials - x[active]).flatten(1),
                 dim=1)[0]
+            assert linf_distances.shape == (len(adversarials),)
+            
             linf_lower = linf_distances < taus[active]
 
             utils.replace_active(linf_distances,

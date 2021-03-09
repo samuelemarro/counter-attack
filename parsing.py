@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 domains = ['cifar10', 'mnist', 'svhn']
 architectures = ['a', 'b', 'c', 'wong_small', 'wong_large', 'small',
                  'x1', 'x2', 'x3', 'x4', 'x5', 'x6', 'x7', 'x8', 'x9', 'x10', 'x11']
-supported_attacks = ['bim', 'carlini', 'brendel',
+supported_attacks = ['bim', 'brendel', 'carlini',
                      'deepfool', 'fast_gradient', 'mip', 'pgd', 'uniform']
 epsilon_attacks = ['bim', 'fast_gradient', 'pgd', 'uniform']
 attacks_with_binary_search = ['bim', 'fast_gradient', 'pgd', 'uniform']
@@ -44,22 +44,24 @@ training_options = [
     click.option('--weight-decay', type=float, default=0, show_default=True,
                  help='The weight decay for the optimiser.'),
     click.option('--adam-betas', nargs=2, type=click.Tuple([float, float]), default=(0.9, 0.999), show_default=True,
-                 help='The two beta values. Ignored if the optimiser is not \'adam\''),
+                 help='The two beta values. Ignored if the optimiser is not "adam".'),
     click.option('--adam-epsilon', type=float, default=1e-8, show_default=True,
-                 help='The value of epsilon. Ignored if the optimiser is not \'adam\''),
+                 help='The value of epsilon. Ignored if the optimiser is not "adam".'),
     click.option('--adam-amsgrad', is_flag=True,
-                 help='Enables AMSGrad. Ignored if the optimiser is not \'adam\''),
+                 help='Enables AMSGrad. Ignored if the optimiser is not "adam".'),
     click.option('--sgd-momentum', type=float, default=0, show_default=True,
-                 help='The intensity of momentum. Ignored if the optimiser is not \'sgd\''),
+                 help='The intensity of momentum. Ignored if the optimiser is not "sgd".'),
     click.option('--sgd-dampening', type=float, default=0, show_default=True,
-                 help='The intensity of dampening. Ignored if the optimiser is not \'sgd\''),
+                 help='The intensity of dampening. Ignored if the optimiser is not "sgd".'),
     click.option('--sgd-nesterov', is_flag=True,
-                 help='Enables Nesterov Accelerated Gradient. Ignored if the optimiser is not \'adam\''),
+                 help='Enables Nesterov Accelerated Gradient. Ignored if the optimiser is not "adam".'),
     click.option('--l1-regularization', type=float, default=0, show_default=True,
-                 help='The weight of L1 regularization. 0 disables L1 regularization'),
-    click.option('--validation-dataset', default=None),
+                 help='The weight of L1 regularization. 0 disables L1 regularization.'),
+    click.option('--validation-dataset', default=None,
+                 help='Validation dataset. Mutually exclusive with --validation-split.'),
     click.option('--validation-split', type=float, default=0,
-                 help='Uses a portion (0-1) of the train dataset as validation dataset. 0 disables the split.'),
+                 help='Uses a portion (0-1) of the train dataset as validation dataset. 0 disables the split. '
+                 'Mutually exclusive with --validation-dataset.'),
     click.option('--early-stopping', type=click.IntRange(0, None), default=0, show_default=True,
                  help='The patience of early stopping. 0 disables early stopping.'),
     click.option('--early-stopping-delta', type=float, default=0, show_default=True,
@@ -113,6 +115,9 @@ def parse_model(domain, architecture, state_dict_path, apply_normalisation, mask
         # SVHN
         # mean = np.array([0.4377, 0.4438, 0.4728])
         # std = np.array([0.1201, 0.1231, 0.1052])
+
+        # TODO: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+        # Valori di normalizzazione di CIFAR10
 
         # The pretrained CIFAR10 and SVHN models
         # use the standard 0.5 normalisations

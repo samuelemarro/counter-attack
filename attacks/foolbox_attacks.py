@@ -1,4 +1,5 @@
-from typing import Union, Optional, Tuple, Any
+import logging
+from typing import Union, Optional
 from typing_extensions import Literal
 
 import advertorch
@@ -6,12 +7,14 @@ import foolbox as fb
 import numpy as np
 import torch
 
-import utils
-
+logger = logging.getLogger(__name__)
 
 class FoolboxAttackWrapper(advertorch.attacks.LabelMixin):
     def __init__(self, model, foolbox_attack, targeted, clip_min=0, clip_max=1):
+        # Get the device from the model. This is only possible if the
+        # model does not contain both CPU and CUDA tensors
         device = next(model.parameters()).device
+        
         self.foolbox_model = fb.models.PyTorchModel(
             model, bounds=(clip_min, clip_max), device=device)
         self.foolbox_attack = foolbox_attack
@@ -33,32 +36,17 @@ class FoolboxAttackWrapper(advertorch.attacks.LabelMixin):
     def perturb(self, x, y=None, **kwargs):
         x, y = self._verify_and_process_inputs(x, y)
 
+        if 'eps' in kwargs or 'epsilons' in kwargs:
+            logger.warning('You are passing eps/epsilons to a non-epsilon attack. Is this intentional?')
+
         # Initialization
         if y is None:
             y = self._get_predicted_label(x)
 
         criterion = self.get_criterion(y)
 
-        # Returns adv, clipped_adv, success
+        # foolbox_attack returns (adv, clipped_adv, success)
         return self.foolbox_attack(self.foolbox_model, x, criterion, epsilons=None, **kwargs)[1]
-
-
-class EpsilonFoolboxAttackWrapper(FoolboxAttackWrapper):
-    def __init__(self, model, foolbox_attack, targeted, clip_min=0, clip_max=1):
-        super().__init__(model, foolbox_attack, targeted,
-                         clip_min=clip_min, clip_max=clip_max)
-        self.eps = None
-
-    def perturb(self, x, y=None, **kwargs):
-        x, y = self._verify_and_process_inputs(x, y)
-
-        # Initialization
-        if y is None:
-            y = self._get_predicted_label(x)
-
-        # Returns adv, clipped_adv, success
-        return self.foolbox_attack(self.foolbox_model, x, y, epsilons=self.eps, **kwargs)[1]
-
 
 class BrendelBethgeAttack(FoolboxAttackWrapper):
     def __init__(

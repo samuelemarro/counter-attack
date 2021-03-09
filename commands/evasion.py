@@ -84,7 +84,7 @@ def evasion(**kwargs):
     substitute_state_dict_paths = kwargs['substitute_state_dict_paths']
 
     if kwargs['rejection_threshold'] >= 0:
-        logger.warn('You are using a positive rejection threshold. Since Counter-Attack only outputs nonpositive values, '
+        logger.warning('You are using a positive rejection threshold. Since Counter-Attack only outputs nonpositive values, '
                     'the detector will never reject an example.')
 
     if len(substitute_state_dict_paths) != len(counter_attack_names):

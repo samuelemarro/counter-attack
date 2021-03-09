@@ -20,6 +20,7 @@ def main():
 # TODO: Linf, L2 -> inf, 2
 
 # TODO: Rimuovere sanity_test e svhn
+# TODO: Rimuovere gli attacchi non usati
 
 # TODO: Quando non trova il sample di partenza (a causa di bound troppo stretti), fa 7200 secondi sprecati.
 # Contemporaneamente, usare dei bound troppo larghi rallenta incredibilmente l'esecuzione
@@ -37,13 +38,62 @@ def main():
 
 # TODO: Tanto logging
 
-# TODO: Vedere se si riesce ancora a velocizzare un po' l'adversarial training
 # TODO: Formalizzare full_stack.py
-# TODO: LABEL DEI MISCLASSIFIED (SOPRATTUTTO COME GESTIRLE NELL'ADV.TRAINING)
+# TODO: LABEL DEI MISCLASSIFIED (SOPRATTUTTO COME GESTIRLE NELL'ADV.TRAINING) (Nota: nell'adversarial training non dà problemi in teoria, check)
+# TODO: Verificare che attack_comparison_test funzioni ancora
 
-# TODO: L'addestramento standard è pessimo, usare le reti con best-classifier (provare però con batch size più piccola? Non è il caso, era 50)
+# TODO: Togliere il boolean indexing da uniform_noise.py
+# TODO: Il sistema di return_best è re-implementato in epsilon_binary_search e uniform_noise. Toglierlo?
+# TODO: Finire il debugging di attacks/mip.py e uniform.py
+# TODO: Il comando mip è un comando a sé da debuggare!
 
 # TODO: Ri-eseguire l'addestramento? Guardo quale aveva vinto per ogni categoria e prendo quello
+
+# TODO: Rimuovere architetture inutili
+# TODO: Eliminare svhn.py
+# TODO: Rimuovere consistent_random
+# TODO: Eliminare sanity_tests.py
+# TODO: accuracy.py che fa l'override di dataset per --from-adversarial-dataset non è bellissimo
+# TODO: LA NORMALIZZAZIONE DI CIFAAAAAAAARRRRRRRRR
+# TODO: è giusto che si usi l'inizializzazione intelligente per Brendel? Secondo me no
+# TODO: Supporto salvataggio checkpoint
+
+"""
+Lista dei moduli ancora da controllare
+
+- attacks
+    - mip.py
+    - uniform_noise.py
+- commands
+    - accuracy.py (quasi fatto)
+    - attack_matrix.py [p]
+    - attack.py
+    - compare.py
+    - cross_validation.py
+    - distance_dataset.py
+    - evasion.py [p]
+    - mip.py
+    - perfect_approximation.py [p]
+    - prune_relu.py
+    - prune_weights.py
+    - train_approximator.py
+    - train_classifier.py
+    - tune_mip.py [p?]
+- models
+    - cifar.py
+    - mnist.py
+- adversarial_dataset.py
+- detectors.py [p]
+- full_stack_automation.py
+- full_stack.py
+- mip_interface.jl
+- parsing.py (manca solo la normalizzazione di CIFAR)
+- torch_utils.py
+- training.py
+- utils.py
+
+"""
+
 
 main.add_command(commands.accuracy)
 main.add_command(commands.attack)

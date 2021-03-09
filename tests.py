@@ -29,6 +29,10 @@ def accuracy(model, loader, device):
 
 def attack_test(model, attack, loader, p, misclassification_policy, device, generation_kwargs, attack_configuration, start, stop, defended_model, blind_trust=False):
     assert not attack.targeted
+
+    logger.debug('Misclassification policy: %s.', misclassification_policy)
+    logger.debug('Blind trust: %s', blind_trust)
+
     model.to(device)
 
     all_images = []

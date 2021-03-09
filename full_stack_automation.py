@@ -4,6 +4,9 @@ import os
 
 logger = logging.getLogger(__name__)
 
+# N.B.: The default Adam parameters for train_classifier.py are the same
+# as Tensorflow's
+
 # Comuni
 training_attack = 'pgd'
 pre_attack = '"[bim, brendel, carlini, pgd, uniform]"'

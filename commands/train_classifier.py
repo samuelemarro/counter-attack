@@ -80,7 +80,7 @@ logger = logging.getLogger(__name__)
               help='The minimum logging level.')
 def train_classifier(**kwargs):
     parsing.set_log_level(kwargs['log_level'])
-    logger.debug('Running train-classifier with kwargs %s', kwargs)
+    logger.debug('Running train-classifier command with kwargs %s', kwargs)
 
     if kwargs['cpu_threads'] is not None:
         torch.set_num_threads(kwargs['cpu_threads'])
@@ -171,6 +171,7 @@ def train_classifier(**kwargs):
         if kwargs['rs_eps'] is None:
             raise click.BadOptionUsage(
                 '--rs-eps', 'Please specify the maximum perturbation for RS loss with --rs-eps.')
+        
         if kwargs['rs_start_epoch'] > kwargs['epochs']:
             logger.warning('--rs-start-epoch is higher than the number of epochs. This means that RS loss will never be activated. '
                            'Is this intentional?')

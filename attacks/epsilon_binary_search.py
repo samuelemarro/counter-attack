@@ -3,16 +3,17 @@ import torch
 import attacks
 import utils
 
-# Nota: Aggiorna eps se ha una distanza più bassa (non solo se ha successo)
+# N.B.: This implementation updates eps based only on whether the attack was successful.
+# Whether the attack found a better distance does not influence the eps update.
 
 class EpsilonBinarySearchAttack(attacks.AdvertorchWrapper):
-    def __init__(self, inner_attack, ord, targeted=False, min_eps=0, max_eps=1, eps_initial_search_steps=9, eps_binary_search_steps=9):
-        if not (isinstance(inner_attack, attacks.EpsilonAttack) or isinstance(inner_attack, attacks.foolbox_attacks.EpsilonFoolboxAttackWrapper)):
-            raise ValueError('inner_attack must be an EpsilonAttack or an EpsilonFoolboxAttackWrapper')
+    def __init__(self, inner_attack, p, targeted=False, min_eps=0, max_eps=1, eps_initial_search_steps=9, eps_binary_search_steps=9):
+        if not isinstance(inner_attack, attacks.EpsilonAttack):
+            raise ValueError('inner_attack must be an EpsilonAttack.')
         
         super().__init__(inner_attack)
 
-        self.ord = ord
+        self.p = p
         assert inner_attack.targeted == targeted
         self.targeted = targeted
         self.min_eps = min_eps
@@ -52,9 +53,11 @@ class EpsilonBinarySearchAttack(attacks.AdvertorchWrapper):
             adversarials = self.perturb_standard(
                 x, y, initial_search_eps).detach()
             adversarial_outputs = self.predict(adversarials).detach()
+            assert len(adversarials) == len(adversarial_outputs)
+
             successful = self.successful(adversarial_outputs, y)
 
-            distances = utils.adversarial_distance(x, adversarials, self.ord)
+            distances = utils.adversarial_distance(x, adversarials, self.p)
             better_distances = distances < best_distances
 
             replace = successful & better_distances
@@ -75,9 +78,11 @@ class EpsilonBinarySearchAttack(attacks.AdvertorchWrapper):
             eps = (eps_lower_bound + eps_upper_bound) / 2
             adversarials = self.perturb_standard(x, y, eps).detach()
             adversarial_outputs = self.predict(adversarials).detach()
+            assert len(adversarials) == len(adversarial_outputs)
+
             successful = self.successful(adversarial_outputs, y)
 
-            distances = utils.adversarial_distance(x, adversarials, self.ord)
+            distances = utils.adversarial_distance(x, adversarials, self.p)
             better_distances = distances < best_distances
             replace = successful & better_distances
 

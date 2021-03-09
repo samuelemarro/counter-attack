@@ -13,12 +13,9 @@ import utils
 logger = logging.getLogger(__name__)
 
 # Required libraries:
-# PyCall (installed from the Python package "julia") (alternatively, I can add it as its own library)
+# PyCall (installed from the Python package "julia")
 # JuMP
 # MIPVerify
-
-# TODO: Testare MaxPool e BatchNorm
-
 
 def module_to_mip(module):
     from julia import MIPVerify
@@ -33,10 +30,6 @@ def module_to_mip(module):
         )
     elif isinstance(module, nn.Flatten):
         assert module.end_dim == -1
-        # Il parametro da passare è essenzialmente il numero di dimensioni dell'input
-        # Interpreta ndim=k come se prima dovesse fare una trasposizione
-        # [k-1, k-2, ..., 0] (inverte gli assi) e poi un flatten verso un vettore 1D
-        # Perché fa la trasposizione? Forse perché Julia è column-major?
 
         # PyTorch uses the BCHW format and reads row-first (backwards), so the order is WHCB
         # Julia uses the BHWC format and reads column-first (straightforward), so in order to read it
@@ -49,9 +42,13 @@ def module_to_mip(module):
         always_zero = module.always_zero.data.cpu().numpy()
         always_linear = module.always_linear.data.cpu().numpy()
         assert not (np.logical_and(always_zero, always_linear)).any()
+        assert always_zero.shape == always_linear.shape
 
         always_zero = always_zero.astype(np.float)
         always_linear = always_linear.astype(np.float)
+
+        logger.debug('Adding %s always_zero elements and %s always_linear elements (out of %s elements).',
+            np.sum(always_zero), np.sum(always_linear), np.prod(always_zero.shape))
 
         mask = np.zeros_like(always_zero)
 
@@ -65,7 +62,8 @@ def module_to_mip(module):
         mean = np.squeeze(to_numpy(module.mean))
         std = np.squeeze(to_numpy(module.std))
 
-        # TODO: Capire qual è la forma adeguata
+        assert mean.shape == std.shape == ()
+
         if len(mean.shape) == 0:
             mean = [mean.item()]
         if len(std.shape) == 0:
@@ -107,8 +105,8 @@ def module_to_mip(module):
 
         converted = MIPVerify.Conv2d(filter_, bias, stride, padding)
 
-        # L'immagine (H, W) filtrata (senza padding) dal filtro (K_H, K_W)
-        # avrà dimensione (H - K_H + 1, W - K_W + 1)
+        # The image (H, W) after a zero padding convolution with filter (K_H, K_W)
+        # will have shape (H - K_H + 1, W - K_W + 1)
     else:
         raise NotImplementedError(
             f'Unsupported module "{type(module).__name__}".')
@@ -123,7 +121,9 @@ def sequential_to_mip(sequential):
 
     layers = [module_to_mip(layer) for layer in layers]
 
-    return MIPVerify.Sequential(layers, 'Converted network')
+    conversion_time = time.time()
+
+    return MIPVerify.Sequential(layers, f'Converted network ({conversion_time})')
 
 # TODO: Return None if the solver times out
 
@@ -137,12 +137,16 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     def __init__(self, predict, p, targeted, tolerance=1e-6, clip_min=0,
                 clip_max=1, initial_correction_factor=1.05, attempts=3,
                 correction_factor_growth=1.5, retry_absolute_gap=1e-5,
-                tightening_overrides=dict(), **gurobi_kwargs):
+                tightening_overrides=None, **gurobi_kwargs):
         super().__init__(predict, None, clip_min, clip_max)
-        if p in [1, 2, float('inf')]:
-            self.p = p
-        else:
+
+        if tightening_overrides is None:
+            tightening_overrides = dict()
+
+        if not np.isposinf(p):
             raise NotImplementedError('MIPAttack only supports p=1, 2 or inf.')
+
+        self.p = p
 
         # Lazy import
         if not MIPAttack._pyjulia_installed:
@@ -157,7 +161,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         self.retry_absolute_gap = retry_absolute_gap
 
         if tolerance == 0:
-            logger.warn('MIP\'s tolerance is set to 0. Given the possible numerical errors,'
+            logger.warning('MIP\'s tolerance is set to 0. Given the possible numerical errors,'
                         ' it is likely that MIP\'s adversarials will be considered unsuccessful by Torch\'s'
                         ' model.')
 
@@ -206,7 +210,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         target_label = label + 1
 
         if perturbation_size is None:
-            logger.debug(f'No starting point provided, using unbounded perturbation.')
+            logger.debug('No starting point provided, using unbounded perturbation.')
             perturbation = MIPVerify.UnrestrictedPerturbationFamily()
         else:
             if not np.isposinf(self.p):
@@ -273,7 +277,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
             while np.isnan(upper) and attempts < self.max_attempts:
                 attempts += 1
-                logger.debug(f'Attempt #{attempts} (feasibility).')
+                logger.debug('Attempt #%s (feasibility).', attempts)
                 adversarial, adversarial_result = self.perform_attempt(image, label, starting_point=starting_point, perturbation_size=perturbation_size)
                 upper = JuMP.getobjectivevalue(adversarial_result['Model'])
                 lower = JuMP.getobjectivebound(adversarial_result['Model'])
@@ -287,7 +291,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
         while ((upper - lower) > self.retry_absolute_gap or np.isnan(upper)) and attempts < self.max_attempts:
             attempts += 1
-            logger.debug(f'Attempt #{attempts} (optimality)')
+            logger.debug('Attempt #%s (optimality)', attempts)
             adversarial, adversarial_result = self.perform_attempt(image, label, starting_point=starting_point, perturbation_size=perturbation_size)
             upper = JuMP.getobjectivevalue(adversarial_result['Model'])
             lower = JuMP.getobjectivebound(adversarial_result['Model'])

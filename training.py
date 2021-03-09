@@ -131,11 +131,14 @@ def model_to_rs_sequence(model, input_shape, device):
 
     placeholder = torch.zeros([1] + list(input_shape), device=device)
 
+    logger.debug('[RS Loss] Parsed layers:')
     for layer in layers:
         if isinstance(layer, torch_utils.Normalisation) or isinstance(layer, nn.ReLU) or isinstance(layer, nn.Flatten):
+            logger.debug('[RS Loss] Non-reshaping layer of type %s, inserting as-is.', type(layer).__name__)
             placeholder = layer(placeholder)
             new_layers.append(layer)
         elif isinstance(layer, nn.Conv2d):
+            logger.debug('[RS Loss] 2D convolution, replacing with linear layer.')
             before_conv_shape = placeholder.shape[1:]
             placeholder = layer(placeholder)
             after_conv_shape = placeholder.shape[1:]
@@ -143,13 +146,13 @@ def model_to_rs_sequence(model, input_shape, device):
                                   after_conv_shape, device)
             new_layers.append((W, b))
         elif isinstance(layer, nn.Linear):
+            logger.debug('[RS Loss] Linear layer, inserting as-is.')
             placeholder = layer(placeholder)
             new_layers.append((layer.weight.T, layer.bias))
         else:
             raise NotImplementedError(
                 f'Unsupported layer {type(layer).__name__}.')
 
-    #print('New layers: ', [type(l).__name__ for l in new_layers])
     return new_layers
 
 
@@ -162,6 +165,7 @@ def rs_loss(model, x, epsilon, input_min=0, input_max=1):
     input_upper = torch.clamp(x + epsilon, min=input_min, max=input_max)
 
     if isinstance(layers[0], torch_utils.Normalisation):
+        logger.debug('[RS Loss] Applying normalisation')
         input_lower = layers[0].forward(input_lower)
         input_upper = layers[0].forward(input_upper)
         layers = layers[1:]

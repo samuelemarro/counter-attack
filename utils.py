@@ -334,7 +334,7 @@ def consistent_randint(linked_tensor, min, max, shape, device):
                               lambda: torch.randint(min, max, shape, device=device))
 
 
-def consistent_rand_init_delta(deltas, x, ord, eps, clip_min, clip_max):
+def consistent_rand_init_delta(deltas, x, p, eps, clip_min, clip_max):
     assert len(x) == len(deltas)
     assert len(x) == len(eps)
 
@@ -344,7 +344,7 @@ def consistent_rand_init_delta(deltas, x, ord, eps, clip_min, clip_max):
         unsqueezed_eps = eps.unsqueeze(0)
         consistent_wrapper(image,
                            lambda: advertorch.attacks.utils.rand_init_delta(
-                               delta, unsqueezed_image, ord, unsqueezed_eps, clip_min, clip_max)[0]
+                               delta, unsqueezed_image, p, unsqueezed_eps, clip_min, clip_max)[0]
                            )
 
     return deltas

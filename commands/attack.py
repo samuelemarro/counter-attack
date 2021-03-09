@@ -55,6 +55,8 @@ logger = logging.getLogger(__name__)
 def attack(**kwargs):
     parsing.set_log_level(kwargs['log_level'])
 
+    logger.debug('Running attack command with kwargs %s.', kwargs)
+
     if kwargs['cpu_threads'] is not None:
         torch.set_num_threads(kwargs['cpu_threads'])
 
@@ -80,7 +82,7 @@ def attack(**kwargs):
     p = kwargs['p']
 
     if kwargs['blind_trust']:
-        logger.warn(
+        logger.warning(
             'Blind trust is activated. This means that the success of the attack will NOT be checked.')
 
     adversarial_dataset = tests.attack_test(model, attack_pool, dataloader, p, kwargs['misclassification_policy'], kwargs[

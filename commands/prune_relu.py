@@ -52,7 +52,7 @@ def recursive_converter(sequential, num_samples_threshold):
             masked_relu.always_linear.data = linear_mask
 
             converted_layers.append(masked_relu)
-            total_relus += np.prod(zero_mask.shape)
+            total_relus += np.prod(zero_mask.shape).item()
             replaced_relus += len(torch.nonzero(zero_mask | linear_mask))
         else:
             converted_layers.append(layer)
@@ -102,11 +102,11 @@ def prune_relu(**kwargs):
         raise ValueError('This command only works with sequential networks.')
 
     if kwargs['dataset'] == 'std:test':
-        logger.warn(
+        logger.warning(
             'This command is recommended to be used with non-test datasets.')
 
     if kwargs['threshold'] < 0.5:
-        logger.warn('By using a threshold smaller than 0.5, a lot of unstable ReLUs will be treated as stable. '
+        logger.warning('By using a threshold smaller than 0.5, a lot of unstable ReLUs will be treated as stable. '
                     'Is this intentional?')
 
     dataset = parsing.parse_dataset(kwargs['domain'], kwargs['dataset'], dataset_edges=(

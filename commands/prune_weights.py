@@ -30,14 +30,14 @@ def prune_weights(**kwargs):
     threshold = kwargs['threshold']
 
     with torch.no_grad():
-        for p in model.parameters():
-            if p.dtype == torch.bool:
+        for param in model.parameters():
+            if param.dtype == torch.bool:
                 continue
 
-            all_parameters += np.prod(list(p.shape))
-            below_threshold = torch.abs(p) < threshold
+            all_parameters += np.prod(list(param.shape))
+            below_threshold = torch.abs(param) < threshold
             prunable_parameters += len(torch.nonzero(below_threshold))
-            p[below_threshold] = 0.0
+            param[below_threshold] = 0.0
 
     logger.info(
         f'Pruned {prunable_parameters} out of {all_parameters} parameters.')
