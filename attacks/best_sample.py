@@ -42,12 +42,11 @@ class BestSampleWrapper(nn.Module):
         outputs = self.model(x)
 
         with torch.no_grad():
+            adversarial_labels = torch.argmax(outputs, dim=1)
             if self.tracker.targeted:
-                successful = torch.eq(torch.argmax(
-                    outputs, dim=1), self.tracker.labels)
+                successful = torch.eq(adversarial_labels, self.tracker.labels)
             else:
-                successful = ~torch.eq(torch.argmax(
-                    outputs, dim=1), self.tracker.labels)
+                successful = ~torch.eq(adversarial_labels, self.tracker.labels)
 
             distances = utils.adversarial_distance(
                 self.tracker.genuines, x, self.tracker.p)

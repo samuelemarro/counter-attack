@@ -1,14 +1,10 @@
 import gzip
-import json
-import hashlib
 import itertools
+import json
 import logging
-import os
 import pathlib
 import pickle
-import sys
 
-import advertorch
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
@@ -16,7 +12,7 @@ import torch
 logger = logging.getLogger(__name__)
 
 
-def save_zip(object, path, protocol=0):
+def save_zip(obj, path, protocol=0):
     """
     Saves a compressed object to disk.
     """
@@ -24,7 +20,7 @@ def save_zip(object, path, protocol=0):
     pathlib.Path(path).parent.mkdir(parents=True, exist_ok=True)
 
     file = gzip.GzipFile(path, 'wb')
-    pickled = pickle.dumps(object, protocol)
+    pickled = pickle.dumps(obj, protocol)
     file.write(pickled)
     file.close()
 
@@ -34,10 +30,10 @@ def load_zip(path):
     Loads a compressed object from disk.
     """
     file = gzip.GzipFile(path, 'rb')
-    buffer = b""
+    buffer = b''
     while True:
         data = file.read()
-        if data == b"":
+        if data == b'':
             break
         buffer += data
     obj = pickle.loads(buffer)
@@ -56,7 +52,8 @@ class AttackConfig:
             for key, value in new_kwargs.items():
                 if key in kwargs.keys():
                     logger.debug(
-                        f'Overriding key "{key}" by replacing {kwargs[key]} with {value}.')
+                        'Overriding key %s by replacing %s with %s.',
+                        key, kwargs[key], value)
                 kwargs[key] = value
 
         def loop_across_dict(current_dict, ramifications):
@@ -94,7 +91,7 @@ def adversarial_distance(genuines, adversarials, p):
     assert genuines.shape == adversarials.shape
 
     if len(genuines) == 0:
-        return torch.zeros([0], device=genuines.device)
+        return torch.zeros([0.], device=genuines.device)
     else:
         genuines = genuines.flatten(1)
         adversarials = adversarials.flatten(1)
@@ -137,7 +134,21 @@ def apply_misclassification_policy(model, images, true_labels, policy):
         else:
             raise NotImplementedError(f'Unsupported policy "{policy}".')
 
+def successful_adversarials(model, adversarials, labels, targeted):
+    assert len(adversarials) == len(labels)
 
+    adversarial_outputs = model(adversarials)
+
+    adversarial_labels = torch.argmax(adversarial_outputs, axis=1)
+    assert adversarial_labels.shape == labels.shape
+
+    if targeted:
+        return torch.eq(adversarial_labels, labels)
+    else:
+        return ~torch.eq(adversarial_labels, labels)
+
+
+# TODO: Consider removing
 def misclassified(model, adversarials, labels, has_detector):
     assert len(adversarials) == len(labels)
 
@@ -194,6 +205,8 @@ def remove_failed(model, images, labels, adversarials, has_detector, p=None, eps
 
 # Returns b if filter_ is True, else a
 def fast_boolean_choice(a, b, filter_, reshape=True):
+    assert len(a) == len(b) == len(filter_)
+
     if reshape:
         pre_expansion_shape = [len(filter_)] + ([1] * (len(a.shape) - 1))
         filter_ = filter_.reshape(*pre_expansion_shape)
@@ -221,64 +234,70 @@ def replace_active(from_, to, active, filter_):
 
 
 def show_images(images, adversarials, limit=None, model=None):
-    assert len(images) == len(adversarials)
+    try:
+        assert len(images) == len(adversarials)
 
-    successful_images = []
-    successful_adversarials = []
+        successful_images = []
+        successful_adversarials = []
 
-    for image, adversarial in zip(images, adversarials):
-        if adversarial is not None:
-            successful_images.append(image)
-            successful_adversarials.append(adversarial)
+        for image, adversarial in zip(images, adversarials):
+            if adversarial is not None:
+                successful_images.append(image)
+                successful_adversarials.append(adversarial)
 
-    successful_images = torch.stack(successful_images)
-    successful_adversarials = torch.stack(successful_adversarials)
+        successful_images = torch.stack(successful_images)
+        successful_adversarials = torch.stack(successful_adversarials)
 
-    if limit is not None:
-        successful_images = successful_images[:limit]
-        successful_adversarials = successful_adversarials[:limit]
+        if limit is not None:
+            successful_images = successful_images[:limit]
+            successful_adversarials = successful_adversarials[:limit]
 
-    assert successful_images.shape == successful_adversarials.shape
+        assert successful_images.shape == successful_adversarials.shape
 
-    if model is None:
-        labels = [None] * len(successful_images)
-        adversarial_labels = [None] * len(successful_images)
-    elif len(successful_images) > 0:
-        labels = get_labels(model, successful_images)
-        adversarial_labels = get_labels(model, successful_adversarials)
-    else:
-        labels = []
-        adversarial_labels = []
+        if model is None:
+            labels = [None] * len(successful_images)
+            adversarial_labels = [None] * len(successful_images)
+        elif len(successful_images) > 0:
+            labels = get_labels(model, successful_images)
+            adversarial_labels = get_labels(model, successful_adversarials)
+        else:
+            labels = []
+            adversarial_labels = []
 
-    for image, label, adversarial, adversarial_label in zip(successful_images, labels, successful_adversarials, adversarial_labels):
-        image_title = 'Original'
-        adversarial_title = 'Adversarial'
+        assert len(successful_images) == len(labels) == len(adversarial_labels)
 
-        if model is not None:
-            image_title += f' (label: {label})'
-            adversarial_title += f' (label: {adversarial_label})'
+        for image, label, adversarial, adversarial_label in zip(successful_images, labels, successful_adversarials, adversarial_labels):
+            image_title = 'Original'
+            adversarial_title = 'Adversarial'
 
-        if image.shape[0] == 1:
-            plt.style.use('grayscale')
+            if model is not None:
+                image_title += f' (label: {label})'
+                adversarial_title += f' (label: {adversarial_label})'
 
-        normalisation = plt.Normalize(vmin=0, vmax=1)
+            if image.shape[0] == 1:
+                plt.style.use('grayscale')
 
-        image = np.moveaxis(image.cpu().numpy(), 0, 2).squeeze()
-        adversarial = np.moveaxis(adversarial.cpu().numpy(), 0, 2).squeeze()
-        difference = np.abs(image - adversarial)
+            normalisation = plt.Normalize(vmin=0, vmax=1)
 
-        _, axes = plt.subplots(1, 3, squeeze=False)
-        axes[0, 0].title.set_text(image_title)
-        axes[0, 0].imshow(image, norm=normalisation)
-        axes[0, 1].title.set_text(adversarial_title)
-        axes[0, 1].imshow(adversarial, norm=normalisation)
-        axes[0, 2].title.set_text('Difference')
-        axes[0, 2].imshow(difference, norm=normalisation)
+            image = np.moveaxis(image.cpu().numpy(), 0, 2).squeeze()
+            adversarial = np.moveaxis(adversarial.cpu().numpy(), 0, 2).squeeze()
+            difference = np.abs(image - adversarial)
 
-        print(f'L2 norm: {np.linalg.norm(difference.flatten())}')
-        print(f'LInf norm: {np.max(difference)}')
+            _, axes = plt.subplots(1, 3, squeeze=False)
+            axes[0, 0].title.set_text(image_title)
+            axes[0, 0].imshow(image, norm=normalisation)
+            axes[0, 1].title.set_text(adversarial_title)
+            axes[0, 1].imshow(adversarial, norm=normalisation)
+            axes[0, 2].title.set_text('Difference')
+            axes[0, 2].imshow(difference, norm=normalisation)
 
-        plt.show()
+            print(f'L2 norm: {np.linalg.norm(difference.flatten())}')
+            print(f'LInf norm: {np.max(difference)}')
+
+            plt.show()
+    except Exception as e:
+        # Never let a visualization error cause an exception
+        logger.error('Failed to show images: %s.', e)
 
 
 def maybe_stack(tensors, fallback_shape, dtype=torch.float, device='cpu'):
@@ -288,7 +307,7 @@ def maybe_stack(tensors, fallback_shape, dtype=torch.float, device='cpu'):
         if fallback_shape is None:
             shape = (0, )
         else:
-            shape = (0, ) + fallback_shape
+            shape = [0] + list(fallback_shape)
         return torch.zeros(shape, dtype=dtype, device=device)
 
 def clip_adversarial(adversarial, genuine, epsilon, input_min=0, input_max=1):
@@ -304,91 +323,6 @@ def clip_adversarial(adversarial, genuine, epsilon, input_min=0, input_max=1):
     adversarial = fast_boolean_choice(adversarial, clipped_upper, replace_upper, reshape=False)
 
     return torch.clip(adversarial, min=input_min, max=input_max)
-
-def tensor_md5(tensor):
-    tensor = tensor.detach().cpu().numpy()
-    tensor_content = tensor.tostring()
-
-    return int(hashlib.md5(tensor).hexdigest(), 16)
-
-
-def consistent_wrapper(linked_tensor, wrapped_function):
-    # Save the current RNG state
-    rng_state = torch.get_rng_state()
-
-    # Get a consistent seed
-    seed = tensor_md5(linked_tensor) % (2**63)
-
-    torch.manual_seed(seed)
-
-    random_tensor = wrapped_function()
-
-    # Restore the RNG state
-    torch.set_rng_state(rng_state)
-
-    return random_tensor
-
-
-def consistent_randint(linked_tensor, min, max, shape, device):
-    return consistent_wrapper(linked_tensor,
-                              lambda: torch.randint(min, max, shape, device=device))
-
-
-def consistent_rand_init_delta(deltas, x, p, eps, clip_min, clip_max):
-    assert len(x) == len(deltas)
-    assert len(x) == len(eps)
-
-    for i, (image, delta, image_eps) in enumerate(zip(x, deltas, eps)):
-        delta = delta.unsqueeze(0)
-        unsqueezed_image = image.unsqueeze(0)
-        unsqueezed_eps = eps.unsqueeze(0)
-        consistent_wrapper(image,
-                           lambda: advertorch.attacks.utils.rand_init_delta(
-                               delta, unsqueezed_image, p, unsqueezed_eps, clip_min, clip_max)[0]
-                           )
-
-    return deltas
-
-
-class ConsistentGenerator:
-    def __init__(self, wrapped_function):
-        self.rng_state_dict = {}
-        self.wrapped_function = wrapped_function
-
-    def generate(self, tensor_id, linked_tensor):
-        if torch.is_tensor(tensor_id):
-            tensor_id = tensor_id.cpu().numpy()
-
-        if isinstance(tensor_id, np.ndarray):
-            tensor_id = tensor_id.item()
-
-        # Save the current RNG state
-        current_rng_state = torch.get_rng_state()
-
-        if tensor_id in self.rng_state_dict:
-            # Load an existing RNG state
-            torch.set_rng_state(self.rng_state_dict[tensor_id])
-        else:
-            # Use the md5 hash as seed
-            torch.manual_seed(tensor_md5(linked_tensor) % (2**63))
-
-        return_value = self.wrapped_function()
-
-        # Save the new RNG state for future use
-        self.rng_state_dict[tensor_id] = torch.get_rng_state()
-
-        # Restore the RNG state
-        torch.set_rng_state(current_rng_state)
-
-        return return_value
-
-    def batch_generate(self, tensor_ids, linked_tensors):
-        return_values = []
-        for tensor_id, linked_tensor in zip(tensor_ids, linked_tensors):
-            return_values.append(self.generate(tensor_id, linked_tensor))
-
-        return torch.stack(return_values)
-
 
 def create_label_dataset(model, images, batch_size):
     image_dataset = torch.utils.data.TensorDataset(images)
@@ -418,13 +352,3 @@ def powerset(iterable, allow_empty=False):
     s = list(iterable)
 
     return list(itertools.chain.from_iterable(itertools.combinations(s, r) for r in range(start, len(s)+1)))
-
-
-class HiddenPrint:
-    def __enter__(self):
-        self._original_stdout = sys.stdout
-        sys.stdout = open(os.devnull, 'w')
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        sys.stdout.close()
-        sys.stdout = self._original_stdout

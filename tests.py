@@ -1,9 +1,13 @@
+import logging
+
 import torch
 from tqdm import tqdm
 
 import detectors
 import utils
 import adversarial_dataset
+
+logger = logging.getLogger(__name__)
 
 # TODO: A volte attack_config è prima di generation_kwargs, a volte dopo
 

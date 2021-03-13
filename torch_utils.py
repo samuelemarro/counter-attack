@@ -1,13 +1,12 @@
+import logging
+
+import numpy as np
 import torch
 import torch.nn as nn
 
-import numpy as np
-
 import utils
 
-import logging
 logger = logging.getLogger(__name__)
-
 
 def split_batch(x, minibatch_size):
     num_minibatches = int(np.ceil(x.shape[0] / float(minibatch_size)))
@@ -22,26 +21,6 @@ def split_batch(x, minibatch_size):
 
     return minibatches
 
-
-class BatchLimitedModel(nn.Module):
-    def __init__(self, wrapped_model, batch_size):
-        super().__init__()
-        self.wrapped_model = wrapped_model
-        self.batch_size = batch_size
-
-    def forward(self, x):
-        outputs = []
-
-        for minibatch in split_batch(x, self.batch_size):
-            outputs.append(self.wrapped_model(minibatch))
-
-        outputs = torch.cat(outputs)
-
-        assert len(outputs) == len(x)
-
-        return outputs
-
-
 class Normalisation(nn.Module):
     def __init__(self, mean, std, num_channels=3):
         super().__init__()
@@ -50,10 +29,12 @@ class Normalisation(nn.Module):
         self.std = torch.from_numpy(
             np.array(std).reshape((num_channels, 1, 1)))
 
-    def forward(self, input):
-        mean = self.mean.to(input)
-        std = self.std.to(input)
-        return (input - mean) / std
+    def forward(self, x):
+        assert x.shape[1] == self.mean.shape[0] == self.std.shape[0]
+
+        mean = self.mean.to(x)
+        std = self.std.to(x)
+        return (x - mean) / std
 
 # Modular version of torch.squeeze()
 class Squeeze(nn.Module):
@@ -82,6 +63,9 @@ class MaskedReLU(nn.Module):
         # that would require using boolean indexing, which
         # causes a CUDA synchronization (causing major slowdowns)
 
+        if self.training:
+            logger.warning('MaskedReLU is not designed for training.')
+
         output = torch.relu(x)
 
         # always_zero masking
@@ -100,6 +84,9 @@ class ReLUCounter(nn.ReLU):
         self.negative_counter = None
 
     def forward(self, x):
+        if self.training:
+            logger.warning('ReLUCounter is not designed for training.')
+
         if self.positive_counter is None:
             self.positive_counter = torch.zeros(
                 x.shape[1:], dtype=torch.long, device=x.device)
@@ -108,6 +95,9 @@ class ReLUCounter(nn.ReLU):
 
         positive = (x > 0).long().sum(dim=0)
         negative = (x < 0).long().sum(dim=0)
+
+        assert positive.shape == self.positive_counter
+        assert negative.shape == self.negative_counter
 
         self.positive_counter += positive
         self.negative_counter += negative

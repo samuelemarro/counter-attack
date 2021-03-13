@@ -12,13 +12,12 @@ class RandomTargetEvasionAttack:
     original one.
     """
 
-    def __init__(self, undefended_model, attack_on_detector_classifier, stochastic_consistency=False):
+    def __init__(self, undefended_model, attack_on_detector_classifier):
         self.undefended_model = undefended_model
 
         assert attack_on_detector_classifier.targeted
         self.predict = attack_on_detector_classifier.predict
         self.attack_on_detector_classifier = attack_on_detector_classifier
-        self.stochastic_consistency = stochastic_consistency
         self.targeted = False  # Always false
 
     def perturb(self, x, y=None, **kwargs):
@@ -36,12 +35,7 @@ class RandomTargetEvasionAttack:
             target_label = None
 
             while target_label is None or target_label == true_label:
-                if self.stochastic_consistency:
-                    # TODO: Controllare consistenza
-                    target_label = utils.consistent_randint(
-                        x[i], 0, num_classes, (1,), x.device)
-                else:
-                    target_label = torch.randint(0, num_classes, (1,))
+                target_label = torch.randint(0, num_classes, (1,))
 
             target_labels.append(target_label)
 

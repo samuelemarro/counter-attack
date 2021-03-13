@@ -15,11 +15,9 @@ import commands
 def main():
     pass
 
-# TODO: consistent_random deve anche prendere in considerazione il seed impostato
 # TODO: Eseguire gli addestramenti adversarial e RS
 # TODO: Linf, L2 -> inf, 2
 
-# TODO: Rimuovere sanity_test e svhn
 # TODO: Rimuovere gli attacchi non usati
 
 # TODO: Quando non trova il sample di partenza (a causa di bound troppo stretti), fa 7200 secondi sprecati.
@@ -49,27 +47,36 @@ def main():
 
 # TODO: Ri-eseguire l'addestramento? Guardo quale aveva vinto per ogni categoria e prendo quello
 
-# TODO: Rimuovere architetture inutili
-# TODO: Eliminare svhn.py
-# TODO: Rimuovere consistent_random
-# TODO: Eliminare sanity_tests.py
 # TODO: accuracy.py che fa l'override di dataset per --from-adversarial-dataset non è bellissimo
-# TODO: LA NORMALIZZAZIONE DI CIFAAAAAAAARRRRRRRRR
 # TODO: è giusto che si usi l'inizializzazione intelligente per Brendel? Secondo me no
-# TODO: Supporto salvataggio checkpoint
+# TODO: Droppare completamente il supporto per L2?
+# TODO: Il seeding dovrebbe anche impostare np.random
+# TODO: Parametri dei vari attacchi
+# TODO: Togliere il boolean indexing da attack pool? In teoria non cambia nulla
+# TODO: Debuggare attack_pool.py
+# TODO: Scegliere una misclassification_policy
+# TODO: successful può portare a una propagazione errata dei gradienti
+# TODO: PGD porta a un comportamento errato dell'adversarial training a causa di return_best
+
+#====================================
+# TODO: I parametri del modello portano il gradiente? Sì, cazzo
+#   Soluzione: get_model riceve no_grad=, nel training esiste disable_parameter_grad e restore_parameter_grad
+#====================================
 
 """
 Lista dei moduli ancora da controllare
 
 - attacks
+    - carlini_wagner
+    - kbesttarget
     - mip.py
-    - uniform_noise.py
+    - random_target
 - commands
     - accuracy.py (quasi fatto)
     - attack_matrix.py [p]
-    - attack.py
+    - attack.py (mancano AttackPool e attack_test)
     - compare.py
-    - cross_validation.py
+    - cross_validation.py [p]
     - distance_dataset.py
     - evasion.py [p]
     - mip.py
@@ -81,16 +88,34 @@ Lista dei moduli ancora da controllare
     - tune_mip.py [p?]
 - models
     - cifar.py
-    - mnist.py
 - adversarial_dataset.py
 - detectors.py [p]
 - full_stack_automation.py
 - full_stack.py
 - mip_interface.jl
-- parsing.py (manca solo la normalizzazione di CIFAR)
-- torch_utils.py
-- training.py
+- parsing.py (manca solo AttackPool, detectors e validazione)
+- training.py (in teoria avevo già fatto una prima passata)
 - utils.py
+    Fatti:
+    - save_zip
+    - load_zip
+    - show_images
+    - maybe_stack
+    - powerset
+- default_attack_configuration.cfg
+
+Paths:
+- train_classifier (quasi fatto)
+- prune_relu
+- prune_weights
+- attack (75%)
+- compare
+- mip
+- perfect_approximation
+
+Da implementare:
+- gestione batching
+- compattamento output
 
 """
 

@@ -92,8 +92,20 @@ def train_approximator(**kwargs):
     optimiser = parsing.parse_optimiser(
         kwargs['optimiser'], model.parameters(), kwargs)
 
+    if kwargs['checkpoint_every'] is None:
+        checkpoint_path = None
+    else:
+        checkpoint_path = kwargs['save_to'] + '-checkpoint'
+
+    if kwargs['load_checkpoint'] is None:
+        loaded_checkpoint = None
+    else:
+        loaded_checkpoint = torch.load(kwargs['load_checkpoint'])
+
     training.train(model, train_dataloader, optimiser, loss, kwargs['epochs'], kwargs['device'],
-                      val_loader=val_dataloader, l1_regularization=kwargs['l1_regularization'], early_stopping=early_stopping)
+                      val_loader=val_dataloader, l1_regularization=kwargs['l1_regularization'], early_stopping=early_stopping,
+                      checkpoint_every=kwargs['checkpoint_every'], checkpoint_path=checkpoint_path,
+                      loaded_checkpoint=loaded_checkpoint)
 
     save_to = kwargs['save_to']
     pathlib.Path(save_to).parent.mkdir(parents=True, exist_ok=True)

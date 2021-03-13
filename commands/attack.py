@@ -1,7 +1,6 @@
 import logging
 
 import click
-import numpy as np
 import torch
 
 import parsing
@@ -33,8 +32,8 @@ logger = logging.getLogger(__name__)
 @click.option('--misclassification-policy', type=click.Choice(parsing.misclassification_policies),
               default='remove', show_default=True, help='The policy that will be applied to deal with '
               'misclassified images.')
-@click.option('--as-defense', is_flag=True,
-              help='If passed, the attack is treated as a defense attack.')
+@click.option('--attack-type', type=click.Choice(['standard', 'defense', 'training']), default='standard',
+              show_default=True, help='The attack type.')
 @click.option('--early-rejection', type=float, default=None,
               help='The threshold for early rejection. If unspecified, no early rejection is performed.')
 @click.option('--blind-trust', is_flag=True)
@@ -67,17 +66,15 @@ def attack(**kwargs):
                               kwargs['state_dict_path'], True, kwargs['masked_relu'], load_weights=True)
     model.eval()
 
-    dataset = parsing.parse_dataset(kwargs['domain'], kwargs['dataset'], dataset_edges=(
-        kwargs['start'], kwargs['stop']))
+    dataset = parsing.parse_dataset(kwargs['domain'], kwargs['dataset'],
+                                    dataset_edges=(kwargs['start'], kwargs['stop']))
     dataloader = torch.utils.data.DataLoader(
         dataset, kwargs['batch_size'], shuffle=False)
 
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
 
-    attack_type = 'defense' if kwargs['as_defense'] else 'standard'
-
     attack_pool = parsing.parse_attack_pool(
-        kwargs['attacks'], kwargs['domain'], kwargs['p'], attack_type, model, attack_config)
+        kwargs['attacks'], kwargs['domain'], kwargs['p'], kwargs['attack_type'], model, attack_config)
 
     p = kwargs['p']
 
@@ -85,8 +82,9 @@ def attack(**kwargs):
         logger.warning(
             'Blind trust is activated. This means that the success of the attack will NOT be checked.')
 
-    adversarial_dataset = tests.attack_test(model, attack_pool, dataloader, p, kwargs['misclassification_policy'], kwargs[
-                                            'device'], kwargs, attack_config, dataset.start, dataset.stop, None, blind_trust=kwargs['blind_trust'])
+    adversarial_dataset = tests.attack_test(model, attack_pool, dataloader, p, kwargs['misclassification_policy'],
+                                            kwargs['device'], kwargs, attack_config, dataset.start, dataset.stop,
+                                            None, blind_trust=kwargs['blind_trust'])
     adversarial_dataset.print_stats()
 
     if kwargs['save_to'] is not None:

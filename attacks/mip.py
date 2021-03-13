@@ -320,6 +320,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             adversarials.append(adversarial)
 
         # TODO: Ritornare semplicemente adversarials
+        # TODO: Se togli maybe_stack, toglierlo da utils
         return utils.maybe_stack(adversarials, x.shape[1:], device=x.device)
 
     def perturb_advanced(self, x, y=None, starting_points=None):

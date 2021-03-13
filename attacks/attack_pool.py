@@ -3,39 +3,41 @@ import logging
 import advertorch
 import torch
 
-import attacks
 import utils
 
 logger = logging.getLogger(__name__)
 
-# TODO: Remember to always check the .targeted of what you're working with,
-# as well as if you're using the standard or defended model
-
-# Nota: In ogni attacco, per "predict" si intende il modello indifeso
-
 class AttackPool(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
-    def __init__(self, predict, evade_detector, pool_attacks, p, brendel_initialization=True):
-        self.predict = predict
+    def __init__(self, predict, evade_detector, pool_attacks, p, targeted=False, clip_min=0, clip_max=1):
+        super().__init__(predict, None, clip_min=clip_min, clip_max=clip_max)
         self.evade_detector = evade_detector
 
-        assert all(not attack.targeted for attack in pool_attacks)
+        assert all((attack.targeted == targeted) for attack in pool_attacks)
         assert all((attack.predict == predict) if hasattr(
             attack, 'predict') else True for attack in pool_attacks)
+        assert all((attack.clip_min == clip_min) if hasattr(
+            attack, 'clip_min') else True for attack in pool_attacks)
+        assert all((attack.clip_max == clip_max) if hasattr(
+            attack, 'clip_max') else True for attack in pool_attacks)
         assert len(pool_attacks) > 0
 
-        if len(pool_attacks) > 1:
+        if len(pool_attacks) == 1:
             logger.warning('You are creating an AttackPool with only one attack. Is this intentional?')
 
         logger.debug('Creating attack pool with %s attacks.', len(pool_attacks))
-        logger.debug('Brendel initialization: %s.', brendel_initialization)
 
         self.pool_attacks = pool_attacks
         self.p = p
-        self.brendel_initialization = brendel_initialization
-        self.targeted = False  # Always false
+        self.targeted = targeted
 
-    def successful(self, adversarials, y):
-        return utils.misclassified(self.predict, adversarials, y, self.evade_detector)
+    def successful(self, pool_results, label):
+        adversarial_outputs = self.predict(pool_results).detach()
+        adversarial_labels = torch.argmax(adversarial_outputs, dim=1)
+
+        if self.targeted:
+            return torch.eq(adversarial_labels, label)
+        else:
+            return ~torch.eq(adversarial_labels, label)
 
     def pick_best(self, x, y, pool_results):
         assert len(pool_results) == len(x)
@@ -43,9 +45,7 @@ class AttackPool(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         best_adversarials = []
 
         for original, pool_result, label in zip(x, pool_results, y):
-            expanded_label = label.expand(len(pool_result))
-
-            successful = self.successful(pool_result, expanded_label)
+            successful = self.successful(pool_result, label)
             assert successful.shape == (len(successful),)
 
             if successful.any():
@@ -69,41 +69,19 @@ class AttackPool(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         assert best_adversarials.shape == x.shape
 
         return best_adversarials
-
-    def check_brendel(self, attack):
-        if isinstance(attack, attacks.BestSampleAttack) or isinstance(attack, attacks.AdvertorchWrapper):
-            return self.check_brendel(attack.inner_attack)
-        # TODO: Controllare anche RandomTarget e KBest?
-
-        return isinstance(attack, attacks.BrendelBethgeAttack)
-
+    
     def perturb(self, x, y=None, **kwargs):
         x, y = self._verify_and_process_inputs(x, y)
 
         # Initialization
         if y is None:
             y = self._get_predicted_label(x)
-
-        brendel_indices = list([i for i, attack in enumerate(self.pool_attacks) if self.check_brendel(attack)])
-        assert len(brendel_indices) <= 1
-        brendel_index = None if len(brendel_indices) == 0 else brendel_indices[0]
-
-        if self.brendel_initialization and brendel_index is not None:
-            # Use the previous pool_attacks as initialization for the Brendel&Bethge attack
-
-            brendel_attack = self.pool_attacks[brendel_index]
-            pool_attacks_without_brendel = [attack for attack in self.pool_attacks if attack is not brendel_attack]
-            results_without_brendel = torch.stack([attack.perturb(x, y=y, **kwargs).detach() for attack in pool_attacks_without_brendel], 1)
-            best_without_brendel = self.pick_best(x, y, results_without_brendel)
-
-            brendel_results = brendel_attack.perturb(x, y=y, starting_points=best_without_brendel, **kwargs)
-            pool_results = torch.stack([torch.stack([no_brendel_result, brendel_result]) for no_brendel_result, brendel_result in zip(best_without_brendel, brendel_results)])
-
-        else:
-            pool_results = torch.stack(
-                [attack.perturb(x, y=y, **kwargs).detach() for attack in self.pool_attacks], 1)
         
-            assert pool_results.shape[1] == len(self.pool_attacks)
+        pool_results = torch.stack(
+            [attack.perturb(x, y=y, **kwargs).detach() for attack in self.pool_attacks], 1)
+    
+        assert len(pool_results) == len(x)
+        assert pool_results.shape[1] == len(self.pool_attacks)
 
         best_adversarials = self.pick_best(x, y, pool_results)
         return best_adversarials

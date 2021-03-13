@@ -1,3 +1,5 @@
+import os
+import pathlib
 import logging
 
 import numpy as np
@@ -220,10 +222,15 @@ def rs_loss(model, x, epsilon, input_min=0, input_max=1):
 def train(model, train_loader, optimiser, loss_function, max_epochs, device, val_loader=None,
           l1_regularization=0, rs_regularization=0, rs_eps=0, rs_minibatch=None, rs_start_epoch=0,
           early_stopping=None, attack=None, attack_ratio=0.5, attack_p=None, attack_eps=None,
-          attack_eps_growth_epoch=0, attack_eps_growth_start=None):
+          attack_eps_growth_epoch=0, attack_eps_growth_start=None, checkpoint_every=None, checkpoint_path=None,
+          loaded_checkpoint=None):
     if early_stopping is not None:
         if val_loader is None:
             raise ValueError('Early stopping requires a validation loader.')
+    if attack_eps is not None and attack_eps_growth_start is not None and attack_eps_growth_start > attack_eps:
+        raise ValueError('attack_eps_growth_start should be smaller than or equal to rs_eps.')
+    if (checkpoint_every is None) ^ (checkpoint_path is None):
+        raise ValueError('checkpoint_every and checkpoint_path should be either both None or both not None.')
 
     # Prepare the epsilon values
     if attack_eps_growth_epoch == 0:
@@ -234,9 +241,30 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
 
     model.train()
     model.to(device)
-    iterator = tqdm(list(enumerate(epsilons)), desc='Training')
+    iterator = tqdm(range(max_epochs), desc='Training')
 
-    for epoch, epsilon in iterator:
+    if loaded_checkpoint is None:
+        start_epoch = 0
+    else:
+        # epoch is saved using 1-indexing, so in practice we're doing
+        # start_epoch = checkpoint['epoch'] - 1 + 1
+        start_epoch = loaded_checkpoint['epoch']
+        model.load_state_dict(loaded_checkpoint['model'])
+        optimiser.load_state_dict(loaded_checkpoint['optimiser'])
+
+        if (early_stopping is None) ^ (loaded_checkpoint['early_stopping'] is None):
+            logger.warning('There is a mismatch between the current early_stopping and '
+                           'the saved one.')
+
+        if early_stopping is not None and loaded_checkpoint['early_stopping'] is not None:
+            early_stopping.load_state_dict(loaded_checkpoint['early_stopping'])
+
+    for epoch in iterator:
+        if epoch < start_epoch:
+            continue
+
+        epsilon = epsilons[epoch]
+
         for x, target in train_loader:
             x = x.to(device)
             target = target.to(device)
@@ -272,6 +300,7 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
 
             optimiser.zero_grad()
             loss.backward()
+
             # RS Regularization uses a high amount of GPU memory, so we use .backward()
             # for each minibatch
             if rs_regularization != 0 and (epoch + 1) >= rs_start_epoch:
@@ -324,14 +353,25 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
                 early_stopping(val_loss, model)
 
                 if early_stopping.stop:
-                    logger.debug('Early stop triggered, loading best state dict.')
-                    model.load_state_dict(early_stopping.best_state_dict)
+                    logger.debug('Early stop triggered.')
                     break
 
-        # In case the validation loss did not improve but the training
-        # reached the max number of epochs, load the best model
-        # TODO: Non dovrebbe essere a prescindere?
+        if (checkpoint_path is not None) and (epoch + 1) % checkpoint_every == 0:
+            if not pathlib.Path(checkpoint_path).exists():
+                os.mkdir(checkpoint_path)
+            
+            # Note: We use 1-indexing for epochs
+            current_epoch_path = pathlib.Path(checkpoint_path) / f'{epoch + 1}.check'
+            torch.save({
+                'optimiser' : optimiser.state_dict(),
+                'epoch' : epoch,
+                'model' : model.state_dict(),
+                'early_stopping' : None if early_stopping is None else early_stopping.state_dict()
+            }, current_epoch_path)
+
+        # If you are using early_stopping, load the best model
         if early_stopping is not None:
+            logger.debug('Early stopping: Loading best state dict.')
             model.load_state_dict(early_stopping.best_state_dict)
 
 class StartStopDataset(torch.utils.data.Dataset):
@@ -432,3 +472,23 @@ class EarlyStopping:
         '''Saves model when validation loss decreases.'''
         self.best_state_dict = model.state_dict()
         self.val_loss_min = val_loss
+
+    def state_dict(self):
+        return {
+            'patience' : self.patience,
+            'counter' : self.counter,
+            'best_score' : self.best_score,
+            'stop' : self.stop,
+            'val_loss_min' : self.val_loss_min,
+            'delta' : self.delta,
+            'best_state_dict' : self.best_state_dict
+        }
+    
+    def load_state_dict(self, state_dict):
+        self.patience = state_dict['patience']
+        self.counter = state_dict['counter']
+        self.best_score = state_dict['best_score']
+        self.stop = state_dict['stop']
+        self.val_loss_min = state_dict['val_loss_min']
+        self.delta = state_dict['delta']
+        self.best_state_dict = state_dict['best_state_dict']

@@ -183,13 +183,25 @@ def train_classifier(**kwargs):
     optimiser = parsing.parse_optimiser(
         kwargs['optimiser'], model.parameters(), kwargs)
 
+    if kwargs['checkpoint_every'] is None:
+        checkpoint_path = None
+    else:
+        checkpoint_path = kwargs['save_to'] + '-checkpoint'
+
+    if kwargs['load_checkpoint'] is None:
+        loaded_checkpoint = None
+    else:
+        loaded_checkpoint = torch.load(kwargs['load_checkpoint'])
+
     training.train(model, train_dataloader, optimiser, loss, kwargs['epochs'], kwargs['device'],
                       val_loader=val_dataloader, l1_regularization=kwargs['l1_regularization'],
                       rs_regularization=kwargs['rs_regularization'], rs_eps=kwargs['rs_eps'], rs_minibatch=kwargs['rs_minibatch'],
                       rs_start_epoch=kwargs['rs_start_epoch'], early_stopping=early_stopping, attack=adversarial_attack,
                       attack_ratio=kwargs['adversarial_ratio'], attack_eps=kwargs['adversarial_eps'],
                       attack_p=kwargs['adversarial_p'], attack_eps_growth_epoch=kwargs['adversarial_eps_growth_epoch'],
-                      attack_eps_growth_start=kwargs['adversarial_eps_growth_start'])
+                      attack_eps_growth_start=kwargs['adversarial_eps_growth_start'],
+                      checkpoint_every=kwargs['checkpoint_every'], checkpoint_path=checkpoint_path,
+                      loaded_checkpoint=loaded_checkpoint)
 
     save_to = kwargs['save_to']
     pathlib.Path(save_to).parent.mkdir(parents=True, exist_ok=True)

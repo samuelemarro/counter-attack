@@ -25,13 +25,8 @@ class EpsilonBinarySearchAttack(attacks.AdvertorchWrapper):
         assert len(x) == len(y)
         return self.inner_attack(x, y=y, eps=eps)
 
-    def successful(self, adversarial_outputs, y):
-        adversarial_labels = torch.argmax(adversarial_outputs, dim=1)
-
-        if self.targeted:
-            return torch.eq(adversarial_labels, y)
-        else:
-            return ~torch.eq(adversarial_labels, y)
+    def successful(self, adversarials, y):
+        return utils.successful_adversarials(self.predict, adversarials, y, self.targeted)
 
     def perturb(self, x, y=None):
         x, y = self._verify_and_process_inputs(x, y)
@@ -52,10 +47,10 @@ class EpsilonBinarySearchAttack(attacks.AdvertorchWrapper):
         for _ in range(self.eps_initial_search_steps):
             adversarials = self.perturb_standard(
                 x, y, initial_search_eps).detach()
-            adversarial_outputs = self.predict(adversarials).detach()
-            assert len(adversarials) == len(adversarial_outputs)
 
-            successful = self.successful(adversarial_outputs, y)
+            assert adversarials.shape == x.shape
+
+            successful = self.successful(adversarials, y).detach()
 
             distances = utils.adversarial_distance(x, adversarials, self.p)
             better_distances = distances < best_distances
@@ -77,10 +72,7 @@ class EpsilonBinarySearchAttack(attacks.AdvertorchWrapper):
         for _ in range(self.eps_binary_search_steps):
             eps = (eps_lower_bound + eps_upper_bound) / 2
             adversarials = self.perturb_standard(x, y, eps).detach()
-            adversarial_outputs = self.predict(adversarials).detach()
-            assert len(adversarials) == len(adversarial_outputs)
-
-            successful = self.successful(adversarial_outputs, y)
+            successful = self.successful(adversarials, y)
 
             distances = utils.adversarial_distance(x, adversarials, self.p)
             better_distances = distances < best_distances

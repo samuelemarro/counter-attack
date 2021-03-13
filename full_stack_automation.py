@@ -1,6 +1,6 @@
 import logging
-from multiprocessing import Process
 import os
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -25,13 +25,13 @@ def run_test(domain, architecture, test_name):
                  test_name)
 
     if domain == 'cifar10':
-        # Usiamo la configurazione da 2/255
+        # Usiamo la configurazione da 8/255
         epochs = 250
         batch_size = 128 # Quella per naive IA, ma va bene per quella advanced
 
-        adversarial_eps = 2/255
+        adversarial_eps = 8/255
         l1_regularization = 1e-5
-        rs_regularization = 1e-3
+        rs_regularization = 2e-3
     elif domain == 'mnist':
         # Usiamo la configurazione da 0.1
         epochs = 70
@@ -43,12 +43,12 @@ def run_test(domain, architecture, test_name):
     else:
         raise RuntimeError()
 
-
     # Derivati dagli altri parametri
     rs_batch_size = batch_size
     rs_start_epoch = int(epochs * rs_start_epoch_ratio) + 1
     rs_eps = adversarial_eps # TODO: RS eps coincide con adversarial eps?
     adversarial_eps_growth_epoch = int(epochs * adversarial_eps_growth_epoch_ratio)
+    checkpoint_every = int(epochs / 20)
 
     if data_augmentation:
         data_augmentation_string = '--flip --translation 0.1 --rotation 15'
@@ -69,11 +69,12 @@ def run_test(domain, architecture, test_name):
     if not os.path.exists(standard_state_dict):
         logger.debug('Starting adversarial training')
         if test_name == 'standard':
-            os.system(f'python cli.py train-classifier {domain} {architecture} std:train {epochs} {standard_state_dict} --batch-size {batch_size} --learning-rate {learning_rate} {data_augmentation_string}')
+            os.system(f'start cmd.exe cmd /k "python cli.py train-classifier {domain} {architecture} std:train {epochs} {standard_state_dict} --batch-size {batch_size} --learning-rate {learning_rate} {data_augmentation_string} --checkpoint-every {checkpoint_every}"')
         elif test_name == 'relu':
-            os.system(f'python cli.py train-classifier {domain} {architecture} std:train {epochs} {standard_state_dict} --batch-size {batch_size} --learning-rate {learning_rate} {data_augmentation_string} --l1-regularization {l1_regularization} --rs-regularization {rs_regularization} --rs-eps {rs_eps} --adversarial-training {training_attack} --adversarial-p linf --adversarial-ratio {adversarial_ratio} --adversarial-eps {adversarial_eps} --rs-minibatch {rs_batch_size} --rs-start-epoch {rs_start_epoch} --adversarial-eps-growth-start {adversarial_eps_growth_start} --adversarial-eps-growth-epoch {adversarial_eps_growth_epoch}')
+            os.system(f'start cmd.exe cmd /k "python cli.py train-classifier {domain} {architecture} std:train {epochs} {standard_state_dict} --batch-size {batch_size} --learning-rate {learning_rate} {data_augmentation_string} --l1-regularization {l1_regularization} --rs-regularization {rs_regularization} --rs-eps {rs_eps} --adversarial-training {training_attack} --adversarial-p linf --adversarial-ratio {adversarial_ratio} --adversarial-eps {adversarial_eps} --rs-minibatch {rs_batch_size} --rs-start-epoch {rs_start_epoch} --adversarial-eps-growth-start {adversarial_eps_growth_start} --adversarial-eps-growth-epoch {adversarial_eps_growth_epoch} --checkpoint-every {checkpoint_every}"')   
         elif test_name == 'adversarial':
-            os.system(f'python cli.py train-classifier {domain} {architecture} std:train {epochs} {standard_state_dict} --batch-size {batch_size} --learning-rate {learning_rate} {data_augmentation_string} --adversarial-training {training_attack} --adversarial-p linf --adversarial-ratio {adversarial_ratio} --adversarial-eps {adversarial_eps} --adversarial-eps-growth-start {adversarial_eps_growth_start} --adversarial-eps-growth-epoch {adversarial_eps_growth_epoch}')
+            os.system(f'start cmd.exe cmd /k "python cli.py train-classifier {domain} {architecture} std:train {epochs} {standard_state_dict} --batch-size {batch_size} --learning-rate {learning_rate} {data_augmentation_string} --adversarial-training {training_attack} --adversarial-p linf --adversarial-ratio {adversarial_ratio} --adversarial-eps {adversarial_eps} --adversarial-eps-growth-start {adversarial_eps_growth_start} --adversarial-eps-growth-epoch {adversarial_eps_growth_epoch} --checkpoint-every {checkpoint_every}"')
+            
         else:
             raise RuntimeError()
     
@@ -93,25 +94,15 @@ def run_test(domain, architecture, test_name):
     else:
         full_stack_path = standard_state_dict
         full_stack_name = test_name
-
+    
     #os.system(f'python full_stack.py {domain} {architecture} {pre_attack} {count} --state-dict {full_stack_path} --state-dict-name {full_stack_name}')
 
 def main():
-    process_batch_size = 6
-    process_batches = [[]]
-    for test_name in ['adversarial', 'relu']:
+    for test_name in ['adversarial']:
         for domain in ['mnist', 'cifar10']:
             for architecture in ['a', 'b', 'c']:
-                p = Process(target=run_test, args=(domain, architecture, test_name))
-                process_batches[-1].append(p)
-                if len(process_batches[-1]) == process_batch_size:
-                    process_batches.append([])
-    
-    for batch in process_batches:
-        for p in batch:
-            p.start()
-        for p in batch:
-            p.join()
+                run_test(domain, architecture, test_name)
+                time.sleep(10)
 
 if __name__ == '__main__':
     main()

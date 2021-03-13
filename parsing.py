@@ -16,9 +16,8 @@ import utils
 
 logger = logging.getLogger(__name__)
 
-domains = ['cifar10', 'mnist', 'svhn']
-architectures = ['a', 'b', 'c', 'wong_small', 'wong_large', 'small',
-                 'x1', 'x2', 'x3', 'x4', 'x5', 'x6', 'x7', 'x8', 'x9', 'x10', 'x11']
+domains = ['cifar10', 'mnist']
+architectures = ['a', 'b', 'c', 'wong_small', 'wong_large']
 supported_attacks = ['bim', 'brendel', 'carlini',
                      'deepfool', 'fast_gradient', 'mip', 'pgd', 'uniform']
 epsilon_attacks = ['bim', 'fast_gradient', 'pgd', 'uniform']
@@ -66,7 +65,11 @@ training_options = [
                  help='The patience of early stopping. 0 disables early stopping.'),
     click.option('--early-stopping-delta', type=float, default=0, show_default=True,
                  help='The minimum improvement required to reset early stopping\'s patience.'),
-    click.option('--shuffle', type=bool, default=True, show_default=True)
+    click.option('--shuffle', type=bool, default=True, show_default=True),
+    click.option('--checkpoint-every', type=click.IntRange(1), default=None,
+                help='How often the program saves a checkpoint.'),
+    click.option('--load-checkpoint', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None,
+                help='If passed, the program will load an existing checkpoint.')
 ]
 
 
@@ -83,7 +86,7 @@ def set_log_level(log_level):
 
 
 def parse_model(domain, architecture, state_dict_path, apply_normalisation, masked_relu, load_weights=False, as_detector=False):
-    logger.debug('Parsing model with %s-%s, state dict at %s, apply_normalisation=%s, ',
+    logger.debug('Parsing model with %s-%s, state dict at %s, apply_normalisation=%s, '
                  'masked_relu=%s, load_weights=%s, as_detector=%s.', domain, architecture,
                  state_dict_path, apply_normalisation, masked_relu, load_weights, as_detector)
     if as_detector:
@@ -99,9 +102,6 @@ def parse_model(domain, architecture, state_dict_path, apply_normalisation, mask
     if domain == 'cifar10':
         model = models.cifar10(architecture, masked_relu,
                                pretrained=pretrained, num_classes=num_classes)
-    elif domain == 'svhn':
-        model = models.svhn(architecture, masked_relu,
-                            pretrained=pretrained, num_classes=num_classes)
     elif domain == 'mnist':
         model = models.mnist(architecture, masked_relu,
                              pretrained=pretrained, num_classes=num_classes)
@@ -112,18 +112,10 @@ def parse_model(domain, architecture, state_dict_path, apply_normalisation, mask
         # CIFAR10:
         # mean = np.array([0.4914, 0.4822, 0.4465])
         # std = np.array([0.2023, 0.1994, 0.2010])
-        # SVHN
-        # mean = np.array([0.4377, 0.4438, 0.4728])
-        # std = np.array([0.1201, 0.1231, 0.1052])
 
-        # TODO: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-        # Valori di normalizzazione di CIFAR10
-
-        # The pretrained CIFAR10 and SVHN models
-        # use the standard 0.5 normalisations
-        if domain in ['cifar10', 'svhn']:
-            mean = np.array([0.5, 0.5, 0.5])
-            std = np.array([0.5, 0.5, 0.5])
+        if domain == 'cifar10':
+            mean = np.array([0.4914, 0.4822, 0.4465])
+            std = np.array([0.2023, 0.1994, 0.2010])
             num_channels = 3
         elif domain == 'mnist':
             mean = np.array([0.1307])
@@ -163,16 +155,6 @@ def parse_dataset(domain, dataset, allow_standard=True, dataset_edges=None, extr
             elif dataset == 'std:test':
                 matched_dataset = torchvision.datasets.CIFAR10(
                     './data/cifar10', train=False, download=True, transform=transform)
-        elif domain == 'svhn':
-            if dataset == 'std:train':
-                matched_dataset = torchvision.datasets.SVHN(
-                    './data/svhn', split='train', download=True, transform=transform)
-            elif dataset == 'std:extra':
-                matched_dataset = torchvision.datasets.SVHN(
-                    './data/svhn', split='extra', download=True, transform=transform)
-            elif dataset == 'std:test':
-                matched_dataset = torchvision.datasets.SVHN(
-                    './data/svhn', split='test', download=True, transform=transform)
         elif domain == 'mnist':
             if dataset == 'std:train':
                 matched_dataset = torchvision.datasets.MNIST(
@@ -234,6 +216,10 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, defe
 
     logger.debug('Loaded attack kwargs: %s.', kwargs)
 
+    if attack_name == 'uniform' and metric != 'linf':
+        logger.warning('UniformAttack is designed for the LInf metric. Are you sure that you '
+                       'want to use %s?', metric)
+
     if attack_type == 'evasion' and defended_model is None:
         raise ValueError('Evasion attacks require a defended model.')
 
@@ -244,7 +230,7 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, defe
         raise ValueError(
             'Passed a defended_model for a standard/defense attack.')
 
-    if domain in ['cifar10', 'mnist', 'svhn']:
+    if domain in ['cifar10', 'mnist']:
         num_classes = 10
     else:
         raise NotImplementedError(f'Unsupported domain "{domain}".')
@@ -339,9 +325,6 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, defe
             target_model, p, targeted=evade_detector, **kwargs)
     else:
         raise NotImplementedError(f'Unsupported attack "{attack_name}".')
-
-    if 'stochastic_consistency' in kwargs and kwargs['stochastic_consistency']:
-        logger.warning('Stochastic consistency is deprecated.')
 
     # Add support for epsilon
     if attack_name in epsilon_attacks:
