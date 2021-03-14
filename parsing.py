@@ -85,7 +85,7 @@ def set_log_level(log_level):
     logging.getLogger().setLevel(_log_level_to_number[log_level])
 
 
-def parse_model(domain, architecture, state_dict_path, apply_normalisation, masked_relu, load_weights=False, as_detector=False):
+def parse_model(domain, architecture, state_dict_path, apply_normalisation, masked_relu, use_grad, load_weights=False, as_detector=False):
     logger.debug('Parsing model with %s-%s, state dict at %s, apply_normalisation=%s, '
                  'masked_relu=%s, load_weights=%s, as_detector=%s.', domain, architecture,
                  state_dict_path, apply_normalisation, masked_relu, load_weights, as_detector)
@@ -135,6 +135,10 @@ def parse_model(domain, architecture, state_dict_path, apply_normalisation, mask
     if load_weights and state_dict_path is not None:
         logger.info('Loading weights from %s.', state_dict_path)
         model.load_state_dict(torch.load(state_dict_path))
+
+    if not use_grad:
+        logger.debug('Permanently disabling gradients for model.')
+        _ = torch_utils.disable_model_gradients(model)
 
     return model
 
@@ -409,8 +413,9 @@ def parse_detector(attack_name, domain, p, attack_type, model, attack_config, de
     detector = detectors.CounterAttackDetector(attack, model, p)
 
     if use_substitute:
+        # TODO: è corretto che use_grad=False?
         substitute_detector = parse_model(
-            domain, substitute_state_dict_path, True, load_weights=True, as_detector=True)
+            domain, substitute_state_dict_path, True, False, load_weights=True, as_detector=True)
 
         # The substitute model returns a [batch_size, 1] matrix, while we need a [batch_size] vector
         substitute_detector = torch.nn.Sequential(

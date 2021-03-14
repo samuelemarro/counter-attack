@@ -114,3 +114,21 @@ def unpack_sequential(module):
             layers.append(layer)
 
     return layers
+
+def disable_model_gradients(model):
+    restore_list = []
+    for param in model.parameters():
+        restore_list.append((param.requires_grad, param.grad))
+        param.requires_grad = False
+        param.grad = None
+
+    return restore_list
+
+def restore_model_gradients(model, restore_list):
+    parameters = list(model.parameters())
+    assert len(parameters) == len(restore_list)
+
+    for param, restore in zip(parameters, restore_list):
+        requires_grad, grad = restore
+        param.requires_grad = requires_grad
+        param.grad = grad

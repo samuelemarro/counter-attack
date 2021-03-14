@@ -46,7 +46,7 @@ def train_approximator(**kwargs):
         torch.manual_seed(kwargs['seed'])
 
     model = parsing.parse_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'],
-                              True, kwargs['masked_relu'], load_weights=False, as_detector=True)
+                              True, kwargs['masked_relu'], True, load_weights=False, as_detector=True)
     model.train()
 
     train_dataset = parsing.parse_dataset(

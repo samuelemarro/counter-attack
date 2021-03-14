@@ -22,7 +22,7 @@ def prune_weights(**kwargs):
     parsing.set_log_level(kwargs['log_level'])
 
     model = parsing.parse_model(kwargs['domain'], kwargs['architecture'],
-                              kwargs['original_state_dict_path'], True, kwargs['masked_relu'], load_weights=True)
+                              kwargs['original_state_dict_path'], True, kwargs['masked_relu'], False, load_weights=True)
 
     all_parameters = 0
     prunable_parameters = 0

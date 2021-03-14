@@ -46,9 +46,9 @@ def run_test(domain, architecture, test_name):
     # Derivati dagli altri parametri
     rs_batch_size = batch_size
     rs_start_epoch = int(epochs * rs_start_epoch_ratio) + 1
-    rs_eps = adversarial_eps # TODO: RS eps coincide con adversarial eps?
+    rs_eps = adversarial_eps # Nota: RS eps coincide con adversarial eps
     adversarial_eps_growth_epoch = int(epochs * adversarial_eps_growth_epoch_ratio)
-    checkpoint_every = int(epochs / 20)
+    checkpoint_every = int(epochs / 50)
 
     if data_augmentation:
         data_augmentation_string = '--flip --translation 0.1 --rotation 15'

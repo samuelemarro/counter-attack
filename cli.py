@@ -56,12 +56,12 @@ def main():
 # TODO: Debuggare attack_pool.py
 # TODO: Scegliere una misclassification_policy
 # TODO: successful può portare a una propagazione errata dei gradienti
-# TODO: PGD porta a un comportamento errato dell'adversarial training a causa di return_best
 
-#====================================
-# TODO: I parametri del modello portano il gradiente? Sì, cazzo
-#   Soluzione: get_model riceve no_grad=, nel training esiste disable_parameter_grad e restore_parameter_grad
-#====================================
+
+# TODO: Cercare i valori corretti di l1 & co. tramite line search?
+# Appunto: CIFAR10-A ha avuto out-of-RAM ed è stato riavviato a partire da 85. è indietro di 35-40 epochs.
+# TODO: Controllare l'attack ratio
+# TODO: Passare a 1-indexing per le epochs nel salvataggio checkpoint?
 
 """
 Lista dei moduli ancora da controllare

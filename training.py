@@ -246,9 +246,7 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
     if loaded_checkpoint is None:
         start_epoch = 0
     else:
-        # epoch is saved using 1-indexing, so in practice we're doing
-        # start_epoch = checkpoint['epoch'] - 1 + 1
-        start_epoch = loaded_checkpoint['epoch']
+        start_epoch = loaded_checkpoint['epoch'] + 1
         model.load_state_dict(loaded_checkpoint['model'])
         optimiser.load_state_dict(loaded_checkpoint['optimiser'])
 
@@ -275,9 +273,16 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
                 adversarial_x = x[indices]
                 adversarial_targets = target[indices]
 
-                logger.debug('Running adversarial training step with epsilon %s.', epsilon)
+                logger.debug('Disabling model parameter gradients.')
+                restore_list = torch_utils.disable_model_gradients(model)
+
+                logger.debug('Running adversarial attack with epsilon %s.', epsilon)
                 adversarials = attack.perturb(
                     adversarial_x, y=adversarial_targets, eps=epsilon).detach()
+                
+                logger.debug('Restoring model parameter gradients.')
+                torch_utils.restore_model_gradients(model, restore_list)
+                del restore_list
 
                 # In Madry's original paper on adversarial training, the authors do not check
                 # the success of the attack: they just clip the resulting adversarial to the allowed

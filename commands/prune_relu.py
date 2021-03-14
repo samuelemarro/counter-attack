@@ -91,7 +91,7 @@ def prune_relu(**kwargs):
     device = kwargs['device']
 
     model = parsing.parse_model(kwargs['domain'], kwargs['architecture'],
-                              kwargs['original_state_dict_path'], True, False, load_weights=True)
+                              kwargs['original_state_dict_path'], True, False, False, load_weights=True)
     model.eval()
     model.to(device)
 

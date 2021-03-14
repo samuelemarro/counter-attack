@@ -90,7 +90,7 @@ def train_classifier(**kwargs):
 
     load_weights = kwargs['state_dict_path'] is not None
     model = parsing.parse_model(kwargs['domain'], kwargs['architecture'],
-                              kwargs['state_dict_path'], True, kwargs['masked_relu'], load_weights=load_weights)
+                              kwargs['state_dict_path'], True, kwargs['masked_relu'], True, load_weights=load_weights)
     model.train()
 
     extra_transforms = []

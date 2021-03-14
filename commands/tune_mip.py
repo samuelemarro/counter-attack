@@ -48,7 +48,7 @@ def tune_mip(**kwargs):
             'save_to must have a .prm file extension.')
 
     model = parsing.parse_model(kwargs['domain'], kwargs['architecture'],
-                              kwargs['state_dict_path'], True, kwargs['masked_relu'], load_weights=True)
+                              kwargs['state_dict_path'], True, kwargs['masked_relu'], False, load_weights=True)
 
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
     attack = parsing.parse_attack(
