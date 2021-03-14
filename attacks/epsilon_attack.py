@@ -30,7 +30,8 @@ class EpsilonAttack(attacks.AdvertorchWrapper):
         attack = copy.copy(self.inner_attack)
 
         if self.unsqueeze:
-            eps = eps.unsqueeze(1).unsqueeze(2).unsqueeze(3)
+            assert len(eps.shape) == 1
+            eps = eps.reshape([len(eps)] + ([1] * (len(x.shape) - 1)))
 
         attack.eps = eps
 

@@ -166,7 +166,7 @@ class CarliniWagnerCPULinfAttack(attacks.Attack, attacks.LabelMixin):
                     self.clip_min,
                     self.clip_max).detach()
 
-                successful = self._successful(outputs, y)
+                successful = self._successful(outputs, y).detach()
 
                 if self.return_best:
                     distances = torch.max(
@@ -232,14 +232,14 @@ class CarliniWagnerCPULinfAttack(attacks.Attack, attacks.LabelMixin):
                 y[active],
                 initial_const,
                 taus[active],
-                prev_adversarials[active].clone())
+                prev_adversarials[active].clone()).detach()
 
             # Store the adversarials for the next iteration,
             # even if they failed
             prev_adversarials[active] = adversarials
 
             adversarial_outputs = self.predict(adversarials)
-            successful = self._successful(adversarial_outputs, y[active])
+            successful = self._successful(adversarial_outputs, y[active]).detach()
 
             # If the Linf distance is lower than tau and the adversarial
             # is successful, use it as the new tau
@@ -454,7 +454,7 @@ class CarliniWagnerCUDALinfAttack(attacks.Attack, attacks.LabelMixin):
                     self.clip_min,
                     self.clip_max).detach()
 
-                successful = self._successful(outputs, y)
+                successful = self._successful(outputs, y).detach()
 
                 if self.return_best:
                     distances = torch.max(
@@ -547,7 +547,7 @@ class CarliniWagnerCUDALinfAttack(attacks.Attack, attacks.LabelMixin):
             prev_adversarials = adversarials
 
             adversarial_outputs = self.predict(adversarials)
-            successful = self._successful(adversarial_outputs, y)
+            successful = self._successful(adversarial_outputs, y).detach()
 
             # If the Linf distance is lower than tau and the adversarial
             # is successful, use it as the new tau

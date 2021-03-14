@@ -41,26 +41,20 @@ def main():
 # TODO: Verificare che attack_comparison_test funzioni ancora
 
 # TODO: Togliere il boolean indexing da uniform_noise.py
-# TODO: Il sistema di return_best è re-implementato in epsilon_binary_search e uniform_noise. Toglierlo?
-# TODO: Finire il debugging di attacks/mip.py e uniform.py
+# TODO: Finire il debugging di attacks/mip.py
 # TODO: Il comando mip è un comando a sé da debuggare!
 
 # TODO: Ri-eseguire l'addestramento? Guardo quale aveva vinto per ogni categoria e prendo quello
 
 # TODO: accuracy.py che fa l'override di dataset per --from-adversarial-dataset non è bellissimo
-# TODO: è giusto che si usi l'inizializzazione intelligente per Brendel? Secondo me no
 # TODO: Droppare completamente il supporto per L2?
 # TODO: Il seeding dovrebbe anche impostare np.random
 # TODO: Parametri dei vari attacchi
-# TODO: Togliere il boolean indexing da attack pool? In teoria non cambia nulla
-# TODO: Debuggare attack_pool.py
 # TODO: Scegliere una misclassification_policy
-# TODO: successful può portare a una propagazione errata dei gradienti
 
 
 # TODO: Cercare i valori corretti di l1 & co. tramite line search?
 # Appunto: CIFAR10-A ha avuto out-of-RAM ed è stato riavviato a partire da 85. è indietro di 35-40 epochs.
-# TODO: Controllare l'attack ratio
 # TODO: Passare a 1-indexing per le epochs nel salvataggio checkpoint?
 
 """

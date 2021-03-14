@@ -16,11 +16,6 @@ class UniformNoiseAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixi
         return utils.successful_adversarials(self.predict, adversarials, y, self.targeted)
 
     def perturb(self, x, y=None):
-        if isinstance(self.eps, torch.Tensor):
-            assert (self.eps.cpu().detach() > 0).all()
-        else:
-            assert self.eps > 0
-
         x, y = self._verify_and_process_inputs(x, y)
 
         # Initialization

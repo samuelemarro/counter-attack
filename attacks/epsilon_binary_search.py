@@ -72,7 +72,7 @@ class EpsilonBinarySearchAttack(attacks.AdvertorchWrapper):
         for _ in range(self.eps_binary_search_steps):
             eps = (eps_lower_bound + eps_upper_bound) / 2
             adversarials = self.perturb_standard(x, y, eps).detach()
-            successful = self.successful(adversarials, y)
+            successful = self.successful(adversarials, y).detach()
 
             distances = utils.adversarial_distance(x, adversarials, self.p)
             better_distances = distances < best_distances

@@ -41,7 +41,7 @@ class CounterAttackDetector(Detector):
 
         labels = utils.get_labels(self.model, x)
         successful = utils.misclassified(
-            self.model, adversarials, labels, False)
+            self.model, adversarials, labels, False).detach()
 
         # TODO: Testare
         # Comportamento attuale: Accetta quando fallisci (dà problemi perché uso inf)

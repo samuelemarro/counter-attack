@@ -7,6 +7,9 @@ import utils
 
 logger = logging.getLogger(__name__)
 
+# Nota: Usa un boolean indexing, ma rimuoverlo richiederebbe riscriverlo in maniera poco
+# elegante. Se viene usato in codice GPU critico, riscriverlo.
+
 class AttackPool(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     def __init__(self, predict, evade_detector, pool_attacks, p, targeted=False, clip_min=0, clip_max=1):
         super().__init__(predict, None, clip_min=clip_min, clip_max=clip_max)
@@ -45,7 +48,7 @@ class AttackPool(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         best_adversarials = []
 
         for original, pool_result, label in zip(x, pool_results, y):
-            successful = self.successful(pool_result, label)
+            successful = self.successful(pool_result, label).detach()
             assert successful.shape == (len(successful),)
 
             if successful.any():
@@ -76,10 +79,10 @@ class AttackPool(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         # Initialization
         if y is None:
             y = self._get_predicted_label(x)
-        
+
         pool_results = torch.stack(
             [attack.perturb(x, y=y, **kwargs).detach() for attack in self.pool_attacks], 1)
-    
+
         assert len(pool_results) == len(x)
         assert pool_results.shape[1] == len(self.pool_attacks)
 
