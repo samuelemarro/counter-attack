@@ -57,6 +57,8 @@ def main():
 # Appunto: CIFAR10-A ha avuto out-of-RAM ed è stato riavviato a partire da 85. è indietro di 35-40 epochs.
 # TODO: Passare a 1-indexing per le epochs nel salvataggio checkpoint?
 
+# Appunto: PGD è abbastanza decente con i parametri da training
+
 """
 Lista dei moduli ancora da controllare
 

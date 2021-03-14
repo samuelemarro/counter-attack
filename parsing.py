@@ -263,6 +263,9 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, defe
     eps_initial_search_steps = kwargs.pop('eps_initial_search_steps', None)
     eps_binary_search_steps = kwargs.pop('eps_binary_search_steps', None)
 
+    # Pop epsilon attack arguments
+    force_eps = kwargs.pop('force_eps', None)
+
     if evade_detector:
         target_model = defended_model
     else:
@@ -340,7 +343,12 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, defe
             raise ValueError(
                 f'Unsupported epsilon attack "{attack_name}"')
 
-        attack = attacks.EpsilonAttack(attack, unsqueeze)
+        epsilon_attack_kwargs = {}
+
+        if force_eps is not None:
+            epsilon_attack_kwargs['force_eps'] = force_eps
+
+        attack = attacks.EpsilonAttack(attack, unsqueeze, **epsilon_attack_kwargs)
 
     # If necessary, wrap the attack in a binary search wrapper
     if binary_search:
