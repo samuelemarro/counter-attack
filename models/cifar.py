@@ -1,9 +1,9 @@
 import logging
 
+from collections import OrderedDict
+
 import torch
 import torch.nn as nn
-import torch.utils.model_zoo as model_zoo
-from collections import OrderedDict
 
 from torch_utils import MaskedReLU
 

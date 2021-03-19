@@ -54,31 +54,40 @@ class AttackConfig:
                     logger.debug(
                         'Overriding key %s by replacing %s with %s.',
                         key, kwargs[key], value)
+                else:
+                    logger.debug('Registering %s=%s', key, value)
+                
                 kwargs[key] = value
 
-        def loop_across_dict(current_dict, ramifications):
-            if len(ramifications) == 0:
-                load_kwargs(current_dict)
-            else:
-                current_ramification = ramifications[0]
+        def loop_across_dict(current_dict, selectors):
+            if 'params' in current_dict:
+                load_kwargs(current_dict['params'])
 
-                for branch in current_ramification:
-                    if branch in current_dict.keys():
-                        loop_across_dict(
-                            current_dict[branch], ramifications[1:])
+            if len(selectors) == 0:
+                return
 
-        # The specific value overrides the general one
+            general_selector, specific_selector = selectors[0]
+
+            if general_selector in current_dict and specific_selector in current_dict:
+                raise RuntimeError('Both selectors available: cannot choose.')
+
+            if specific_selector in current_dict:
+                loop_across_dict(current_dict[specific_selector], selectors[1:])
+            elif general_selector in current_dict:
+                assert len(current_dict.keys()) <= 2
+                loop_across_dict(current_dict[general_selector], selectors[1:])
+
+        # The specific value overrides the general one, from outermost to innermost
         loop_across_dict(self.config_dict,
                          [
-                             ['all_attacks', attack_name],
-                             ['all_domains', domain],
-                             ['all_distances', p],
-                             ['all_types', attack_type]
+                             ('all_attacks', attack_name),
+                             ('all_domains', domain),
+                             ('all_distances', p),
+                             ('all_types', attack_type)
                          ]
                          )
 
         return kwargs
-
 
 def read_attack_config_file(path):
     with open(path, 'r') as f:
@@ -93,27 +102,21 @@ def adversarial_distance(genuines, adversarials, p):
     if len(genuines) == 0:
         return torch.zeros([0.], device=genuines.device)
     else:
+        # pairwise_distance only accepts 2D tensors
         genuines = genuines.flatten(1)
         adversarials = adversarials.flatten(1)
 
         distances = torch.nn.functional.pairwise_distance(
             genuines, adversarials, p)
-
-        assert len(distances) == len(genuines)
+        assert distances.shape == (len(genuines),)
 
         return distances
-
-
-def one_adversarial_distance(genuine, adversarial, p):
-    return adversarial_distance(genuine.unsqueeze(0), adversarial.unsqueeze(0), p)[0]
-
 
 def one_many_adversarial_distance(one, many, p):
     assert one.shape == many.shape[1:]
 
     # Add a batch dimension that matches many's batch size
     one = one.unsqueeze(0).expand(len(many), -1, -1, -1)
-
     assert one.shape == many.shape
 
     return adversarial_distance(one, many, p)
@@ -134,7 +137,7 @@ def apply_misclassification_policy(model, images, true_labels, policy):
         else:
             raise NotImplementedError(f'Unsupported policy "{policy}".')
 
-def successful_adversarials(model, adversarials, labels, targeted):
+def check_successful(model, adversarials, labels, targeted):
     assert len(adversarials) == len(labels)
 
     adversarial_outputs = model(adversarials)
@@ -181,27 +184,20 @@ def misclassified_outputs(outputs, labels, has_detector):
 # Testare!
 # TODO: Come funziona valid_distance?
 
-
-def remove_failed(model, images, labels, adversarials, has_detector, p=None, eps=None):
+def remove_failed(model, images, labels, adversarials, has_detector):
     assert len(images) == len(labels)
-    assert len(images) == len(adversarials)
+    assert images.shape == adversarials.shape
 
     successful = misclassified(model, adversarials, labels, has_detector)
-
-    if eps is not None:
-        assert p is not None
-        distances = adversarial_distance(images, adversarials, p)
+    assert successful.shape == (len(images),)
 
     adversarials = list(adversarials)
 
     for i in range(len(images)):
-        valid_distance = (eps is None) or (distances[i] < eps)
-        # TODO: Controllare
-        if not (successful[i] and valid_distance):
+        if not successful[i]:
             adversarials[i] = None
 
     return adversarials
-
 
 # Returns b if filter_ is True, else a
 def fast_boolean_choice(a, b, filter_, reshape=True):
@@ -221,7 +217,10 @@ def fast_boolean_choice(a, b, filter_, reshape=True):
 
 def get_labels(model, images):
     model_device = next(model.parameters()).device
-    return torch.argmax(model(images.to(model_device)), axis=1).to(images.device)
+    outputs = model(images.to(model_device))
+    assert len(outputs) == len(images)
+
+    return torch.argmax(outputs, axis=1).to(images.device)
 
 
 def replace_active(from_, to, active, filter_):
@@ -275,6 +274,7 @@ def show_images(images, adversarials, limit=None, model=None):
                 adversarial_title += f' (label: {adversarial_label})'
 
             if image.shape[0] == 1:
+                # Use grayscale for images with only one channel
                 plt.style.use('grayscale')
 
             normalisation = plt.Normalize(vmin=0, vmax=1)
@@ -311,6 +311,8 @@ def maybe_stack(tensors, fallback_shape, dtype=torch.float, device='cpu'):
         return torch.zeros(shape, dtype=dtype, device=device)
 
 def clip_adversarial(adversarial, genuine, epsilon, input_min=0, input_max=1):
+    # Note: Supports both single and batch modes
+
     assert adversarial.shape == genuine.shape
 
     clipped_lower = torch.clip(genuine - epsilon, min=input_min, max=input_max)
@@ -319,6 +321,7 @@ def clip_adversarial(adversarial, genuine, epsilon, input_min=0, input_max=1):
     replace_lower = adversarial < clipped_lower
     replace_upper = adversarial > clipped_upper
 
+    # Clip to [clipped_lower, clipped_upper]
     adversarial = fast_boolean_choice(adversarial, clipped_lower, replace_lower, reshape=False)
     adversarial = fast_boolean_choice(adversarial, clipped_upper, replace_upper, reshape=False)
 

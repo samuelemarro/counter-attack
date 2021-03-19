@@ -13,7 +13,7 @@ class UniformNoiseAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixi
         self.count = count
 
     def successful(self, adversarials, y):
-        return utils.successful_adversarials(self.predict, adversarials, y, self.targeted)
+        return utils.check_successful(self.predict, adversarials, y, self.targeted)
 
     def perturb(self, x, y=None):
         x, y = self._verify_and_process_inputs(x, y)

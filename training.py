@@ -1,6 +1,6 @@
+import logging
 import os
 import pathlib
-import logging
 
 import numpy as np
 import torch
@@ -93,7 +93,6 @@ def _compute_bounds_n_layers(n, lbs, ubs, Ws, biases):
     active_mask_unexpanded = (lb > 0).float()
 
     # active_mask = torch.tile(torch.unsqueeze(active_mask_unexpanded, 2), [1, 1, out_dim]) # This should be B x y x p
-    print(active_mask_unexpanded.shape)
     active_mask = torch.unsqueeze(active_mask_unexpanded, 2).expand(
         [-1, -1, out_dim])  # This should be B x y x p
 
@@ -313,7 +312,7 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
                     rs = rs_loss(model, x, epsilon=rs_eps) * rs_regularization
                     rs.backward()
                 else:
-                    for minibatch in split_batch(x, rs_minibatch):
+                    for minibatch in torch_utils.split_batch(x, rs_minibatch):
                         # RS loss isn't divided by the batch size
                         rs = rs_loss(model, minibatch,
                                      epsilon=rs_eps) * rs_regularization
@@ -346,7 +345,7 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
                                 rs_regularization
                             val_loss += rs
                         else:
-                            for minibatch in split_batch(x, rs_minibatch):
+                            for minibatch in torch_utils.split_batch(x, rs_minibatch):
                                 rs = rs_loss(model, minibatch,
                                              epsilon=rs_eps) * rs_regularization
                                 val_loss += rs

@@ -105,9 +105,16 @@ class ReLUCounter(nn.ReLU):
         return torch.relu(x)
 
 
-def unpack_sequential(module):
+def unpack_sequential(module, ignore=None):
+    if ignore is None:
+        ignore = []
+
     layers = []
     for layer in module:
+        # If the layer is of a type to be ignored, skip it
+        if any([isinstance(layer, t) for t in ignore]):
+            continue
+
         if isinstance(layer, nn.Sequential):
             layers += unpack_sequential(layer)
         else:

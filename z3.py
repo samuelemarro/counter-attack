@@ -8,8 +8,7 @@ import utils
 
 ONE_MINUS_EPS = 0.999999
 TARGET_MULT = 10000.0
-MAX_DISTANCE = 100000.0
-SMALL_LOSS_COEFFICIENT = 0.0001
+VERY_HIGH_NUMBER = 10000
 
 def get_carlini_linf_attack(target_model, num_classes, cuda_optimized=True, **kwargs):
     if cuda_optimized:
@@ -123,12 +122,12 @@ class CarliniWagnerLinfAttack(attacks.Attack, attacks.LabelMixin):
         loss2 = torch.sum(penalties, dim=image_dimensions)
         assert loss2.shape == loss1.shape
 
-        losses = const * loss1 + loss2
-        assert losses.shape == (len(x),)
+        loss = const * loss1 + loss2
+        assert loss.shape == (len(x),)
 
-        # losses is returned as a (batch_size,) vector to support abort_early
+        # loss is returned as a (batch_size,) vector to support abort_early
         # Only later it is converted to a scalar
-        return outputs.detach(), losses
+        return outputs.detach(), loss
 
     def _successful(self, outputs, y):
         adversarial_labels = torch.argmax(outputs, dim=1)
@@ -188,7 +187,7 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
         batch_size = len(x)
         best_adversarials = x.clone().detach()
         best_distances = torch.ones((batch_size,),
-                                    device=x.device) * MAX_DISTANCE
+                                    device=x.device) * VERY_HIGH_NUMBER
 
         if self.warm_start:
             starting_atanh = self._get_arctanh_x(prev_adversarials.clone())
@@ -205,10 +204,11 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
         const = initial_const
 
         while torch.any(active) and const < self.max_const:
+            print('Const: ', const)
             # We add an extra iteration because adversarials
             # are not saved until the next iteration
             for _ in range(self.max_iterations + 1):
-                outputs, losses = self._outputs_and_loss(
+                outputs, loss = self._outputs_and_loss(
                     x[active],
                     modifiers[active],
                     starting_atanh[active],
@@ -230,6 +230,9 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
                         ).flatten(1),
                         dim=1)[0]
                     better_distance = distances < best_distances[active]
+                    print('Act', active)
+                    print('SB', successful & better_distance)
+                    print(best_distances)
 
                     utils.replace_active(adversarials,
                                      best_adversarials,
@@ -247,16 +250,18 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
                 # possibly dropped. This is not an issue, since adversarials are detached from
                 # the gradient graph and saved before updating. In other words, the modifiers
                 # will be updated, while the adversarials won't be (at least until the next iteration)
-                total_loss = torch.sum(losses)
+                # TODO: Questo significa che vengono salvati i risultati di un'operazione in meno!
+                total_loss = torch.sum(loss)
                 optimizer.zero_grad()
                 total_loss.backward()
+                print(total_loss)
                 optimizer.step()
 
                 # If early aborting is enabled, drop successful
                 # samples with a small loss (the current adversarials
                 # are saved regardless of whether they are dropped)
                 if self.abort_early:
-                    small_loss = losses < SMALL_LOSS_COEFFICIENT * const
+                    small_loss = loss < 0.0001 * const
 
                     active[active] = ~(successful & small_loss)
 
@@ -265,7 +270,6 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
 
             # Give more weight to the output loss
             const *= self.const_factor
-
         return best_adversarials
 
     def perturb(self, x, y=None):
@@ -279,7 +283,7 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
         batch_size = len(x)
         best_adversarials = x.clone()
         best_distances = torch.ones((batch_size,),
-                                    device=x.device) * MAX_DISTANCE
+                                    device=x.device) * float("inf")
 
         # An array of booleans that stores which samples have not converged
         # yet
@@ -293,12 +297,20 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
         prev_adversarials = x.clone()
 
         while torch.any(active):
+            print('====')
+            print(taus)
+            print(torch.sum(x))
+            print(torch.sum(y))
+            print(initial_const)
+            print(torch.sum(prev_adversarials))
+            print('====')
             adversarials = self._run_attack(
                 x[active],
                 y[active],
                 initial_const,
-                taus[active],
-                prev_adversarials[active].clone()).detach()
+                torch.tensor([0.005] * 10)[active],#taus[active], # Modificato per test
+                x[active].clone()).detach() # Modificato per test
+            print('Risultato: ', torch.sum(adversarials))
 
             # Store the adversarials for the next iteration,
             # even if they failed
@@ -416,7 +428,7 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
         batch_size = len(x)
         best_adversarials = x.clone().detach()
         best_distances = torch.ones((batch_size,),
-                                    device=x.device) * MAX_DISTANCE
+                                    device=x.device) * VERY_HIGH_NUMBER
 
         if self.warm_start:
             starting_atanh = self._get_arctanh_x(prev_adversarials.clone())
@@ -436,10 +448,11 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
         stop_search = False
 
         while (not stop_search) and const < self.max_const:
+            print('Const: ', const)
             # We add an extra iteration because adversarials are
             # not saved until the next iteration
             for k in range(self.max_iterations + 1):
-                outputs, losses = self._outputs_and_loss(
+                outputs, loss = self._outputs_and_loss(
                     x,
                     modifiers,
                     starting_atanh,
@@ -462,6 +475,8 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
                         dim=1)[0]
                     better_distance = distances < best_distances
                     replace = successful & better_distance
+                    print(replace)
+                    print(best_distances)
                 else:
                     replace = torch.ones((batch_size,), dtype=torch.bool, device=x.device)
 
@@ -474,7 +489,7 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
                     best_distances = utils.fast_boolean_choice(best_distances, distances, replace)
 
                 # Update the modifiers
-                total_loss = torch.sum(losses)
+                total_loss = torch.sum(loss[active]) # TODO: L'ho modificato per test
                 optimizer.zero_grad()
                 total_loss.backward()
                 optimizer.step()
@@ -483,7 +498,7 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
                 # samples with a small loss (the current adversarials
                 # are saved regardless of whether they are dropped)
                 if self.abort_early:
-                    small_loss = losses < SMALL_LOSS_COEFFICIENT * const
+                    small_loss = loss < 0.0001 * const
 
                     active = active & ~(successful & small_loss)
 
@@ -518,7 +533,7 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
         batch_size = len(x)
         best_adversarials = x.clone()
         best_distances = torch.ones((batch_size,),
-                                    device=x.device) * MAX_DISTANCE
+                                    device=x.device) * float("inf")
 
         # An array of booleans that stores which samples have not converged
         # yet
@@ -536,12 +551,20 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
         i = 0
 
         while max_tau > self.min_tau:
+            print('====')
+            print(taus)
+            print(torch.sum(x))
+            print(torch.sum(y))
+            print(initial_const)
+            print(torch.sum(prev_adversarials))
+            print('====')
             adversarials = self._run_attack(
-                x,
-                y,
+                x[active],
+                y[active],
                 initial_const,
-                taus,
-                prev_adversarials.clone()).detach()
+                torch.tensor([0.005] * 10)[active],#taus, # Modificato per test
+                x.clone()[active]) # Modificato per test
+            print('Risultato: ', torch.sum(adversarials))
 
             # Store the adversarials for the next iteration,
             # even if they failed
@@ -569,10 +592,8 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
             if not self.update_inactive:
                 replace = replace & active
 
+            best_distances = utils.fast_boolean_choice(best_distances, linf_distances, replace)
             best_adversarials = utils.fast_boolean_choice(best_adversarials, adversarials, replace)
-
-            if self.return_best:
-                best_distances = utils.fast_boolean_choice(best_distances, linf_distances, replace)
 
             taus *= self.tau_factor
             max_tau *= self.tau_factor
@@ -593,3 +614,4 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
             i += 1
 
         return best_adversarials
+

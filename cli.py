@@ -40,7 +40,6 @@ def main():
 # TODO: LABEL DEI MISCLASSIFIED (SOPRATTUTTO COME GESTIRLE NELL'ADV.TRAINING) (Nota: nell'adversarial training non dà problemi in teoria, check)
 # TODO: Verificare che attack_comparison_test funzioni ancora
 
-# TODO: Togliere il boolean indexing da uniform_noise.py
 # TODO: Finire il debugging di attacks/mip.py
 # TODO: Il comando mip è un comando a sé da debuggare!
 
@@ -56,40 +55,45 @@ def main():
 # TODO: Cercare i valori corretti di l1 & co. tramite line search?
 # Appunto: CIFAR10-A ha avuto out-of-RAM ed è stato riavviato a partire da 85. è indietro di 35-40 epochs.
 # TODO: Passare a 1-indexing per le epochs nel salvataggio checkpoint?
-
+# TODO: Evitare duplicazione del codice in train/val?
+# TODO: topk e random_target hanno delle sincronizzazioni
+# TODO: Carlini Linf usa parametri molto più tranquilli nell'implementazione originale
+# TODO: parsing non ha modo di sapere qual è il device corretto per Carlini Linf
+# TODO: Ci sono pezzi del codice che danno per scontato che le immagini siano 4D? Non è un problema, anche MNIST ha una batch dim
+# TODO: torch.max non ha il comportamento atteso?
+# TODO: Verificare che il nuovo .cfg abbia senso
 # Appunto: PGD è abbastanza decente con i parametri da training
 
 """
 Lista dei moduli ancora da controllare
 
 - attacks
-    - carlini_wagner
-    - kbesttarget
+    - k_best_target [p]
     - mip.py
-    - random_target
+    - random_target [p]
 - commands
     - accuracy.py (quasi fatto)
     - attack_matrix.py [p]
-    - attack.py (mancano AttackPool e attack_test)
+    - attack.py (mancano attack_test e l'adversarial dataset)
     - compare.py
     - cross_validation.py [p]
-    - distance_dataset.py
+    - distance_dataset.py [p]
     - evasion.py [p]
     - mip.py
     - perfect_approximation.py [p]
     - prune_relu.py
     - prune_weights.py
-    - train_approximator.py
+    - train_approximator.py [p]
     - train_classifier.py
     - tune_mip.py [p?]
 - models
     - cifar.py
 - adversarial_dataset.py
 - detectors.py [p]
-- full_stack_automation.py
-- full_stack.py
+- full_stack_automation.py [?]
+- full_stack.py [?]
 - mip_interface.jl
-- parsing.py (manca solo AttackPool, detectors e validazione)
+- parsing.py (manca solo detectors [p] e validazione)
 - training.py (in teoria avevo già fatto una prima passata)
 - utils.py
     Fatti:
@@ -98,6 +102,12 @@ Lista dei moduli ancora da controllare
     - show_images
     - maybe_stack
     - powerset
+    - read_attack_config_file
+    - clip_adversarial
+    - create_label_dataset
+    - get_labels
+    - one_many_adversarial_distance
+    - adversarial_distance
 - default_attack_configuration.cfg
 
 Paths:

@@ -4,9 +4,9 @@ import numpy as np
 import torch
 
 import parsing
+import torch_utils
 
 logger = logging.getLogger(__name__)
-
 
 @click.command()
 @click.argument('domain')
@@ -24,13 +24,16 @@ def prune_weights(**kwargs):
     model = parsing.parse_model(kwargs['domain'], kwargs['architecture'],
                               kwargs['original_state_dict_path'], True, kwargs['masked_relu'], False, load_weights=True)
 
+    # TODO: Debuggare
+    simplified_model = torch_utils.unpack_sequential(model, ignore=[torch_utils.Normalisation])
+
     all_parameters = 0
     prunable_parameters = 0
 
     threshold = kwargs['threshold']
 
     with torch.no_grad():
-        for param in model.parameters():
+        for param in simplified_model.parameters():
             if param.dtype == torch.bool:
                 continue
 
@@ -40,6 +43,6 @@ def prune_weights(**kwargs):
             param[below_threshold] = 0.0
 
     logger.info(
-        f'Pruned {prunable_parameters} out of {all_parameters} parameters.')
+        'Pruned %s out of %s parameters.', prunable_parameters, all_parameters)
 
     torch.save(model.state_dict(), kwargs['save_to'])

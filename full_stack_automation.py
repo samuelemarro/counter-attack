@@ -30,7 +30,7 @@ def run_test(domain, architecture, test_name):
         batch_size = 128 # Quella per naive IA, ma va bene per quella advanced
 
         adversarial_eps = 8/255
-        l1_regularization = 1e-5
+        l1_regularization = 1e-4 # TODO: Modificato
         rs_regularization = 2e-3
     elif domain == 'mnist':
         # Usiamo la configurazione da 0.1
@@ -38,7 +38,7 @@ def run_test(domain, architecture, test_name):
         batch_size = 32
 
         adversarial_eps = 0.1
-        l1_regularization = 2e-5
+        l1_regularization = 2e-4 # TODO: Modificato
         rs_regularization = 12e-5
     else:
         raise RuntimeError()
@@ -79,13 +79,14 @@ def run_test(domain, architecture, test_name):
             raise RuntimeError()
     
     if test_name == 'relu':
-        if not os.path.exists(weight_pruned_state_dict):
+        pass
+        """if not os.path.exists(weight_pruned_state_dict):
             logger.debug('Starting weight pruning')
             os.system(f'python cli.py prune-weights {domain} {architecture} {standard_state_dict} {weight_pruned_state_dict} {weight_pruning_threshold}')
         if not os.path.exists(relu_pruned_state_dict):
             logger.debug('Starting ReLU pruning')
             os.system(f'python cli.py prune-relu {domain} {architecture} std:train {weight_pruned_state_dict} {relu_pruned_state_dict} {relu_pruning_threshold}')
-
+        """
     logger.debug('Starting full_stack.py')
 
     if test_name == 'relu':
@@ -98,7 +99,7 @@ def run_test(domain, architecture, test_name):
     #os.system(f'python full_stack.py {domain} {architecture} {pre_attack} {count} --state-dict {full_stack_path} --state-dict-name {full_stack_name}')
 
 def main():
-    for test_name in ['adversarial']:
+    for test_name in ['relu']:
         for domain in ['mnist', 'cifar10']:
             for architecture in ['a', 'b', 'c']:
                 run_test(domain, architecture, test_name)
