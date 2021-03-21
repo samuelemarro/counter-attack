@@ -4,6 +4,7 @@ import json
 import logging
 import pathlib
 import pickle
+import random
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -355,3 +356,8 @@ def powerset(iterable, allow_empty=False):
     s = list(iterable)
 
     return list(itertools.chain.from_iterable(itertools.combinations(s, r) for r in range(start, len(s)+1)))
+
+def set_seed(seed):
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)

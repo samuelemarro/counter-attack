@@ -59,7 +59,7 @@ def attack_matrix(**kwargs):
         torch.set_num_threads(kwargs['cpu_threads'])
 
     if kwargs['seed'] is not None:
-        torch.manual_seed(kwargs['seed'])
+        utils.set_seed(kwargs['seed'])
 
     model = parsing.parse_model(kwargs['domain'], kwargs['architecture'],
                               kwargs['state_dict_path'], True, kwargs['masked_relu'], False, load_weights=True)
@@ -106,7 +106,7 @@ def attack_matrix(**kwargs):
                 model, detector, rejection_threshold)
 
             evasion_attack = parsing.parse_attack(
-                evasion_attack_name, kwargs['domain'], kwargs['p'], 'evasion', model, attack_config, defended_model=defended_model)
+                evasion_attack_name, kwargs['domain'], kwargs['p'], 'evasion', model, attack_config, kwargs['device'], defended_model=defended_model)
 
             test_name = f'{evasion_attack_name} vs {counter_attack_name}'
 

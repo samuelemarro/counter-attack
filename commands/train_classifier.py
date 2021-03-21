@@ -1,15 +1,12 @@
 import logging
 
 import click
-import ignite
 import pathlib
 import torch
 import torchvision
 
 import utils
 import parsing
-import tests
-import torch_utils
 import training
 
 logger = logging.getLogger(__name__)
@@ -86,7 +83,7 @@ def train_classifier(**kwargs):
         torch.set_num_threads(kwargs['cpu_threads'])
 
     if kwargs['seed'] is not None:
-        torch.manual_seed(kwargs['seed'])
+        utils.set_seed(kwargs['seed'])
 
     load_weights = kwargs['state_dict_path'] is not None
     model = parsing.parse_model(kwargs['domain'], kwargs['architecture'],
@@ -165,7 +162,7 @@ def train_classifier(**kwargs):
             kwargs['adversarial_cfg_file'])
 
         adversarial_attack = parsing.parse_attack_pool(
-            kwargs['adversarial_training'], kwargs['domain'], kwargs['adversarial_p'], 'training', model, attack_config)
+            kwargs['adversarial_training'], kwargs['domain'], kwargs['adversarial_p'], 'training', model, attack_config, kwargs['device'])
 
     if kwargs['rs_regularization'] != 0:
         if kwargs['rs_eps'] is None:

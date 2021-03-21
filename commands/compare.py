@@ -52,7 +52,7 @@ def compare(**kwargs):
         torch.set_num_threads(kwargs['cpu_threads'])
 
     if kwargs['seed'] is not None:
-        torch.manual_seed(kwargs['seed'])
+        utils.set_seed(kwargs['seed'])
 
     model = parsing.parse_model(kwargs['domain'], kwargs['architecture'],
                               kwargs['state_dict_path'], True, kwargs['masked_relu'], False, load_weights=True)
@@ -72,7 +72,7 @@ def compare(**kwargs):
 
     for attack_name in attack_names:
         attack = parsing.parse_attack(
-            attack_name, kwargs['domain'], p, 'standard', model, attack_config)
+            attack_name, kwargs['domain'], p, 'standard', model, attack_config, kwargs['device'])
         attacks.append(attack)
 
     result_dataset = tests.multiple_attack_test(model, attack_names, attacks, dataloader, p,

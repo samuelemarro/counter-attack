@@ -43,8 +43,6 @@ def main():
 # TODO: Finire il debugging di attacks/mip.py
 # TODO: Il comando mip è un comando a sé da debuggare!
 
-# TODO: Ri-eseguire l'addestramento? Guardo quale aveva vinto per ogni categoria e prendo quello
-
 # TODO: accuracy.py che fa l'override di dataset per --from-adversarial-dataset non è bellissimo
 # TODO: Droppare completamente il supporto per L2?
 # TODO: Il seeding dovrebbe anche impostare np.random
@@ -62,6 +60,7 @@ def main():
 # TODO: Ci sono pezzi del codice che danno per scontato che le immagini siano 4D? Non è un problema, anche MNIST ha una batch dim
 # TODO: torch.max non ha il comportamento atteso?
 # TODO: Verificare che il nuovo .cfg abbia senso
+# TODO: np.seed è deprecato
 # Appunto: PGD è abbastanza decente con i parametri da training
 
 """

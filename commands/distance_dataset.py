@@ -56,7 +56,7 @@ def distance_dataset(**kwargs):
         torch.set_num_threads(kwargs['cpu_threads'])
 
     if kwargs['seed'] is not None:
-        torch.manual_seed(kwargs['seed'])
+        utils.set_seed(kwargs['seed'])
 
     model = parsing.parse_model(kwargs['domain'], kwargs['architecture'],
                               kwargs['state_dict_path'], True, kwargs['masked_relu'], False, load_weights=True)
@@ -66,7 +66,7 @@ def distance_dataset(**kwargs):
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
 
     attack_pool = parsing.parse_attack_pool(
-        kwargs['attacks'], kwargs['domain'], kwargs['p'], 'standard', model, attack_config)
+        kwargs['attacks'], kwargs['domain'], kwargs['p'], 'standard', model, attack_config, kwargs['device'])
 
     p = kwargs['p']
 

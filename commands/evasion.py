@@ -64,7 +64,7 @@ def evasion(**kwargs):
         torch.set_num_threads(kwargs['cpu_threads'])
 
     if kwargs['seed'] is not None:
-        torch.manual_seed(kwargs['seed'])
+        utils.set_seed(kwargs['seed'])
 
     model = parsing.parse_model(kwargs['domain'], kwargs['architecture'],
                               kwargs['state_dict_path'], True, kwargs['masked_relu'], False, load_weights=True)
@@ -105,7 +105,7 @@ def evasion(**kwargs):
         model, detector, kwargs['rejection_threshold'])
 
     evasion_pool = parsing.parse_attack_pool(
-        kwargs['evasion_attacks'], kwargs['domain'], kwargs['p'], 'evasion', model, attack_config, defended_model=defended_model)
+        kwargs['evasion_attacks'], kwargs['domain'], kwargs['p'], 'evasion', model, attack_config, kwargs['device'], defended_model=defended_model)
 
     adversarial_dataset = tests.attack_test(
         model, evasion_pool, dataloader, p, kwargs['misclassification_policy'], kwargs['device'], attack_config, dataset.start, dataset.stop, kwargs, defended_model)

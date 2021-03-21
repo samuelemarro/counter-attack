@@ -52,7 +52,9 @@ def tune_mip(**kwargs):
 
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
     attack = parsing.parse_attack(
-        'mip', kwargs['domain'], kwargs['p'], 'standard', model, attack_config)
+        'mip', kwargs['domain'], kwargs['p'], 'standard', model, attack_config, 'cpu')
+
+    # TODO: model.cpu()?
 
     if kwargs['pre_adversarial_dataset'] is None:
         pre_adversarial_dataset = None

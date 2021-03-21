@@ -62,7 +62,7 @@ def mip(**kwargs):
         torch.set_num_threads(kwargs['cpu_threads'])
 
     if kwargs['seed'] is not None:
-        torch.manual_seed(kwargs['seed'])
+        utils.set_seed(kwargs['seed'])
 
     model = parsing.parse_model(kwargs['domain'], kwargs['architecture'],
                               kwargs['state_dict_path'], True, kwargs['masked_relu'], False, load_weights=True)

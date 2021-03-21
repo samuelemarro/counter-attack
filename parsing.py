@@ -203,7 +203,7 @@ def parse_optimiser(optimiser_name, learnable_parameters, options):
 # Targeted FGSM is introduced in
 # http://bengio.abracadoudou.com/publications/pdf/kurakin_2017_iclr_physical.pdf
 
-def parse_attack(attack_name, domain, p, attack_type, model, attack_config, defended_model=None):
+def parse_attack(attack_name, domain, p, attack_type, model, attack_config, device, defended_model=None):
     logger.debug('Parsing %s attack %s-%s (using defended: %s).', attack_type,
                  attack_name, p, defended_model is not None)
     
@@ -294,8 +294,9 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, defe
             attack = attacks.CarliniWagnerL2Attack(
                 target_model, num_classes, targeted=evade_detector, **kwargs)
         elif metric == 'linf':
+            cuda_optimized = device == 'cuda'
             attack = attacks.get_carlini_linf_attack(target_model, num_classes,
-                targeted=evade_detector, return_best=return_best, **kwargs)
+                targeted=evade_detector, return_best=return_best, cuda_optimized=cuda_optimized, **kwargs)
         else:
             raise NotImplementedError(
                 f'Unsupported attack "{attack_name}" for "{metric}".')
@@ -381,7 +382,7 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, defe
     return attack
 
 
-def parse_attack_pool(attack_names, domain, p, attack_type, model, attack_config, defended_model=None):
+def parse_attack_pool(attack_names, domain, p, attack_type, model, attack_config, device, defended_model=None):
     logger.debug('Parsing %s attack pool %s for %s (using defended: %s).', attack_type,
                  attack_names, p, defended_model is not None)
     evade_detector = (attack_type == 'evasion')
@@ -394,7 +395,7 @@ def parse_attack_pool(attack_names, domain, p, attack_type, model, attack_config
     attack_pool = []
     for attack_name in attack_names:
         attack_pool.append(parse_attack(attack_name, domain, p, attack_type,
-                                      model, attack_config, defended_model=defended_model))
+                                      model, attack_config, device, defended_model=defended_model))
 
     if len(attack_pool) == 1:
         return attack_pool[0]
@@ -416,7 +417,7 @@ def parse_detector(attack_name, domain, p, attack_type, model, attack_config, de
             f'You are using an attack of type "{attack_type}" for a detector. Is this intentional?')
 
     attack = parse_attack(attack_name, domain, p, attack_type,
-                        model, attack_config, defended_model=None)
+                        model, attack_config, device, defended_model=None)
     assert attack.predict == model
     detector = detectors.CounterAttackDetector(attack, model, p)
 
