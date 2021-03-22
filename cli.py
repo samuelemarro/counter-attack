@@ -20,6 +20,10 @@ def main():
 
 # TODO: Rimuovere gli attacchi non usati
 
+# Nota: Se negli evasion l'originale viene rifiutato ma l'adversarial no, l'adversarial conta
+# come successo anche se ha mantenuto la stessa label di partenza
+# TODO: Testare!
+
 # TODO: Quando non trova il sample di partenza (a causa di bound troppo stretti), fa 7200 secondi sprecati.
 # Contemporaneamente, usare dei bound troppo larghi rallenta incredibilmente l'esecuzione
 # Nota che il fatto che anche se la soluzione è infeasible non è detto che MIP non riesca a trovare uno start
@@ -61,6 +65,8 @@ def main():
 # TODO: torch.max non ha il comportamento atteso?
 # TODO: Verificare che il nuovo .cfg abbia senso
 # TODO: np.seed è deprecato
+# TODO: La misclassification policy "remove" deve restituirli come None?
+# TODO [p]: Debuggare il comportamento targeted
 # Appunto: PGD è abbastanza decente con i parametri da training
 
 """
@@ -74,7 +80,7 @@ Lista dei moduli ancora da controllare
     - accuracy.py (quasi fatto)
     - attack_matrix.py [p]
     - attack.py (mancano attack_test e l'adversarial dataset)
-    - compare.py
+    - compare.py (manca l'adversarial dataset)
     - cross_validation.py [p]
     - distance_dataset.py [p]
     - evasion.py [p]
@@ -93,6 +99,10 @@ Lista dei moduli ancora da controllare
 - full_stack.py [?]
 - mip_interface.jl
 - parsing.py (manca solo detectors [p] e validazione)
+    Controllati:
+    - parse_dataset
+    - parse_optimiser
+    - parse_attack
 - training.py (in teoria avevo già fatto una prima passata)
 - utils.py
     Fatti:
@@ -107,6 +117,10 @@ Lista dei moduli ancora da controllare
     - get_labels
     - one_many_adversarial_distance
     - adversarial_distance
+    - AttackConfig
+    - remove_failed
+    - misclassified
+    - misclassified_outputs
 - default_attack_configuration.cfg
 
 Paths:

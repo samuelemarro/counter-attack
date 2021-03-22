@@ -218,12 +218,14 @@ def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p
 
 def multiple_attack_test(model, attack_names, attacks, loader, p, misclassification_policy, device, attack_configuration, start, stop, generation_kwargs):
     assert all(not attack.targeted for attack in attacks)
+    assert len(attack_names) == len(attacks)
+
+    logger.debug('Running multiple attack tests with attacks %s.', attack_names)
 
     model.to(device)
 
-    assert len(attack_names) == len(attacks)
-
     all_images = []
+    all_labels = []
     all_true_labels = []
     all_attack_results = []
 
@@ -231,15 +233,17 @@ def multiple_attack_test(model, attack_names, attacks, loader, p, misclassificat
         images = images.to(device)
         true_labels = true_labels.to(device)
 
+        # true_labels are the labels in the dataset, while labels are
+        # the labels that will be used by the attack (which may or may not
+        # be the same as true_labels, depending on the misclassification policy)
         images, true_labels, labels = utils.apply_misclassification_policy(
             model, images, true_labels, misclassification_policy)
 
         attack_results = [dict() for _ in range(len(images))]
 
         for test_name, attack in zip(attack_names, attacks):
-            # Nota y=labels
+            # Note y=labels
             adversarials = attack.perturb(images, y=labels).detach()
-
             assert adversarials.shape == images.shape
 
             adversarials = utils.remove_failed(
@@ -254,12 +258,17 @@ def multiple_attack_test(model, attack_names, attacks, loader, p, misclassificat
 
         images = images.cpu()
         labels = labels.cpu()
+        true_labels = true_labels.cpu()
 
         all_images += list(images)
+        all_labels += list(labels)
         all_true_labels += list(true_labels)
         all_attack_results += attack_results
 
+    assert len(all_labels) == len(all_images)
     assert len(all_true_labels) == len(all_images)
     assert len(all_attack_results) == len(all_images)
 
-    return adversarial_dataset.AttackComparisonDataset(all_images, all_true_labels, attack_names, all_attack_results, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs)
+    logger.debug('Collected %s results.', len(all_attack_results))
+
+    return adversarial_dataset.AttackComparisonDataset(all_images, all_labels, all_true_labels, attack_names, all_attack_results, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs)

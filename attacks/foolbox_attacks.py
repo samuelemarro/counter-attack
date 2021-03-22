@@ -151,32 +151,6 @@ class DeepFoolAttack(FoolboxAttackWrapper):
         # DeepFool is untargeted
         super().__init__(model, foolbox_attack, False, clip_min=clip_min, clip_max=clip_max)
 
-class CarliniWagnerL2Attack(FoolboxAttackWrapper):
-    def __init__(
-        self,
-        model,
-        clip_min=0,
-        clip_max=1,
-        targeted=False,
-        binary_search_steps: int = 9,
-        steps: int = 10000,
-        stepsize: float = 1e-2,
-        confidence: float = 0,
-        initial_const: float = 1e-3,
-        abort_early: bool = True,
-    ):
-        foolbox_attack = fb.attacks.L2CarliniWagnerAttack(
-            binary_search_steps=binary_search_steps,
-            steps=steps,
-            stepsize=stepsize,
-            confidence=confidence,
-            initial_const=initial_const,
-            abort_early=abort_early)
-
-        super().__init__(model, foolbox_attack, targeted,
-                         clip_min=clip_min, clip_max=clip_max)
-
-
 # This attack is implemented to provide the default Brendel&Bethge behaviour
 # in case the initialization from an AttackPool fails.
 

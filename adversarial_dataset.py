@@ -113,7 +113,6 @@ class AdversarialDataset(data.Dataset):
         print(f'Median Successful Distance: {median_distance}')
         print(f'Average Successful Distance: {average_distance}')
 
-
 class MIPDataset(data.Dataset):
     def __init__(self, genuines, true_labels, adversarials, lower_bounds, upper_bounds, solve_times, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs):
         assert len(genuines) == len(true_labels)

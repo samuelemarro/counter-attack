@@ -410,7 +410,6 @@ class StartStopDataset(torch.utils.data.Dataset):
     def __len__(self):
         return self.stop - self.start
 
-
 class IndexedDataset(torch.utils.data.Dataset):
     def __init__(self, dataset, indices):
         assert len(indices) <= len(dataset)

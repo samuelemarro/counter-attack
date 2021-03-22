@@ -80,7 +80,7 @@ def train_approximator(**kwargs):
     if val_dataset is None:
         val_dataloader = None
     else:
-        # There's no point in shuffling the validation dataset
+        # There is no point in shuffling the validation dataset
         val_dataloader = torch.utils.data.DataLoader(
             val_dataset, kwargs['batch_size'], shuffle=False)
 

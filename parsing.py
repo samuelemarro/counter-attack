@@ -3,11 +3,11 @@ import logging
 import advertorch
 import advertorch.bpda
 import click
-import attacks
 import numpy as np
 import torch
 import torchvision
 
+import attacks
 import detectors
 import models
 import torch_utils
@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 domains = ['cifar10', 'mnist']
 architectures = ['a', 'b', 'c', 'wong_small', 'wong_large']
+attack_types = ['defense', 'evasion', 'standard', 'training']
 supported_attacks = ['bim', 'brendel', 'carlini',
                      'deepfool', 'fast_gradient', 'mip', 'pgd', 'uniform']
 epsilon_attacks = ['bim', 'fast_gradient', 'pgd', 'uniform']
@@ -143,7 +144,10 @@ def parse_model(domain, architecture, state_dict_path, apply_normalisation, mask
     return model
 
 
-def parse_dataset(domain, dataset, allow_standard=True, dataset_edges=None, extra_transforms=[]):
+def parse_dataset(domain, dataset, allow_standard=True, dataset_edges=None, extra_transforms=None):
+    if extra_transforms is None:
+        extra_transforms = []
+
     logger.debug('Parsing dataset %s-%s (edges=%s) with %s extra transforms.',
                  domain, dataset, dataset_edges, len(extra_transforms))
     matched_dataset = None
@@ -206,7 +210,7 @@ def parse_optimiser(optimiser_name, learnable_parameters, options):
 def parse_attack(attack_name, domain, p, attack_type, model, attack_config, device, defended_model=None):
     logger.debug('Parsing %s attack %s-%s (using defended: %s).', attack_type,
                  attack_name, p, defended_model is not None)
-    
+
     # Convert the float value to its standard name
     if p == 2:
         metric = 'l2'
@@ -214,6 +218,9 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, devi
         metric = 'linf'
     else:
         raise NotImplementedError(f'Unsupported metric "l{p}"')
+
+    if attack_type not in attack_types:
+        raise NotImplementedError(f'Unsupported attack type {attack_type}.')
 
     kwargs = attack_config.get_arguments(
         attack_name, domain, metric, attack_type)
@@ -230,9 +237,9 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, devi
     binary_search = 'enable_binary_search' in kwargs and kwargs['enable_binary_search']
     return_best = kwargs.pop('return_best', False)
 
-    if (attack_type == 'standard' or attack_type == 'defense') and defended_model is not None:
+    if attack_type != 'evasion' and defended_model is not None:
         raise ValueError(
-            'Passed a defended_model for a standard/defense attack.')
+            'Passed a defended_model for a non-evasion attack.')
 
     if domain in ['cifar10', 'mnist']:
         num_classes = 10
@@ -290,8 +297,7 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, devi
         attack = attacks.BrendelBethgeAttack(target_model, p, **kwargs)
     elif attack_name == 'carlini':
         if metric == 'l2':
-            # TODO: Testare
-            attack = attacks.CarliniWagnerL2Attack(
+            attack = advertorch.attacks.CarliniWagnerL2Attack(
                 target_model, num_classes, targeted=evade_detector, **kwargs)
         elif metric == 'linf':
             cuda_optimized = device == 'cuda'
@@ -303,7 +309,7 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, devi
     elif attack_name == 'deepfool':
         attack = attacks.DeepFoolAttack(target_model, p, **kwargs)
     elif attack_name == 'fast_gradient':
-        # FGM is the L2 variant, FGSM is the LInf variant
+        # FGM is the L2 variant, FGSM is the Linf variant
         if metric == 'l2':
             attack = advertorch.attacks.FGM(
                 target_model, targeted=evade_detector, **kwargs)
@@ -367,6 +373,7 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, devi
         attack = attacks.EpsilonBinarySearchAttack(
             attack, p, targeted=evade_detector, **binary_search_kwargs)
 
+    # Complete the best sample wrapping
     # Carlini Linf does not support BestSample
     if return_best and not (attack_name == 'carlini' and np.isposinf(p)):
         logger.debug('Finalizing best sample wrapping.')
@@ -377,7 +384,7 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, devi
     # Convert targeted evasion attacks into untargeted ones
     if evade_detector and (attack_name in targeted_attacks):
         logger.debug('Converting targeted to untargeted attack.')
-        attack = attacks.KBestTargetEvasionAttack(model, attack)
+        attack = attacks.KBestTargetEvasionAttack(target_model, attack)
 
     return attack
 

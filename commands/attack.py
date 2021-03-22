@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 @click.option('--misclassification-policy', type=click.Choice(parsing.misclassification_policies),
               default='remove', show_default=True, help='The policy that will be applied to deal with '
               'misclassified images.')
-@click.option('--attack-type', type=click.Choice(['standard', 'defense', 'training']), default='standard',
+@click.option('--attack-type', type=click.Choice(parsing.attack_types), default='standard',
               show_default=True, help='The attack type.')
 @click.option('--early-rejection', type=float, default=None,
               help='The threshold for early rejection. If unspecified, no early rejection is performed.')

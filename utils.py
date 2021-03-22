@@ -56,12 +56,13 @@ class AttackConfig:
                         'Overriding key %s by replacing %s with %s.',
                         key, kwargs[key], value)
                 else:
-                    logger.debug('Registering %s=%s', key, value)
-                
+                    logger.debug('Registering %s=%s.', key, value)
+
                 kwargs[key] = value
 
         def loop_across_dict(current_dict, selectors):
             if 'params' in current_dict:
+                logger.debug('Found params.')
                 load_kwargs(current_dict['params'])
 
             if len(selectors) == 0:
@@ -73,9 +74,11 @@ class AttackConfig:
                 raise RuntimeError('Both selectors available: cannot choose.')
 
             if specific_selector in current_dict:
+                logger.debug('Going into %s.', specific_selector)
                 loop_across_dict(current_dict[specific_selector], selectors[1:])
             elif general_selector in current_dict:
                 assert len(current_dict.keys()) <= 2
+                logger.debug('Going into %s.', general_selector)
                 loop_across_dict(current_dict[general_selector], selectors[1:])
 
         # The specific value overrides the general one, from outermost to innermost
@@ -152,11 +155,11 @@ def check_successful(model, adversarials, labels, targeted):
         return ~torch.eq(adversarial_labels, labels)
 
 
-# TODO: Consider removing
 def misclassified(model, adversarials, labels, has_detector):
     assert len(adversarials) == len(labels)
 
     adversarial_predictions = model(adversarials)
+    assert len(adversarial_predictions) == len(adversarials)
 
     return misclassified_outputs(adversarial_predictions, labels, has_detector)
 
@@ -165,25 +168,17 @@ def misclassified_outputs(outputs, labels, has_detector):
     assert len(outputs) == len(labels)
 
     adversarial_labels = torch.argmax(outputs, axis=1)
-
     assert adversarial_labels.shape == labels.shape
 
-    successful = torch.logical_not(torch.eq(adversarial_labels, labels))
+    successful = ~torch.eq(adversarial_labels, labels)
 
     if has_detector:
         num_classes = outputs.shape[1]
         rejected = torch.eq(adversarial_labels, num_classes - 1)
-        accepted = torch.logical_not(rejected)
 
-        successful = successful & accepted
+        successful = successful & ~rejected
 
     return successful
-
-# AdverTorch come considera i failed?
-# Nota: Se l'originale viene rifiutato ma l'adversarial no, l'adversarial conta
-# come successo anche se ha mantenuto la stessa label di partenza
-# Testare!
-# TODO: Come funziona valid_distance?
 
 def remove_failed(model, images, labels, adversarials, has_detector):
     assert len(images) == len(labels)
@@ -212,7 +207,7 @@ def fast_boolean_choice(a, b, filter_, reshape=True):
         filter_ = filter_.expand(*post_expansion_shape)
 
     filter_ = filter_.float()
-    
+
     return filter_ * b + (1 - filter_) * a
 
 
@@ -347,7 +342,7 @@ def create_label_dataset(model, images, batch_size):
     return torch.utils.data.TensorDataset(images, labels)
 
 
-def powerset(iterable, allow_empty=False):
+def powerset(iterable, allow_empty):
     if allow_empty:
         start = 0
     else:

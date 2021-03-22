@@ -10,7 +10,6 @@ import utils
 
 logger = logging.getLogger(__name__)
 
-
 @click.command()
 @click.argument('domain', type=click.Choice(parsing.domains))
 @click.argument('architecture', type=click.Choice(parsing.architectures))
@@ -38,6 +37,7 @@ logger = logging.getLogger(__name__)
 @click.option('--stop', type=click.IntRange(0, None), default=None,
               help='The last index (exclusive) of the dataset that will be used. If unspecified, defaults to '
               'the dataset size.')
+@click.option('--no-stats', is_flag=True, help='If passed, no stats are printed.')
 @click.option('--save-to', type=click.Path(exists=False, file_okay=True, dir_okay=False),
               help='The path to the file where the test results will be saved (as a dataset). If unspecified, '
               'no dataset is saved.')
@@ -66,109 +66,113 @@ def compare(**kwargs):
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
 
     p = kwargs['p']
+    device = kwargs['device']
 
     attack_names = kwargs['attacks']
     attacks = []
 
     for attack_name in attack_names:
         attack = parsing.parse_attack(
-            attack_name, kwargs['domain'], p, 'standard', model, attack_config, kwargs['device'])
+            attack_name, kwargs['domain'], p, 'standard', model, attack_config, device)
         attacks.append(attack)
 
     result_dataset = tests.multiple_attack_test(model, attack_names, attacks, dataloader, p,
-                                                kwargs['misclassification_policy'], kwargs['device'], attack_config, dataset.start, dataset.stop, kwargs)
+                                                kwargs['misclassification_policy'], device,
+                                                attack_config, dataset.start, dataset.stop,
+                                                kwargs)
 
-    print('===Standard Result===')
-    complete_pool = result_dataset.simulate_pooling(attack_names)
-    complete_pool.print_stats()
-    print()
-
-    # How much does a single attack contribute to the overall quality?
-    print('===Attack Dropping Effects===')
-
-    for attack_name in attack_names:
-        other_attack_names = [x for x in attack_names if x != attack_name]
-        pool_adversarial_dataset = result_dataset.simulate_pooling(
-            other_attack_names)
-
-        print(f'Without {attack_name}:')
-
-        pool_adversarial_dataset.print_stats()
+    if not kwargs['no_stats']:
+        print('===Standard Result===')
+        complete_pool = result_dataset.simulate_pooling(attack_names)
+        complete_pool.print_stats()
         print()
 
-    attack_powerset = utils.powerset(attack_names)
+        # How much does a single attack contribute to the overall quality?
+        print('===Attack Dropping Effects===')
 
-    print('===Pool Stats===')
-    for attack_set in attack_powerset:
-        print(f'Pool {attack_set}:')
+        for attack_name in attack_names:
+            other_attack_names = [x for x in attack_names if x != attack_name]
+            pool_adversarial_dataset = result_dataset.simulate_pooling(
+                other_attack_names)
 
-        pool_adversarial_dataset = result_dataset.simulate_pooling(attack_set)
-        pool_adversarial_dataset.print_stats()
+            print(f'Without {attack_name}:')
+
+            pool_adversarial_dataset.print_stats()
+            print()
+
+        attack_powerset = utils.powerset(attack_names, False)
+
+        print('===Pool Stats===')
+        for attack_set in attack_powerset:
+            print(f'Pool {attack_set}:')
+
+            pool_adversarial_dataset = result_dataset.simulate_pooling(attack_set)
+            pool_adversarial_dataset.print_stats()
+            print()
+
+        print()
+        print('===Best Pools===')
         print()
 
-    print()
-    print('===Best Pools===')
-    print()
+        for n in range(1, len(attack_names) + 1):
+            print(f'==Pool of size {n}==')
+            print()
 
-    for n in range(1, len(attack_names) + 1):
-        print(f'==Pool of size {n}==')
+            n_size_sets = [
+                subset for subset in attack_powerset if len(subset) == n]
+            n_size_pools = [result_dataset.simulate_pooling(
+                subset) for subset in n_size_sets]
+
+            attack_success_rates = np.array(
+                [x.attack_success_rate for x in n_size_pools])
+            median_distances = np.array(
+                [np.median(x.successful_distances) for x in n_size_pools])
+            average_distances = np.array(
+                [np.average(x.successful_distances) for x in n_size_pools])
+
+            best_by_success_rate = np.argmax(attack_success_rates)
+
+            print(
+                f'Best pool of size {n} by success rate: {n_size_sets[best_by_success_rate]}')
+            n_size_pools[best_by_success_rate].print_stats()
+            print()
+
+            best_by_median_distance = np.argmin(median_distances)
+
+            print(
+                f'Best pool of size {n} by successful median distance: {n_size_sets[best_by_median_distance]}')
+            n_size_pools[best_by_median_distance].print_stats()
+            print()
+
+            best_by_average_distance = np.argmin(average_distances)
+            print(
+                f'Best pool of size {n} by successful average distance: {n_size_sets[best_by_average_distance]}')
+            n_size_pools[best_by_average_distance].print_stats()
+            print()
+
+        print('===Attack Ranking Stats===')
+
+        for attack_name in attack_names:
+            print(f'Attack {attack_name}:')
+
+            attack_ranking_stats = result_dataset.attack_ranking_stats(attack_name)
+
+            for position, rate in [x for x in attack_ranking_stats.items() if x[0] != 'failure']:
+                print('The attack is {}°: {:.2f}%'.format(
+                    position + 1, rate * 100.0))
+
+            print('The attack fails: {:.2f}%'.format(
+                attack_ranking_stats['failure'] * 100.0))
+            print()
+
         print()
+        print('===One vs One Comparison===')
 
-        n_size_sets = [
-            subset for subset in attack_powerset if len(subset) == n]
-        n_size_pools = [result_dataset.simulate_pooling(
-            subset) for subset in n_size_sets]
+        victory_matrix = result_dataset.pairwise_comparison()
 
-        attack_success_rates = np.array(
-            [x.attack_success_rate for x in n_size_pools])
-        median_distances = np.array(
-            [np.median(x.successful_distances) for x in n_size_pools])
-        average_distances = np.array(
-            [np.average(x.successful_distances) for x in n_size_pools])
-
-        best_by_success_rate = np.argmax(attack_success_rates)
-
-        print(
-            f'Best pool of size {n} by success rate: {n_size_sets[best_by_success_rate]}')
-        n_size_pools[best_by_success_rate].print_stats()
-        print()
-
-        best_by_median_distance = np.argmin(median_distances)
-
-        print(
-            f'Best pool of size {n} by successful median distance: {n_size_sets[best_by_median_distance]}')
-        n_size_pools[best_by_median_distance].print_stats()
-        print()
-
-        best_by_average_distance = np.argmin(average_distances)
-        print(
-            f'Best pool of size {n} by successful average distance: {n_size_sets[best_by_average_distance]}')
-        n_size_pools[best_by_average_distance].print_stats()
-        print()
-
-    print('===Attack Ranking Stats===')
-
-    for attack_name in attack_names:
-        print(f'Attack {attack_name}:')
-
-        attack_ranking_stats = result_dataset.attack_ranking_stats(attack_name)
-
-        for position, rate in [x for x in attack_ranking_stats.items() if x[0] != 'failure']:
-            print('The attack is {}°: {:.2f}%'.format(
-                position + 1, rate * 100.0))
-
-        print('The attack fails: {:.2f}%'.format(
-            attack_ranking_stats['failure'] * 100.0))
-        print()
-
-    print()
-    print('===One vs One Comparison===')
-
-    victory_matrix = result_dataset.pairwise_comparison()
-
-    for winner, loser_dict in victory_matrix.items():
-        for loser, rate in loser_dict.items():
-            print('{} beats {}: {:.2f}%'.format(winner, loser, rate * 100.0))
+        for winner, loser_dict in victory_matrix.items():
+            for loser, rate in loser_dict.items():
+                print('{} beats {}: {:.2f}%'.format(winner, loser, rate * 100.0))
 
     if kwargs['save_to'] is not None:
         utils.save_zip(result_dataset, kwargs['save_to'])
