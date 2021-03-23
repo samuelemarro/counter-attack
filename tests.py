@@ -79,6 +79,7 @@ def attack_test(model, attack, loader, p, misclassification_policy, device, gene
     assert len(all_images) == len(all_true_labels)
     assert len(all_images) == len(all_adversarials)
 
+    # TODO: Dopo images deve passare labels
     return adversarial_dataset.AdversarialDataset(all_images, all_true_labels, all_adversarials, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs)
 
 

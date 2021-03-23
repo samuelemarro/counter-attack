@@ -55,6 +55,7 @@ def train_approximator(**kwargs):
     val_dataset = None
 
     if kwargs['from_adversarial_dataset']:
+        # TODO: Controllare
         train_dataset = train_dataset.to_distance_dataset()
     elif isinstance(train_dataset, ad.AdversarialDataset):
         raise click.BadArgumentUsage('Expected a distance dataset as training dataset, got an adversarial dataset. '
@@ -69,6 +70,7 @@ def train_approximator(**kwargs):
             kwargs['domain'], kwargs['validation_dataset'], allow_standard=False)
 
         if kwargs['val_from_adversarial_dataset']:
+            # TODO: controllare
             val_dataset = val_dataset.to_distance_dataset()
         elif isinstance(val_dataset, ad.AdversarialDataset):
             raise click.BadArgumentUsage('Expected a distance dataset as validation dataset, got an adversarial dataset. '

@@ -46,6 +46,7 @@ def accuracy(**kwargs):
         kwargs['start'], kwargs['stop']))
 
     if kwargs['from_adversarial_dataset']:
+        # TODO: Correggere
         dataset = dataset.to_adversarial_training_dataset()
         logger.warning(
             'The accuracy will be computed only on the successful adversarial examples.')

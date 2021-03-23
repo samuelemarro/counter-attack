@@ -157,9 +157,11 @@ def compare(**kwargs):
 
             attack_ranking_stats = result_dataset.attack_ranking_stats(attack_name)
 
-            for position, rate in [x for x in attack_ranking_stats.items() if x[0] != 'failure']:
+            for position in range(len(attack_names)):
                 print('The attack is {}°: {:.2f}%'.format(
-                    position + 1, rate * 100.0))
+                    position + 1, attack_ranking_stats[position] * 100.0))
+                print('The attack is {}° ex aequo: {:.2f}%'.format(
+                    position + 1, attack_ranking_stats[str(position) + '_ex_aequo'] * 100.0))
 
             print('The attack fails: {:.2f}%'.format(
                 attack_ranking_stats['failure'] * 100.0))
