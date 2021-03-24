@@ -40,6 +40,7 @@ def attack_test(model, attack, loader, p, misclassification_policy, device, gene
     model.to(device)
 
     all_images = []
+    all_labels = []
     all_true_labels = []
     all_adversarials = []
 
@@ -67,20 +68,23 @@ def attack_test(model, attack, loader, p, misclassification_policy, device, gene
 
         # Move to CPU
         images = images.cpu()
+        labels = labels.cpu()
         true_labels = true_labels.cpu()
+
         for i in range(len(adversarials)):
             if adversarials[i] is not None:
                 adversarials[i] = adversarials[i].cpu()
 
         all_images += list(images)
+        all_labels += list(labels)
         all_true_labels += list(true_labels)
         all_adversarials += list(adversarials)
 
+    assert len(all_images) == len(all_labels)
     assert len(all_images) == len(all_true_labels)
     assert len(all_images) == len(all_adversarials)
 
-    # TODO: Dopo images deve passare labels
-    return adversarial_dataset.AdversarialDataset(all_images, all_true_labels, all_adversarials, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs)
+    return adversarial_dataset.AdversarialDataset(all_images, all_labels, all_true_labels, all_adversarials, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs)
 
 
 def mip_test(model, attack, loader, p, misclassification_policy, device, generation_kwargs, attack_configuration, start, stop, pre_adversarial_dataset=None):

@@ -79,8 +79,6 @@ Lista dei moduli ancora da controllare
 - commands
     - accuracy.py (quasi fatto)
     - attack_matrix.py [p]
-    - attack.py (manca attack_test)
-    - compare.py (manca l'adversarial dataset)
     - cross_validation.py [p]
     - distance_dataset.py [p]
     - evasion.py [p]
@@ -95,7 +93,7 @@ Lista dei moduli ancora da controllare
     - cifar.py
 - adversarial_dataset.py
     Fatti:
-    - AttackDataset
+    - AttackDataset (manca la conversione in AdversarialTrainingDataset)
     - AttackComparisonDataset
 - detectors.py [p]
 - full_stack_automation.py [?]
@@ -108,6 +106,7 @@ Lista dei moduli ancora da controllare
     - parse_attack
 - tests.py
     Fatti:
+    - attack
     - multiple_attack
 - training.py (in teoria avevo già fatto una prima passata)
 - utils.py
@@ -133,8 +132,8 @@ Paths:
 - train_classifier (quasi fatto)
 - prune_relu
 - prune_weights
-- attack (75%)
-- compare (90%)
+- attack (100%)
+- compare (100%)
 - mip
 - perfect_approximation
 

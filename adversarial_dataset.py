@@ -33,7 +33,7 @@ class AdversarialDataset(data.Dataset):
 
     @property
     def successful_count(self):
-        return len([x for x in self.adversarials if x is not None])
+        return len(self.successful_indices)
 
     @property
     def successful_distances(self):
@@ -70,6 +70,7 @@ class AdversarialDataset(data.Dataset):
 
         return AdversarialDistanceDataset(self.genuines, final_distances)
 
+    @property
     def successful_adversarials(self):
         successful_genuines = []
         successful_labels = []
@@ -85,10 +86,14 @@ class AdversarialDataset(data.Dataset):
 
         return successful_genuines, successful_labels, successful_true_labels, successful_adversarials
 
+    @property
+    def successful_indices(self):
+        return [i for i in range(len(self)) if self.adversarials[i] is not None]
+
 # TODO: Add/rewrite AdversarialTrainingDataset
     """
     def to_adversarial_training_dataset(self, use_true_labels):
-        _, successful_labels, successful_true_labels, successful_adversarials = self.successful_adversarials()
+        _, successful_labels, successful_true_labels, successful_adversarials = self.successful_adversarials
 
         if use_true_labels:
             used_labels = successful_true_labels
@@ -99,6 +104,7 @@ class AdversarialDataset(data.Dataset):
     """
 
     def index_of_genuine(self, genuine, rtol=1e-5, atol=1e-8):
+        assert len(genuine).shape == 3
         genuine = genuine.cpu()
 
         for i in range(len(self)):
