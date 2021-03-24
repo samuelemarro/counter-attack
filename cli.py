@@ -49,7 +49,6 @@ def main():
 
 # TODO: accuracy.py che fa l'override di dataset per --from-adversarial-dataset non è bellissimo
 # TODO: Droppare completamente il supporto per L2?
-# TODO: Il seeding dovrebbe anche impostare np.random
 # TODO: Parametri dei vari attacchi
 # TODO: Scegliere una misclassification_policy
 

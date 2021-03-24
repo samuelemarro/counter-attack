@@ -32,6 +32,24 @@ class AdversarialDataset(data.Dataset):
         self.generation_kwargs = generation_kwargs
 
     @property
+    def attack_success_rate(self):
+        return self.successful_count / len(self.genuines)
+
+    def to_distance_dataset(self, failure_value=None):
+        successful_distances = list(self.successful_distances)
+        final_distances = []
+        for i in range(len(self.genuines)):
+            if self.adversarials[i] is None:
+                final_distances.append(failure_value)
+            else:
+                final_distances.append(successful_distances.pop(0))
+
+        # Check that all successful distances were matched to a successful adversarial
+        assert len(successful_distances) == 0
+
+        return AdversarialDistanceDataset(self.genuines, final_distances)
+
+    @property
     def successful_count(self):
         return len(self.successful_indices)
 
@@ -51,24 +69,6 @@ class AdversarialDataset(data.Dataset):
             return utils.adversarial_distance(successful_genuines, successful_adversarials, self.p)
         else:
             return torch.empty(0, dtype=torch.float32)
-
-    @property
-    def attack_success_rate(self):
-        return self.successful_count / len(self.genuines)
-
-    def to_distance_dataset(self, failure_value=None):
-        successful_distances = list(self.successful_distances)
-        final_distances = []
-        for i in range(len(self.genuines)):
-            if self.adversarials[i] is None:
-                final_distances.append(failure_value)
-            else:
-                final_distances.append(successful_distances.pop(0))
-
-        # Check that all successful distances were matched to a successful adversarial
-        assert len(successful_distances) == 0
-
-        return AdversarialDistanceDataset(self.genuines, final_distances)
 
     @property
     def successful_adversarials(self):

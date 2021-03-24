@@ -37,6 +37,9 @@ def attack_test(model, attack, loader, p, misclassification_policy, device, gene
     logger.debug('Misclassification policy: %s.', misclassification_policy)
     logger.debug('Blind trust: %s', blind_trust)
 
+    if misclassification_policy == 'remove':
+        logger.warning('Remember that using "remove" as a misclassification policy can interfere with dataset merging.')
+
     model.to(device)
 
     all_images = []
@@ -89,6 +92,10 @@ def attack_test(model, attack, loader, p, misclassification_policy, device, gene
 
 def mip_test(model, attack, loader, p, misclassification_policy, device, generation_kwargs, attack_configuration, start, stop, pre_adversarial_dataset=None):
     assert not attack.targeted
+
+    if misclassification_policy == 'remove':
+        logger.warning('Remember that using "remove" as a misclassification policy can interfere with dataset merging.')
+
     model.to(device)
 
     all_images = []
@@ -174,6 +181,9 @@ def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p
     assert all(attack.predict == defended_model.predict for attack,
                defended_model in zip(attacks, defended_models))
 
+    if misclassification_policy == 'remove':
+        logger.warning('Remember that using "remove" as a misclassification policy can interfere with dataset merging.')
+
     model.to(device)
 
     for defended_model in defended_models:
@@ -226,6 +236,9 @@ def multiple_attack_test(model, attack_names, attacks, loader, p, misclassificat
     assert len(attack_names) == len(attacks)
 
     logger.debug('Running multiple attack tests with attacks %s.', attack_names)
+
+    if misclassification_policy == 'remove':
+        logger.warning('Remember that using "remove" as a misclassification policy can interfere with dataset merging.')
 
     model.to(device)
 
