@@ -33,11 +33,6 @@ def main():
 
 # TODO: Devo abbandonare l'idea di sapere subito se un tempo è feasible? Se è così, devo permettere di passare un tempo diverso di esplorazione
 
-# TODO: --adversarial-eps-growth-start = 1 dovrebbe non fare nessuna differenza, ma non sono sicuro
-# TODO: Dare un nome di diverso a --adversarial-growth-eps-start?
-
-# TODO: Aggiungere un valore di default di eps che causi errore se non viene overridato
-
 # TODO: Tanto logging
 
 # TODO: Formalizzare full_stack.py
@@ -53,15 +48,8 @@ def main():
 
 
 # TODO: Cercare i valori corretti di l1 & co. tramite line search?
-# Appunto: CIFAR10-A ha avuto out-of-RAM ed è stato riavviato a partire da 85. è indietro di 35-40 epochs.
-# TODO: Passare a 1-indexing per le epochs nel salvataggio checkpoint?
-# TODO: Evitare duplicazione del codice in train/val?
 # TODO: topk e random_target hanno delle sincronizzazioni
 # TODO: Carlini Linf usa parametri molto più tranquilli nell'implementazione originale
-# TODO: parsing non ha modo di sapere qual è il device corretto per Carlini Linf
-# TODO: Ci sono pezzi del codice che danno per scontato che le immagini siano 4D? Non è un problema, anche MNIST ha una batch dim
-# TODO: torch.max non ha il comportamento atteso?
-# TODO: Verificare che il nuovo .cfg abbia senso
 # TODO: np.seed è deprecato
 # TODO: La misclassification policy "remove" deve restituirli come None?
 # TODO [p]: Debuggare il comportamento targeted
@@ -72,16 +60,10 @@ def main():
 # TODO: Il preprocessor si basa sulla media di tutti i sample del training set, nonostante parte di essi vengano usati poi
 # per il validation set. Questo non è particolarmente grave, ma è qualcosa su cui riflettere
 
-# TODO: Breaking bug: training.py caricava a ogni epoch il best model [fixed]. Rifare addestramenti standard
-# TODO: Breaking bug: relu_stable calcolava RS sui clean, non sugli adversarials [fixed, da debuggare]
-# TODO: Breaking bug: relu_stable usa xent media, non sommata (mentre usa la sommata per l1?) [fixed, da debuggare] -> Anche io, a quanto pare
-# TODO: Breaking bug: np.random.choice può estrarre più volte la stessa cosa [fixed]
-# Vista la grande quantità di breaking bugs, si consiglia un confronto completo con relu_stable
-# TODO: Breaking bug: L1 viene calcolata e scalata in maniera diversa [fixed, da debuggare]
 # TODO: Breaking bug: ReLU Pruning viene fatto in maniera diversa. Confrontare quello e weight pruning con l'originale
 # TODO: Perché l'implementazione originale ha anche un modello masked?
 
-# TODO: Aggiungere --keep-best a training?
+# TODO: Rifare tutti gli addestramenti
 
 # TODO: Nell'originale di Xiao e Madry non usano manco la normalisation
 
@@ -116,8 +98,7 @@ Lista dei moduli ancora da controllare
     - perfect_approximation.py [p]
     - prune_relu.py [da fare, ha un breaking]
     - prune_weights.py
-    - train_approximator.py [p, manca supporto --choose-best]
-    - train_classifier.py [manca supporto --choose-best]
+    - train_approximator.py [p]
     - tune_mip.py [p?]
 - models
     - cifar.py
@@ -151,6 +132,7 @@ Lista dei moduli ancora da controllare
     - model_to_linear_sequence
     - EarlyStop [mancano test generali]
     - ValidationTracker [mancano test generali]
+    - conv_to_matrix [manca il TODO legato a RS e i test generali]
 - utils.py
     Fatti:
     - save_zip

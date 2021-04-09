@@ -14,20 +14,24 @@ import utils
 logger = logging.getLogger(__name__)
 
 def conv_to_matrix(conv, image_shape, output_shape, device):
-    # TODO: Controllare molto bene la correttezza teorica
-    # TODO: Ricorda che i primi controlli sulla retropropagazione li ho già fatti l' 8/4/21
-    identity = torch.eye(np.prod(image_shape).item()).reshape(
-        [-1] + list(image_shape)).to(device)
+    # Since a convolution is, at its essence, a matrix multiplication,
+    # computing conv(I) (with no bias) gives W x I, aka the matrix
+    # representing the convolution
+    identity = torch.eye(np.prod(image_shape), device=device).reshape(
+        [-1] + list(image_shape))
+
+    # No bias (since it is computed separately)
     output = F.conv2d(identity, conv.weight, None, conv.stride, conv.padding)
-    W = output.reshape(-1, np.prod(output_shape).item())
+    W = output.reshape(-1, np.prod(output_shape))
     # In theory W should be transposed, but the algorithm requires it to be left as it is
+
+    # b is the bias tensor repeated for every pixel of the output
     b = torch.stack(
         [torch.ones(output_shape[1:], device=device) * bi for bi in conv.bias])
-    #b = b.reshape(-1, np.prod(output_shape[1:]).item())
+
     b = b.reshape(-1)
-    # print(b.shape)
-    # print(conv.bias.shape)
-    # print('===')
+
+    # TODO: Capire come si relaziona la trasposizione con RS
 
     return W, b
 
