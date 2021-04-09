@@ -144,6 +144,7 @@ Lista dei moduli ancora da controllare
     Fatti:
     - split_dataset
     - IndexedDataset
+    - StartStopDataset
     - l1_loss
     - train [manca da pulire i print e un po' di test generali]
     - adversarial_training

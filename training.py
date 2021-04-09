@@ -482,10 +482,19 @@ class StartStopDataset(torch.utils.data.Dataset):
         if isinstance(idx, slice):
             if self.start + idx.stop > self.stop:
                 raise ValueError('Slice stop is bigger than dataset stop.')
+            if idx.start < 0 or idx.stop < 0 or idx.step < 0:
+                raise NotImplementedError('Negative slices are not supported.')
             slice_ = slice(self.start + idx.start,
                            self.start + idx.stop, idx.step)
             return self.dataset[slice_]
         else:
+            if isinstance(idx, int):
+                if idx >= self.stop:
+                    raise ValueError('Index out of bounds.')
+                if idx < 0:
+                    raise NotImplementedError('Negative indices are not supported.')
+            # Performing checks on tensors could trigger CUDA synchronizations,
+            # which would slow down massively the execution
             return self.dataset[self.start + idx]
 
     def __len__(self):
