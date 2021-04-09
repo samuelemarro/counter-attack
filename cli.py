@@ -145,10 +145,11 @@ Lista dei moduli ancora da controllare
     - split_dataset
     - IndexedDataset
     - l1_loss
-    - train [mancano i TODO, pulire i print e un po' di test generali]
+    - train [manca da pulire i print e un po' di test generali]
     - adversarial_training
-    - model_to_linear_sequence [mancano i TODO]
-    - EarlyStop [in corso]
+    - model_to_linear_sequence
+    - EarlyStop [mancano test generali]
+    - ValidationTracker [mancano test generali]
 - utils.py
     Fatti:
     - save_zip

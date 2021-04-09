@@ -109,7 +109,7 @@ def train_approximator(**kwargs):
     training.train(model, train_dataloader, optimiser, loss, kwargs['epochs'], kwargs['device'],
                       val_loader=val_dataloader, l1_regularization=kwargs['l1_regularization'], early_stopping=early_stopping,
                       checkpoint_every=kwargs['checkpoint_every'], checkpoint_path=checkpoint_path,
-                      loaded_checkpoint=loaded_checkpoint)
+                      loaded_checkpoint=loaded_checkpoint, choose_best=kwargs['choose_best'])
 
     save_to = kwargs['save_to']
     pathlib.Path(save_to).parent.mkdir(parents=True, exist_ok=True)

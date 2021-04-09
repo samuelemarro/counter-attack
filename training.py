@@ -278,7 +278,7 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
           l1_regularization=0, rs_regularization=0, rs_eps=0, rs_minibatch_size=None, rs_start_epoch=0,
           early_stopping=None, attack=None, attack_ratio=0.5, attack_p=None, attack_eps=None,
           attack_eps_growth_epoch=0, attack_eps_growth_start=None, checkpoint_every=None, checkpoint_path=None,
-          loaded_checkpoint=None):
+          loaded_checkpoint=None, choose_best=False):
     # Perform basic checks
     if early_stopping is not None and val_loader is None:
         raise ValueError('Early stopping requires a validation loader.')
@@ -286,6 +286,11 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
         raise ValueError('attack_eps_growth_start should be smaller than or equal to rs_eps.')
     if (checkpoint_every is None) ^ (checkpoint_path is None):
         raise ValueError('checkpoint_every and checkpoint_path should be either both None or both not None.')
+
+    if choose_best and val_loader is None:
+        raise ValueError('choose_best requires a validation loader')
+
+    validation_tracker = ValidationTracker() if choose_best else None
 
     # Prepare the epsilon values
     if attack_eps_growth_epoch in [0, 1]:
@@ -310,11 +315,18 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
         optimiser.load_state_dict(loaded_checkpoint['optimiser'])
 
         if (early_stopping is None) ^ (loaded_checkpoint['early_stopping'] is None):
-            logger.warning('There is a mismatch between the current early_stopping and '
-                           'the saved one.')
+            raise RuntimeError('There is a mismatch between the current early_stopping and '
+                               'the saved one.')
 
         if early_stopping is not None and loaded_checkpoint['early_stopping'] is not None:
             early_stopping.load_state_dict(loaded_checkpoint['early_stopping'])
+
+        if (validation_tracker is None) ^ (loaded_checkpoint['validation_tracker'] is None):
+            raise RuntimeError('There is a mismatch between the current validation_tracker and '
+                               'the saved one.')
+
+        if validation_tracker is not None and loaded_checkpoint['validation_tracker'] is not None:
+            validation_tracker.load_state_dict(loaded_checkpoint['validation_tracker'])
 
     input_shape = None
 
@@ -415,9 +427,12 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
             iterator.set_description('Training | Validation Loss: {:.3e}'.format(
                 val_loss.cpu().detach().item()))
 
+            if validation_tracker is not None:
+                validation_tracker(val_loss, model)
+
             if early_stopping is not None:
                 print('Checking early stopping. Loss: ', val_loss)
-                early_stopping(val_loss, model)
+                early_stopping(val_loss)
 
                 if early_stopping.stop:
                     print('Early stop triggered')
@@ -435,16 +450,14 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
                 'optimiser' : optimiser.state_dict(),
                 'epoch' : epoch, # Epochs are stored internally using 0-indexing
                 'model' : model.state_dict(),
-                'early_stopping' : None if early_stopping is None else early_stopping.state_dict()
+                'early_stopping' : None if early_stopping is None else early_stopping.state_dict(),
+                'validation_tracker' : None if validation_tracker is None else validation_tracker.state_dict()
             }, current_epoch_path)
 
-    # TODO: Supporto best model?
-    # TODO: Si fa che si prende il best state dict?
-    # If you are using early_stopping, load the best model
-    if early_stopping is not None:
+    if validation_tracker is not None:
         print('Loading best state dict')
-        logger.debug('Early stopping: Loading best state dict.')
-        model.load_state_dict(early_stopping.best_state_dict)
+        logger.debug('Validation tracker: Loading best state dict.')
+        model.load_state_dict(validation_tracker.best_state_dict)
 
 class StartStopDataset(torch.utils.data.Dataset):
     def __init__(self, dataset, start=None, stop=None):
@@ -507,67 +520,103 @@ def split_dataset(original_dataset, val_split, shuffle=True):
 
     return train_dataset, val_dataset
 
-class EarlyStopping:
-    """Early stops the training if validation loss doesn't improve after a given patience."""
+# Note: ValidationTracker stores the best overall state_dict without
+# considering delta. In other words, even if a nonzero loss improvement is too
+# small to reset EarlyStopping's counter, it will be big enough to be
+# registered by ValidationTracker.
 
-    def __init__(self, patience, delta=0):
+class ValidationTracker:
+    def __init__(self):
+        self.best_loss = None
+        self.best_state_dict = None
+
+    def __call__(self, val_loss, model):
+        val_loss = val_loss.cpu().detach().item()
+
+        if self.best_loss is None or val_loss < self.best_loss:
+            self.best_loss = val_loss
+            self.best_state_dict = model.state_dict()
+        print('Tracking best loss: ', self.best_loss)
+
+    def state_dict(self):
+        return {
+            'best_loss' : self.best_loss,
+            'best_state_dict' : self.best_state_dict
+        }
+
+    def load_state_dict(self, state_dict):
+        self.best_loss = state_dict['best_loss']
+        self.best_state_dict = state_dict['best_state_dict'] 
+
+class EarlyStopping:
+    """
+    Early stops the training if validation loss doesn't improve after a given patience.
+    Follows the same semantics as Keras' implementation.
+    """
+
+    def __init__(self, patience, delta=0, allow_different_config=False):
         """
         Args:
             patience (int): How long to wait after last time validation loss improved.
             delta (float): Minimum change in the monitored quantity to qualify as an improvement.
-                            Default: 0
+                           Default: 0
+            allow_different_config (bool) : If True, loading a state_dict with different values
+                                            for patience and delta will not throw an error.
         """
         self.patience = patience
         self.counter = 0
-        self.best_score = None
+        self.best_loss = None
         self.stop = False
         self.delta = delta
-        self.best_state_dict = None
+        self.allow_different_config = allow_different_config
 
-    def __call__(self, val_loss, model):
-        # Higher score means better results
+    def __call__(self, val_loss):
         val_loss = val_loss.cpu().detach().item()
-        score = -val_loss
 
         print('Pre-counter: ', self.counter)
-        if self.best_score is None:
+        if self.best_loss is None:
             # First call
-            self.best_score = score
-            self.save_checkpoint(model)
-        # TODO: <= or < ?
-        elif score < self.best_score + self.delta:
+            self.best_loss = val_loss
+            assert self.counter == 0
+        elif val_loss < self.best_loss - self.delta:
+            # Significant improvement, reset the counter
+            self.best_loss = val_loss
+            self.counter = 0
+        else:
             # Not a significant improvement, increase the counter
             self.counter += 1
             if self.counter >= self.patience:
                 # Too many calls without improvement, stop
                 self.stop = True
-        else:
-            # Significant improvement, reset the counter
-            self.best_score = score
-            self.save_checkpoint(model)
-            self.counter = 0
-        # TODO: Tecnicamente con patience > 0 non salva il modello migliore
-        print('Best score: ', self.best_score)
+        print('Best loss: ', self.best_loss)
         print('Counter: ', self.counter)
-
-    def save_checkpoint(self, model):
-        '''Saves model when validation loss decreases.'''
-        self.best_state_dict = model.state_dict()
 
     def state_dict(self):
         return {
             'patience' : self.patience,
             'counter' : self.counter,
-            'best_score' : self.best_score,
+            'best_loss' : self.best_loss,
             'stop' : self.stop,
-            'delta' : self.delta,
-            'best_state_dict' : self.best_state_dict
+            'delta' : self.delta
         }
-    
+
     def load_state_dict(self, state_dict):
+        if self.patience != state_dict['patience']:
+            if self.allow_different_config:
+                logger.warning('Loading a different value for patience.')
+            else:
+                raise RuntimeError('Found a different value for patience. If this is '
+                                   'intentional, initialise with allow_different_config=True.')
+
+        if self.delta != state_dict['delta']:
+            if self.allow_different_config:
+                logger.warning('Loading a different value for delta.')
+            else:
+                raise RuntimeError('Found a different value for delta. If this is '
+                                   'intentional, initialise with allow_different_config=True.')
+
         self.patience = state_dict['patience']
         self.counter = state_dict['counter']
-        self.best_score = state_dict['best_score']
+        self.best_loss = state_dict['best_loss']
         self.stop = state_dict['stop']
         self.delta = state_dict['delta']
-        self.best_state_dict = state_dict['best_state_dict']

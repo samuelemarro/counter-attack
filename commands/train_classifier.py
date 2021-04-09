@@ -234,7 +234,7 @@ def train_classifier(**kwargs):
                       attack_eps=kwargs['adversarial_eps'], attack_eps_growth_epoch=kwargs['adversarial_eps_growth_epoch'],
                       attack_eps_growth_start=kwargs['adversarial_eps_growth_start'],
                       checkpoint_every=kwargs['checkpoint_every'], checkpoint_path=checkpoint_path,
-                      loaded_checkpoint=loaded_checkpoint)
+                      loaded_checkpoint=loaded_checkpoint, choose_best=kwargs['choose_best'])
 
     save_to = kwargs['save_to']
     pathlib.Path(save_to).parent.mkdir(parents=True, exist_ok=True)
