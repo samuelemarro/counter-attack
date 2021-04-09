@@ -42,7 +42,6 @@ def main():
 
 # TODO: Formalizzare full_stack.py
 # TODO: LABEL DEI MISCLASSIFIED (SOPRATTUTTO COME GESTIRLE NELL'ADV.TRAINING) (Nota: nell'adversarial training non dà problemi in teoria, check)
-# TODO: Verificare che attack_comparison_test funzioni ancora
 
 # TODO: Finire il debugging di attacks/mip.py
 # TODO: Il comando mip è un comando a sé da debuggare!
@@ -68,6 +67,38 @@ def main():
 # TODO [p]: Debuggare il comportamento targeted
 # Appunto: PGD è abbastanza decente con i parametri da training
 
+# TODO: ADVERSARIAL TRAINING NON USA IL DATA AUGMENTATION
+
+# TODO: Il preprocessor si basa sulla media di tutti i sample del training set, nonostante parte di essi vengano usati poi
+# per il validation set. Questo non è particolarmente grave, ma è qualcosa su cui riflettere
+
+# TODO: Breaking bug: training.py caricava a ogni epoch il best model [fixed]. Rifare addestramenti standard
+# TODO: Breaking bug: relu_stable calcolava RS sui clean, non sugli adversarials [fixed, da debuggare]
+# TODO: Breaking bug: relu_stable usa xent media, non sommata (mentre usa la sommata per l1?) [fixed, da debuggare] -> Anche io, a quanto pare
+# TODO: Breaking bug: np.random.choice può estrarre più volte la stessa cosa [fixed]
+# Vista la grande quantità di breaking bugs, si consiglia un confronto completo con relu_stable
+# TODO: Breaking bug: L1 viene calcolata e scalata in maniera diversa [fixed, da debuggare]
+# TODO: Breaking bug: ReLU Pruning viene fatto in maniera diversa. Confrontare quello e weight pruning con l'originale
+# TODO: Perché l'implementazione originale ha anche un modello masked?
+
+# TODO: Aggiungere --keep-best a training?
+
+# TODO: Nell'originale di Xiao e Madry non usano manco la normalisation
+
+# Appunto: conv_to_matrix preserva il grafo dei gradienti e fare la l1 sul linear è equivalente a fare una l1 sulla conv e
+# moltiplicare per la dimensione (senza channel) dell'output. Nota però che linearized_model non è
+# un leaf node, quindi non ha un grad
+
+# Appunto: è giusto che se calcolo con la weight matrix ottengo un gradiente uguale a 49 volte il gradiente di conv?
+# Sì, perché supponendo di avere il gradiente di una singola applicazione di conv, essa corrisponde a selezionare una zona, prendere
+# input_channels canali, moltiplicarli per la convoluzione e ottenere un pixel con output_channels canali. Ciò viene ripetuto per ogni
+# pixel dell'output, ovvero 7x7
+# La versione matriciale semplicemente esplicita questa ripetizione, ottenendo una matrice che associa tutto l'input a tutto l'output, ma dove
+# ogni pixel di output è influenzato esclusivamente dalla regione che avrebbe considerato la convoluzione.
+
+# TODO: Tecnicamente il checkpoint dovrebbe salvare lo stato attuale di random, ma anche se non è diverso non dovrebbe essere grave
+# TODO: Aggiungere supporto per il --choose-best.
+
 """
 Lista dei moduli ancora da controllare
 
@@ -83,10 +114,10 @@ Lista dei moduli ancora da controllare
     - evasion.py [p]
     - mip.py
     - perfect_approximation.py [p]
-    - prune_relu.py
+    - prune_relu.py [da fare, ha un breaking]
     - prune_weights.py
-    - train_approximator.py [p]
-    - train_classifier.py
+    - train_approximator.py [p, manca supporto --choose-best]
+    - train_classifier.py [manca supporto --choose-best]
     - tune_mip.py [p?]
 - models
     - cifar.py
@@ -98,16 +129,26 @@ Lista dei moduli ancora da controllare
 - full_stack_automation.py [?]
 - full_stack.py [?]
 - mip_interface.jl
-- parsing.py (manca solo detectors [p] e validazione)
+- parsing.py (manca solo detectors [p])
     Controllati:
     - parse_dataset
     - parse_optimiser
     - parse_attack
+    - validate_lp_distance
+    - ParameterList
 - tests.py
     Fatti:
     - attack
     - multiple_attack
 - training.py (in teoria avevo già fatto una prima passata)
+    Fatti:
+    - split_dataset
+    - IndexedDataset
+    - l1_loss
+    - train [mancano i TODO, pulire i print e un po' di test generali]
+    - adversarial_training
+    - model_to_linear_sequence [mancano i TODO]
+    - EarlyStop [in corso]
 - utils.py
     Fatti:
     - save_zip

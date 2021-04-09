@@ -63,14 +63,19 @@ training_options = [
                  help='Uses a portion (0-1) of the train dataset as validation dataset. 0 disables the split. '
                  'Mutually exclusive with --validation-dataset.'),
     click.option('--early-stopping', type=click.IntRange(0, None), default=0, show_default=True,
-                 help='The patience of early stopping. 0 disables early stopping.'),
+                 help='The patience of early stopping. 0 disables early stopping. Requires either '
+                 '--validation-dataset or --validation-split.'),
     click.option('--early-stopping-delta', type=float, default=0, show_default=True,
                  help='The minimum improvement required to reset early stopping\'s patience.'),
     click.option('--shuffle', type=bool, default=True, show_default=True),
     click.option('--checkpoint-every', type=click.IntRange(1), default=None,
                 help='How often the program saves a checkpoint.'),
     click.option('--load-checkpoint', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None,
-                help='If passed, the program will load an existing checkpoint.')
+                help='If passed, the program will load an existing checkpoint.'),
+    click.option('--choose-best', is_flag=True,
+                help='If passed, the program will save the state_dict with the best validation loss, otherwise '
+                'the state_dict of the last epoch will be saved. Requires either --validation-dataset or '
+                '--validation-split.')
 ]
 
 

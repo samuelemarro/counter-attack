@@ -321,6 +321,7 @@ def clip_adversarial(adversarial, genuine, epsilon, input_min=0, input_max=1):
     adversarial = fast_boolean_choice(adversarial, clipped_lower, replace_lower, reshape=False)
     adversarial = fast_boolean_choice(adversarial, clipped_upper, replace_upper, reshape=False)
 
+    # Note: Technically the additional clip is unnecessary and is only used as a safety measure
     return torch.clip(adversarial, min=input_min, max=input_max)
 
 def create_label_dataset(model, images, batch_size):

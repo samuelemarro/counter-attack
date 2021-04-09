@@ -7,7 +7,6 @@ import torch
 import attacks
 import parsing
 import tests
-import torch_utils
 import utils
 
 logger = logging.getLogger(__name__)
@@ -34,11 +33,6 @@ logger = logging.getLogger(__name__)
 @click.option('--misclassification-policy', type=click.Choice(parsing.misclassification_policies),
               default='remove', show_default=True, help='The policy that will be applied to deal with '
               'misclassified images.')
-# TODO: Rimuovere?
-@click.option('--gurobi-model', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None,
-              help='The path to the cached Gurobi model that will be used to run the attack. If unspecified, the model '
-              'is built on the fly. Warning: no checks on whether the Gurobi model is the same as the PyTorch model '
-              'are performed.')
 @click.option('--pre-adversarial-dataset', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None,
               help='The path to an adversarial dataset of an attack run on the main dataset. Used to speed up MIP.')
 @click.option('--start', type=click.IntRange(0, None), default=0,
@@ -68,8 +62,8 @@ def mip(**kwargs):
                               kwargs['state_dict_path'], True, kwargs['masked_relu'], False, load_weights=True)
     model.eval()
 
-    dataset = parsing.parse_dataset(kwargs['domain'], kwargs['dataset'], dataset_edges=(
-        kwargs['start'], kwargs['stop']))
+    dataset = parsing.parse_dataset(kwargs['domain'], kwargs['dataset'],
+                                    dataset_edges=(kwargs['start'], kwargs['stop']))
     dataloader = torch.utils.data.DataLoader(
         dataset, kwargs['batch_size'], shuffle=False)
 

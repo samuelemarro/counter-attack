@@ -91,6 +91,7 @@ def train_approximator(**kwargs):
         early_stopping = training.EarlyStopping(
             kwargs['early_stopping'], delta=kwargs['early_stopping_delta'])
 
+    # TODO: Mean or Sum?
     loss = torch.nn.MSELoss()
     optimiser = parsing.parse_optimiser(
         kwargs['optimiser'], model.parameters(), kwargs)

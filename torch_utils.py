@@ -116,7 +116,7 @@ def unpack_sequential(module, ignore=None):
             continue
 
         if isinstance(layer, nn.Sequential):
-            layers += unpack_sequential(layer)
+            layers += unpack_sequential(layer, ignore=ignore)
         else:
             layers.append(layer)
 

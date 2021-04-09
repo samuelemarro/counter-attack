@@ -4,6 +4,7 @@ import time
 import advertorch
 import numpy as np
 import torch
+# TODO: Remove
 from torch import per_tensor_affine
 import torch.nn as nn
 
