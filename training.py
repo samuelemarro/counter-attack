@@ -13,16 +13,17 @@ import utils
 
 logger = logging.getLogger(__name__)
 
-def conv_to_matrix(conv, image_shape, output_shape, device):
+def conv_to_matrix(conv, image_shape, output_shape, device, tf_weights):
     # Since a convolution is, at its essence, a matrix multiplication,
-    # computing conv(I) (with no bias) gives W x I, aka the matrix
-    # representing the convolution
+    # we can use conv(I) to compute W.T
+    # Specifically, PyTorch computes matmul(I.T, W.T).T, which is equivalent
+    # to matmul(W, I).T = W.T
     identity = torch.eye(np.prod(image_shape), device=device).reshape(
         [-1] + list(image_shape))
 
     # No bias (since it is computed separately)
     output = F.conv2d(identity, conv.weight, None, conv.stride, conv.padding)
-    W = output.reshape(-1, np.prod(output_shape))
+    WT = output.reshape(-1, np.prod(output_shape))
     # In theory W should be transposed, but the algorithm requires it to be left as it is
 
     # b is the bias tensor repeated for every pixel of the output
@@ -31,9 +32,30 @@ def conv_to_matrix(conv, image_shape, output_shape, device):
 
     b = b.reshape(-1)
 
-    # TODO: Capire come si relaziona la trasposizione con RS
+    # TODO: Capire come si relaziona la trasposizione con RS. E perché quelli dei layer vengono trasposti,
+    # mentre questi no? Dopotutto anche qui i W non sono utilizzabili direttamente
+    # In generale tutta questa questione della trasposizione non è ancora ben chiara. Per il momento quello che so è:
+    # - Il peso di linear è direttamente utilizzabile, ma noi lo forniamo trasposto
+    # - conv_to_matrix dà una W che funziona solo se trasposta
+    # Quindi noi stiamo fornendo in entrambi i casi un peso trasposto!
+    # Ma se gli forniamo quelli "giusti", _interval_arithmetic fallisce
+    # Si può considerare di passare transpose=True
 
-    return W, b
+    # Salta fuori che Tensorflow calcola nei linear matmul(x, W)
+    # dove W è [n_in, n_out], mentre PyTorch calcola
+    # matmul(x, W^T) dove W è [n_out, n_in]
+    # PyTorch è quindi equivalente a fare matmul(W, x), spiegando perché
+    # posso usare direttamente il peso dei layer lineari
+    # TODO: Rimuovere il testo in italiano
+
+    # Wt has shape (in_channels, out_channels)
+
+    if tf_weights:
+        # Tensorflow accepts transposed weights (in_channels, out_channels)
+        return WT, b
+    else:
+        # PyTorch accepts traditional weights (out_channels, in_channels)
+        return WT.T, b
 
 
 def _interval_arithmetic(lb, ub, W, b):
@@ -132,7 +154,7 @@ def _compute_bounds_n_layers(n, lbs, ubs, Ws, biases):
     return (prev_layer_bounds[0] + deeper_bounds[0], prev_layer_bounds[1] + deeper_bounds[1])
 
 
-def model_to_linear_sequence(model, input_shape, device):
+def model_to_linear_sequence(model, input_shape, device, tf_weights):
     layers = torch_utils.unpack_sequential(model)
     new_layers = []
 
@@ -151,14 +173,20 @@ def model_to_linear_sequence(model, input_shape, device):
             after_conv_shape = placeholder.shape[1:]
             logger.debug('[RS Loss] Before conv shape: %s, After conv shape: %s', before_conv_shape, after_conv_shape)
             W, b = conv_to_matrix(layer, before_conv_shape,
-                                  after_conv_shape, device)
+                                  after_conv_shape, device, tf_weights)
             new_layers.append((W, b))
         elif isinstance(layer, nn.Linear):
             logger.debug('[RS Loss] Linear layer, inserting as-is.')
             placeholder = layer(placeholder)
-            # PyTorch's Linear module uses a transposed weight to improve performance. We
-            # transpose it back to its original form before saving it
-            new_layers.append((layer.weight.T, layer.bias))
+
+            if tf_weights:
+                # Tensorflow accepts transposed weights (in_channels, out_channels)
+                weight = layer.weight.T
+            else:
+                # PyTorch accepts traditional weights (out_channels, in_channels)
+                weight = layer.weight
+
+            new_layers.append((weight, layer.bias))
         else:
             raise NotImplementedError(
                 f'Unsupported layer {type(layer).__name__}.')
@@ -168,7 +196,8 @@ def model_to_linear_sequence(model, input_shape, device):
 
 def rs_loss(model, x, epsilon, input_min=0, input_max=1):
     # TODO: TENERE A MENTE LAYER-FIRST VS LAYER-LAST PER PYTORCH VS TENSORFLOW
-    layers = model_to_linear_sequence(model, x.shape[1:], x.device)
+    # Use tf-like weights
+    layers = model_to_linear_sequence(model, x.shape[1:], x.device, True)
     batch_size = x.shape[0]
     total_loss = 0
 
@@ -262,13 +291,11 @@ def adversarial_training(x, target, model, attack, attack_ratio, epsilon):
 # Following Xiao and Madry's implementation, l1 loss is computed by considering the
 # convolutions as if they were their corresponding fully-connected matrices
 def l1_loss(model, input_shape, device, l1_regularization):
-    layers = model_to_linear_sequence(model, input_shape, device)
+    # Use standard weights
+    layers = model_to_linear_sequence(model, input_shape, device, False)
     loss = 0
     for layer in layers:
         if isinstance(layer, tuple):
-            # Note: the weights have been transposed, but since addition is commutative
-            # it does not change the backward graph
-
             # Only compute l1 loss on the weights
             W, _ = layer
             loss += torch.sum(torch.abs(W)) * l1_regularization
