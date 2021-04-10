@@ -114,7 +114,7 @@ class CarliniWagnerLinfAttack(attacks.Attack, attacks.LabelMixin):
         image_dimensions = tuple(range(1, len(x.shape)))
 
         # Reshape taus to [batch_size, 1, 1, 1] for broadcasting
-        taus_shape = (-1,) + (1,) * (len(x.shape) - 1)
+        taus_shape = (len(x),) + (1,) * (len(x.shape) - 1)
 
         penalties = torch.clamp(
             torch.abs(adversarials - x) - taus.view(taus_shape), min=0)
@@ -313,7 +313,7 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
                 torch.abs(adversarials - x[active]).flatten(1),
                 dim=1)[0]
             assert linf_distances.shape == (len(adversarials),)
-            
+
             linf_lower = linf_distances < taus[active]
 
             utils.replace_active(linf_distances,
@@ -565,7 +565,7 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
                 replace = successful & better_distance
             else:
                 replace = successful
-            
+
             if not self.update_inactive:
                 replace = replace & active
 

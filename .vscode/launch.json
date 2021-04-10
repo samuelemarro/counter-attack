@@ -579,6 +579,61 @@
                 "--batch-size",
                 "5"
             ]
+        },
+        {
+            "name" : "Training",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "train-classifier",
+                "cifar10",
+                "c",
+                "std:train",
+                "100",
+                "z3.pth",
+                "--rs-regularization",
+                "1e-3",
+                "--rs-eps",
+                "1e-3"
+            ]
+        },
+        {
+            "name" : "Carlini Linf",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "attack",
+                "cifar10",
+                "c",
+                "std:test",
+                "carlini",
+                "linf",
+                "--state-dict-path",
+                "trained-models/best-classifiers/cifar10-c.pth"
+            ]
+        },
+        {
+            "name" : "Carlini Linf CPU",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "attack",
+                "cifar10",
+                "c",
+                "std:test",
+                "carlini",
+                "linf",
+                "--state-dict-path",
+                "trained-models/best-classifiers/cifar10-c.pth",
+                "--device",
+                "cpu"
+            ]
         }
     ]
 }

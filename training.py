@@ -58,32 +58,31 @@ def conv_to_matrix(conv, image_shape, output_shape, device, tf_weights):
         return WT.T, b
 
 # TODO: Controllare no modifiche in-place
-
+# Assumes shapes of Bxm, Bxm, mxn, n
 def _interval_arithmetic(lb, ub, W, b):
-    W_max = torch.maximum(W, torch.tensor(0.0).to(W))
-    W_min = torch.minimum(W, torch.tensor(0.0).to(W))
+    W_max = torch.maximum(W, torch.tensor(0.0, device=W.device))
+    W_min = torch.minimum(W, torch.tensor(0.0, device=W.device))
     new_lb = torch.matmul(lb, W_max) + torch.matmul(ub, W_min) + b
     new_ub = torch.matmul(ub, W_max) + torch.matmul(lb, W_min) + b
     return new_lb, new_ub
 
+
+# TODO: Rimuovere
 # Assumes shapes of m, m, Bxmxn, n
-
-
 def _interval_arithmetic_batch(lb, ub, W, b):
-    W_max = torch.maximum(W, torch.tensor(0.0).to(W))
-    W_min = torch.minimum(W, torch.tensor(0.0).to(W))
+    W_max = torch.maximum(W, torch.tensor(0.0, device=W.device))
+    W_min = torch.minimum(W, torch.tensor(0.0, device=W.device))
     new_lb = torch.einsum("m,bmn->bn", lb, W_max) + \
         torch.einsum("m,bmn->bn", ub, W_min) + b
     new_ub = torch.einsum("m,bmn->bn", ub, W_max) + \
         torch.einsum("m,bmn->bn", lb, W_min) + b
     return new_lb, new_ub
 
+
 # Assumes shapes of Bxm, Bxm, Bxmxn, Bxn
-
-
 def _interval_arithmetic_all_batch(lb, ub, W, b):
-    W_max = torch.maximum(W, torch.tensor(0.0).to(W))
-    W_min = torch.minimum(W, torch.tensor(0.0).to(W))
+    W_max = torch.maximum(W, torch.tensor(0.0, device=W.device))
+    W_min = torch.minimum(W, torch.tensor(0.0, device=W.device))
     new_lb = torch.einsum("bm,bmn->bn", lb, W_max) + \
         torch.einsum("bm,bmn->bn", ub, W_min) + b
     new_ub = torch.einsum("bm,bmn->bn", ub, W_max) + \
@@ -105,7 +104,6 @@ def _compute_bounds_n_layers(n, lbs, ubs, Ws, biases):
     W = Ws[0]
     b = biases[0]
 
-    #print('n: ', n)
     # Base case
     if n == 1:
         if len(W.shape) == 2:
@@ -123,12 +121,12 @@ def _compute_bounds_n_layers(n, lbs, ubs, Ws, biases):
     active_mask_unexpanded = (lb > 0).float()
 
     # active_mask = torch.tile(torch.unsqueeze(active_mask_unexpanded, 2), [1, 1, out_dim]) # This should be B x y x p
-    active_mask = torch.unsqueeze(active_mask_unexpanded, 2).expand(
-        [-1, -1, out_dim])  # This should be B x y x p
+    # In this context, torch.repeat is equivalent to tf.tile
+    assert len(active_mask_unexpanded.shape) == 2
+    active_mask = torch.unsqueeze(active_mask_unexpanded, 2).repeat(
+        [1, 1, out_dim])  # This should be B x y x p
 
     nonactive_mask = 1.0 - active_mask
-    #print('W: ', W.shape)
-    #print('active_mask: ', active_mask.shape)
     W_A = torch.mul(W, active_mask)  # B x y x p
     W_NA = torch.mul(W, nonactive_mask)  # B x y x p
 
@@ -136,15 +134,17 @@ def _compute_bounds_n_layers(n, lbs, ubs, Ws, biases):
     if len(lb.shape) == 2:
         prev_layer_bounds = _interval_arithmetic_all_batch(lb, ub, W_NA, b)
     else:
-        prev_layer_bounds = _interval_arithmetic_batch(
-            lb, ub, W_NA, b)  # TODO: Quando avviene?
+        # This case deals with lower/upper bounds for non-flat tensors.
+        # Since TF and PyTorch use different approaches for dealing with
+        # image-like tensors (channel-last vs channel-first, respectively),
+        # we explicitly forbid image-like tensors.
+        raise NotImplementedError('Case not supported.')
+        #prev_layer_bounds = _interval_arithmetic_batch(
+        #    lb, ub, W_NA, b)
 
     # Compute new products
     W_prod = torch.einsum('my,byp->bmp', W_prev, W_A)  # b x m x p
     b_prod = torch.einsum('y,byp->bp', b_prev, W_A)  # b x p
-
-    #print('W_prod: ', W_prod.shape)
-    #print('b_prod: ', b_prod.shape)
 
     lbs_new = lbs[1:]
     ubs_new = ubs[1:]

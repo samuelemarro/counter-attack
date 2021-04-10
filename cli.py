@@ -134,6 +134,10 @@ Lista dei moduli ancora da controllare
     - ValidationTracker [mancano i test generali]
     - conv_to_matrix [mancano i test generali]
     - rs_loss [mancano i test generali]
+    - _interval_arithmetic [uguale]
+    - _interval_arithmetic_batch [uguale]
+    - _interval_arithmetic_all_batch [uguale]
+    - _compute_bounds_n_layers [mancano i test generali]
 - utils.py
     Fatti:
     - save_zip
