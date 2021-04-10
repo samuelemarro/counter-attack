@@ -130,9 +130,10 @@ Lista dei moduli ancora da controllare
     - train [manca da pulire i print e un po' di test generali]
     - adversarial_training
     - model_to_linear_sequence
-    - EarlyStop [mancano test generali]
-    - ValidationTracker [mancano test generali]
-    - conv_to_matrix [manca il TODO legato a RS e i test generali]
+    - EarlyStop [mancano i test generali]
+    - ValidationTracker [mancano i test generali]
+    - conv_to_matrix [mancano i test generali]
+    - rs_loss [mancano i test generali]
 - utils.py
     Fatti:
     - save_zip

@@ -57,6 +57,7 @@ def conv_to_matrix(conv, image_shape, output_shape, device, tf_weights):
         # PyTorch accepts traditional weights (out_channels, in_channels)
         return WT.T, b
 
+# TODO: Controllare no modifiche in-place
 
 def _interval_arithmetic(lb, ub, W, b):
     W_max = torch.maximum(W, torch.tensor(0.0).to(W))
@@ -96,6 +97,7 @@ def _compute_bounds_n_layers(n, lbs, ubs, Ws, biases):
     assert n == len(ubs)
     assert n == len(Ws)
     assert n == len(biases)
+    assert n >= 1
 
     # Current layer
     lb = lbs[0]
@@ -195,7 +197,6 @@ def model_to_linear_sequence(model, input_shape, device, tf_weights):
 
 
 def rs_loss(model, x, epsilon, input_min=0, input_max=1):
-    # TODO: TENERE A MENTE LAYER-FIRST VS LAYER-LAST PER PYTORCH VS TENSORFLOW
     # Use tf-like weights
     layers = model_to_linear_sequence(model, x.shape[1:], x.device, True)
     batch_size = x.shape[0]
@@ -204,7 +205,10 @@ def rs_loss(model, x, epsilon, input_min=0, input_max=1):
     input_lower = torch.clamp(x - epsilon, min=input_min, max=input_max)
     input_upper = torch.clamp(x + epsilon, min=input_min, max=input_max)
 
+    # If the first layer is a normalisation layer, apply it to the lower/upper bounds
     if isinstance(layers[0], torch_utils.Normalisation):
+        if not (layers[0].std >= 0).all():
+            raise NotImplementedError('Negative normalisations are not supported.')
         logger.debug('[RS Loss] Applying normalisation')
         input_lower = layers[0].forward(input_lower)
         input_upper = layers[0].forward(input_upper)
@@ -218,8 +222,15 @@ def rs_loss(model, x, epsilon, input_min=0, input_max=1):
     Ws = []
     bs = []
 
-    post_relu_lowers.append(input_lower)
-    post_relu_uppers.append(input_upper)
+    post_relu_lowers.insert(0, input_lower)
+    post_relu_uppers.insert(0, input_upper)
+
+    del input_lower, input_upper
+
+    # Intentionally None as a safety measure
+    # (the first computation only needs post_relu_lowers and post_relu_uppers)
+    post_linear_lower = None
+    post_linear_upper = None
 
     # RS Loss is designed for networks that are sequences of conv/linear and ReLUs
     layer_index = 0
@@ -229,28 +240,36 @@ def rs_loss(model, x, epsilon, input_min=0, input_max=1):
             raise RuntimeError(
                 'More than one normalisation in the Sequential.')
         elif isinstance(layer, nn.ReLU):
-            lower = F.relu(lower)
-            upper = F.relu(upper)
-            post_relu_lowers.insert(0, lower)
-            post_relu_uppers.insert(0, upper)
+            post_relu_lowers.insert(0, F.relu(post_linear_lower))
+            post_relu_uppers.insert(0, F.relu(post_linear_upper))
+
+            # The following computation only needs post_relu_lowers and
+            # post_relu_uppers
+            post_linear_lower = None
+            post_linear_upper = None
         elif isinstance(layer, tuple):
+            assert post_linear_lower is None
+            assert post_linear_upper is None
+            assert len(post_relu_lowers) == len(post_relu_uppers)
+
             layer_index += 1
             W, b = layer
 
             Ws.insert(0, W)
             bs.insert(0, b)
-            #print(f'layer {layer_index}: {W.shape}, {b.shape}')
 
             if len(post_relu_lowers) != layer_index:
                 raise RuntimeError('There aren\'t as many Linear/Conv2D layers as ReLU layers. '
                                    'Check the architecture of the model.')
 
-            lower, upper = _compute_bounds_n_layers(
+            post_linear_lower, post_linear_upper = _compute_bounds_n_layers(
                 layer_index, post_relu_lowers, post_relu_uppers, Ws, bs)
 
-            # Il segno è corretto?
-            total_loss -= torch.mean(torch.sum(torch.tanh(1 +
-                                                          lower * upper), -1))
+            # Using default norm constant
+            norm_constant = 1.0
+            loss = -torch.mean(torch.sum(torch.tanh(1 + norm_constant * post_linear_lower * post_linear_upper), -1))
+            total_loss += loss
+            del loss
         elif not isinstance(layer, nn.Flatten):  # Flatten is ignored
             raise NotImplementedError('Unsupported layer')
 
@@ -301,6 +320,8 @@ def l1_loss(model, input_shape, device, l1_regularization):
             loss += torch.sum(torch.abs(W)) * l1_regularization
 
     return loss
+
+# TODO prima dei test generali: controllare se ci sono TODO in giro
 
 # Note: Xiao and Madry's ReLU training technique also supports sparse weight initialization,
 # which is however disabled by default
