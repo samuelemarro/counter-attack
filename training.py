@@ -23,32 +23,15 @@ def conv_to_matrix(conv, image_shape, output_shape, device, tf_weights):
 
     # No bias (since it is computed separately)
     output = F.conv2d(identity, conv.weight, None, conv.stride, conv.padding)
-    WT = output.reshape(-1, np.prod(output_shape))
-    # In theory W should be transposed, but the algorithm requires it to be left as it is
+
+    # WT has shape (in_channels, out_channels)
+    WT = output.reshape(np.prod(image_shape), np.prod(output_shape))
 
     # b is the bias tensor repeated for every pixel of the output
     b = torch.stack(
         [torch.ones(output_shape[1:], device=device) * bi for bi in conv.bias])
 
     b = b.reshape(-1)
-
-    # TODO: Capire come si relaziona la trasposizione con RS. E perché quelli dei layer vengono trasposti,
-    # mentre questi no? Dopotutto anche qui i W non sono utilizzabili direttamente
-    # In generale tutta questa questione della trasposizione non è ancora ben chiara. Per il momento quello che so è:
-    # - Il peso di linear è direttamente utilizzabile, ma noi lo forniamo trasposto
-    # - conv_to_matrix dà una W che funziona solo se trasposta
-    # Quindi noi stiamo fornendo in entrambi i casi un peso trasposto!
-    # Ma se gli forniamo quelli "giusti", _interval_arithmetic fallisce
-    # Si può considerare di passare transpose=True
-
-    # Salta fuori che Tensorflow calcola nei linear matmul(x, W)
-    # dove W è [n_in, n_out], mentre PyTorch calcola
-    # matmul(x, W^T) dove W è [n_out, n_in]
-    # PyTorch è quindi equivalente a fare matmul(W, x), spiegando perché
-    # posso usare direttamente il peso dei layer lineari
-    # TODO: Rimuovere il testo in italiano
-
-    # Wt has shape (in_channels, out_channels)
 
     if tf_weights:
         # Tensorflow accepts transposed weights (in_channels, out_channels)
@@ -57,7 +40,6 @@ def conv_to_matrix(conv, image_shape, output_shape, device, tf_weights):
         # PyTorch accepts traditional weights (out_channels, in_channels)
         return WT.T, b
 
-# TODO: Controllare no modifiche in-place
 # Assumes shapes of Bxm, Bxm, mxn, n
 def _interval_arithmetic(lb, ub, W, b):
     W_max = torch.maximum(W, torch.tensor(0.0, device=W.device))
@@ -65,19 +47,6 @@ def _interval_arithmetic(lb, ub, W, b):
     new_lb = torch.matmul(lb, W_max) + torch.matmul(ub, W_min) + b
     new_ub = torch.matmul(ub, W_max) + torch.matmul(lb, W_min) + b
     return new_lb, new_ub
-
-
-# TODO: Rimuovere
-# Assumes shapes of m, m, Bxmxn, n
-def _interval_arithmetic_batch(lb, ub, W, b):
-    W_max = torch.maximum(W, torch.tensor(0.0, device=W.device))
-    W_min = torch.minimum(W, torch.tensor(0.0, device=W.device))
-    new_lb = torch.einsum("m,bmn->bn", lb, W_max) + \
-        torch.einsum("m,bmn->bn", ub, W_min) + b
-    new_ub = torch.einsum("m,bmn->bn", ub, W_max) + \
-        torch.einsum("m,bmn->bn", lb, W_min) + b
-    return new_lb, new_ub
-
 
 # Assumes shapes of Bxm, Bxm, Bxmxn, Bxn
 def _interval_arithmetic_all_batch(lb, ub, W, b):
@@ -120,7 +89,6 @@ def _compute_bounds_n_layers(n, lbs, ubs, Ws, biases):
     out_dim = W.shape[-1]
     active_mask_unexpanded = (lb > 0).float()
 
-    # active_mask = torch.tile(torch.unsqueeze(active_mask_unexpanded, 2), [1, 1, out_dim]) # This should be B x y x p
     # In this context, torch.repeat is equivalent to tf.tile
     assert len(active_mask_unexpanded.shape) == 2
     active_mask = torch.unsqueeze(active_mask_unexpanded, 2).repeat(
@@ -139,8 +107,6 @@ def _compute_bounds_n_layers(n, lbs, ubs, Ws, biases):
         # image-like tensors (channel-last vs channel-first, respectively),
         # we explicitly forbid image-like tensors.
         raise NotImplementedError('Case not supported.')
-        #prev_layer_bounds = _interval_arithmetic_batch(
-        #    lb, ub, W_NA, b)
 
     # Compute new products
     W_prod = torch.einsum('my,byp->bmp', W_prev, W_A)  # b x m x p
