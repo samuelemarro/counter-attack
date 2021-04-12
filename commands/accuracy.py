@@ -5,6 +5,7 @@ import torch
 
 import parsing
 import tests
+import utils
 
 logger = logging.getLogger(__name__)
 
@@ -30,10 +31,15 @@ logger = logging.getLogger(__name__)
 @click.option('--stop', type=click.IntRange(0, None), default=None,
               help='The last index (exclusive) of the dataset that will be used. If unspecified, defaults to '
               'the dataset size.')
+@click.option('--deterministic', is_flag=True,
+              help='If passed, all computations except random number generation are deterministic (but slower).')
 @click.option('--log-level', type=click.Choice(parsing.log_levels), default='info', show_default=True,
               help='The minimum logging level.')
 def accuracy(**kwargs):
     parsing.set_log_level(kwargs['log_level'])
+
+    if kwargs['deterministic']:
+        utils.enable_determinism()
 
     if kwargs['cpu_threads'] is not None:
         torch.set_num_threads(kwargs['cpu_threads'])

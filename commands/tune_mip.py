@@ -38,10 +38,15 @@ logger = logging.getLogger(__name__)
 @click.option('--attack-config-file', type=click.Path(exists=True, file_okay=True, dir_okay=False),
               default='default_attack_configuration.cfg', show_default=True, help='The path to the file containing the '
               'attack configuration.')
+@click.option('--deterministic', is_flag=True,
+              help='If passed, all computations except random number generation are deterministic (but slower).')
 @click.option('--log-level', type=click.Choice(parsing.log_levels), default='info', show_default=True,
               help='The minimum logging level.')
 def tune_mip(**kwargs):
     parsing.set_log_level(kwargs['log_level'])
+
+    if kwargs['deterministic']:
+        utils.enable_determinism()
 
     if not kwargs['save_to'].endswith('.prm'):
         raise click.BadArgumentUsage(

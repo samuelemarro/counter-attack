@@ -48,12 +48,20 @@ logger = logging.getLogger(__name__)
               'no dataset is saved.')
 @click.option('--seed', type=int, default=None,
               help='The seed for random generation. If unspecified, the current time is used as seed.')
+@click.option('--deterministic', is_flag=True,
+              help='If passed, all computations except random number generation are deterministic (but slower).')
 @click.option('--show', type=click.IntRange(1, None), default=None,
               help='The number of adversarials to be shown. If unspecified, no adversarials are shown.')
 @click.option('--log-level', type=click.Choice(parsing.log_levels), default='info', show_default=True,
               help='The minimum logging level.')
 def attack_matrix(**kwargs):
     parsing.set_log_level(kwargs['log_level'])
+
+    if kwargs['deterministic']:
+        if kwargs['seed'] is None:
+            logger.warning('Determinism is enabled, but no seed has been provided.')
+
+        utils.enable_determinism()
 
     if kwargs['cpu_threads'] is not None:
         torch.set_num_threads(kwargs['cpu_threads'])

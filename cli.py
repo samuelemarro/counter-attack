@@ -78,12 +78,7 @@ def main():
 # La versione matriciale semplicemente esplicita questa ripetizione, ottenendo una matrice che associa tutto l'input a tutto l'output, ma dove
 # ogni pixel di output è influenzato esclusivamente dalla regione che avrebbe considerato la convoluzione.
 
-# TODO: GLI ADDESTRAMENTI VANNO FATTI CON CHOOSE-BEST
-
-# TODO: Aggiungere supporto determinismo con
-# torch.backends.cudnn.benchmark = False
-# torch.set_deterministic(True)
-# ?
+# TODO: GLI ADDESTRAMENTI VANNO FATTI CON CHOOSE-BEST E DETERMINISTIC
 
 # Appunto: Se uso un dataloader multi-worker con delle data augmentations, c'è un bug molto comune
 # https://www.reddit.com/r/MachineLearning/comments/mocpgj/p_using_pytorch_numpy_a_bug_that_plagues/

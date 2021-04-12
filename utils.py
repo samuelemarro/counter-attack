@@ -354,6 +354,7 @@ def powerset(iterable, allow_empty):
     return list(itertools.chain.from_iterable(itertools.combinations(s, r) for r in range(start, len(s)+1)))
 
 def set_seed(seed):
+    logger.info('Setting seed.')
     torch.manual_seed(seed)
     np.random.seed(seed)
     random.seed(seed)
@@ -373,3 +374,8 @@ def set_rng_state(state_info):
     np.random.set_state(numpy_state)
     torch.set_rng_state(pytorch_state)
     torch.cuda.set_rng_state_all(cuda_states)
+
+def enable_determinism():
+    logger.info('Enabling determinism.')
+    torch.backends.cudnn.benchmark = False
+    torch.set_deterministic(True)

@@ -1,10 +1,14 @@
+import logging
+
 import click
 import matplotlib.pyplot as plt
 import numpy as np
 
 import adversarial_dataset as ad
 import parsing
+import utils
 
+logger = logging.getLogger(__name__)
 
 @click.command()
 @click.argument('domain', type=click.Choice(parsing.domains))
@@ -14,8 +18,13 @@ import parsing
               help='The minimum logging level.')
 @click.option('--from-perfect-adversarial-dataset', is_flag=True, help='Compute the perfect distance dataset from an adversarial dataset.')
 @click.option('--from-approximate-adversarial-dataset', is_flag=True, help='Compute the approximate distance dataset from an adversarial dataset.')
+@click.option('--deterministic', is_flag=True,
+              help='If passed, all computations except random number generation are deterministic (but slower).')
 def perfect_approximation(**kwargs):
     parsing.set_log_level(kwargs['log_level'])
+
+    if kwargs['deterministic']:
+        utils.enable_determinism()
 
     perfect_distance_dataset = parsing.parse_dataset(
         kwargs['domain'], kwargs['perfect_distance_dataset'], allow_standard=False)
