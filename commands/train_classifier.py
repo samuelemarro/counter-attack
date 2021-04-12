@@ -96,6 +96,12 @@ def train_classifier(**kwargs):
         extra_transforms.append(torchvision.transforms.RandomHorizontalFlip())
 
     if kwargs['rotation'] != 0 or kwargs['translation'] != 0:
+        if kwargs['translation'] < 0 or kwargs['translation'] > 1:
+            logger.warning('The suggested range for --translation is [0, 1].')
+
+        if kwargs['rotation'] < 0 or kwargs['rotation'] > 180:
+            logger.warning('The suggested range for --rotation is [0, 180].')
+
         translation = (kwargs['translation'], kwargs['translation']
                        ) if kwargs['translation'] != 0 else None
         extra_transforms.append(torchvision.transforms.RandomAffine(
@@ -131,6 +137,10 @@ def train_classifier(**kwargs):
     # Early stopping
     early_stopping = None
     if kwargs['early_stopping'] > 0:
+        if kwargs['choose_best'] and kwargs['early_stopping_delta'] != 0:
+            logger.warning('You are using --choose-best and --early-stopping with delta != 0. '
+                           'Remember that with delta != 0, --choose-best and --early-stopping '
+                           'track differently the best loss and state_dict.')
         logger.debug('Adding early stopping.')
         early_stopping = training.EarlyStopping(
             kwargs['early_stopping'], delta=kwargs['early_stopping_delta'])
@@ -160,7 +170,7 @@ def train_classifier(**kwargs):
         if kwargs['adversarial_ratio'] is None:
             raise click.BadOptionUsage(
                 '--adversarial-ratio', 'Please specify the ratio for adversarial training with --adversarial-ratio.')
-        
+
         if kwargs['adversarial_ratio'] < 0 or kwargs['adversarial_ratio'] > 1:
             raise click.BadOptionUsage(
                 '--adversarial-ratio', '--adversarial-ratio must be between 0 and 1 (inclusive).')
@@ -203,7 +213,7 @@ def train_classifier(**kwargs):
         if kwargs['rs_eps'] is None:
             raise click.BadOptionUsage(
                 '--rs-eps', 'Please specify the maximum perturbation for RS loss with --rs-eps.')
-        
+
         if kwargs['rs_start_epoch'] > kwargs['epochs']:
             logger.warning('--rs-start-epoch is higher than the number of epochs. This means that RS loss will never be activated. '
                            'Is this intentional?')

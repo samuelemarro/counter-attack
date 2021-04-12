@@ -36,7 +36,6 @@ def main():
 # TODO: Tanto logging
 
 # TODO: Formalizzare full_stack.py
-# TODO: LABEL DEI MISCLASSIFIED (SOPRATTUTTO COME GESTIRLE NELL'ADV.TRAINING) (Nota: nell'adversarial training non dà problemi in teoria, check)
 
 # TODO: Finire il debugging di attacks/mip.py
 # TODO: Il comando mip è un comando a sé da debuggare!
@@ -55,7 +54,7 @@ def main():
 # TODO [p]: Debuggare il comportamento targeted
 # Appunto: PGD è abbastanza decente con i parametri da training
 
-# TODO: ADVERSARIAL TRAINING NON USA IL DATA AUGMENTATION
+# TODO: ADVERSARIAL TRAINING NON USA IL DATA AUGMENTATION. Ma nel paper originale di Madry sì
 
 # TODO: Il preprocessor si basa sulla media di tutti i sample del training set, nonostante parte di essi vengano usati poi
 # per il validation set. Questo non è particolarmente grave, ma è qualcosa su cui riflettere
@@ -63,6 +62,7 @@ def main():
 # TODO: Breaking bug: ReLU Pruning viene fatto in maniera diversa. Confrontare quello e weight pruning con l'originale
 # TODO: Perché l'implementazione originale ha anche un modello masked?
 
+# TODO: Valori corretti delle data augmentations
 # TODO: Rifare tutti gli addestramenti
 
 # TODO: Nell'originale di Xiao e Madry non usano manco la normalisation
@@ -78,8 +78,15 @@ def main():
 # La versione matriciale semplicemente esplicita questa ripetizione, ottenendo una matrice che associa tutto l'input a tutto l'output, ma dove
 # ogni pixel di output è influenzato esclusivamente dalla regione che avrebbe considerato la convoluzione.
 
-# TODO: Tecnicamente il checkpoint dovrebbe salvare lo stato attuale di random, ma anche se non è diverso non dovrebbe essere grave
-# TODO: Aggiungere supporto per il --choose-best.
+# TODO: GLI ADDESTRAMENTI VANNO FATTI CON CHOOSE-BEST
+
+# TODO: Aggiungere supporto determinismo con
+# torch.backends.cudnn.benchmark = False
+# torch.set_deterministic(True)
+# ?
+
+# Appunto: Se uso un dataloader multi-worker con delle data augmentations, c'è un bug molto comune
+# https://www.reddit.com/r/MachineLearning/comments/mocpgj/p_using_pytorch_numpy_a_bug_that_plagues/
 
 """
 Lista dei moduli ancora da controllare

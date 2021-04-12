@@ -39,7 +39,7 @@ class BestSampleWrapper(nn.Module):
 
         assert len(x) == len(self.tracker.genuines)
 
-        # Don't detach here: attacks might require the model's gradients
+        # Don't detach here: attacks might require the gradients
         outputs = self.model(x)
 
         with torch.no_grad():

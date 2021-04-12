@@ -357,3 +357,19 @@ def set_seed(seed):
     torch.manual_seed(seed)
     np.random.seed(seed)
     random.seed(seed)
+
+def get_rng_state():
+    python_state = random.getstate()
+    numpy_state = np.random.get_state()
+    pytorch_state = torch.get_rng_state()
+    cuda_states = torch.cuda.get_rng_state_all()
+
+    return python_state, numpy_state, pytorch_state, cuda_states
+
+def set_rng_state(state_info):
+    python_state, numpy_state, pytorch_state, cuda_states = state_info
+
+    random.setstate(python_state)
+    np.random.set_state(numpy_state)
+    torch.set_rng_state(pytorch_state)
+    torch.cuda.set_rng_state_all(cuda_states)

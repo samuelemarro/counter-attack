@@ -60,7 +60,6 @@ def _interval_arithmetic_all_batch(lb, ub, W, b):
 
 
 def _compute_bounds_n_layers(n, lbs, ubs, Ws, biases):
-    # print(n, len(lbs))
     assert n == len(lbs)
     assert n == len(ubs)
     assert n == len(Ws)
@@ -72,6 +71,9 @@ def _compute_bounds_n_layers(n, lbs, ubs, Ws, biases):
     ub = ubs[0]
     W = Ws[0]
     b = biases[0]
+
+    assert len(lb.shape) == 2
+    assert lb.shape == ub.shape
 
     # Base case
     if n == 1:
@@ -161,8 +163,7 @@ def model_to_linear_sequence(model, input_shape, device, tf_weights):
 
     return new_layers
 
-
-def rs_loss(model, x, epsilon, input_min=0, input_max=1):
+def cumulative_rs_loss(model, x, epsilon, input_min=0, input_max=1):
     # Use tf-like weights
     layers = model_to_linear_sequence(model, x.shape[1:], x.device, True)
     batch_size = x.shape[0]
@@ -173,8 +174,6 @@ def rs_loss(model, x, epsilon, input_min=0, input_max=1):
 
     # If the first layer is a normalisation layer, apply it to the lower/upper bounds
     if isinstance(layers[0], torch_utils.Normalisation):
-        if not (layers[0].std >= 0).all():
-            raise NotImplementedError('Negative normalisations are not supported.')
         logger.debug('[RS Loss] Applying normalisation')
         input_lower = layers[0].forward(input_lower)
         input_upper = layers[0].forward(input_upper)
@@ -233,13 +232,14 @@ def rs_loss(model, x, epsilon, input_min=0, input_max=1):
 
             # Using default norm constant
             norm_constant = 1.0
-            loss = -torch.mean(torch.sum(torch.tanh(1 + norm_constant * post_linear_lower * post_linear_upper), -1))
+            # The loss should be averaged across the batch dimension, but in order
+            # to support minibatches we just sum it and divide later
+            loss = -torch.sum(torch.tanh(1 + norm_constant * post_linear_lower * post_linear_upper), -1).sum()
             total_loss += loss
             del loss
         elif not isinstance(layer, nn.Flatten):  # Flatten is ignored
             raise NotImplementedError('Unsupported layer')
 
-    #print('Total loss:', total_loss)
     return total_loss
 
 def adversarial_training(x, target, model, attack, attack_ratio, epsilon):
@@ -275,7 +275,7 @@ def adversarial_training(x, target, model, attack, attack_ratio, epsilon):
 
 # Following Xiao and Madry's implementation, l1 loss is computed by considering the
 # convolutions as if they were their corresponding fully-connected matrices
-def l1_loss(model, input_shape, device, l1_regularization):
+def l1_loss(model, input_shape, device):
     # Use standard weights
     layers = model_to_linear_sequence(model, input_shape, device, False)
     loss = 0
@@ -283,7 +283,7 @@ def l1_loss(model, input_shape, device, l1_regularization):
         if isinstance(layer, tuple):
             # Only compute l1 loss on the weights
             W, _ = layer
-            loss += torch.sum(torch.abs(W)) * l1_regularization
+            loss += torch.sum(torch.abs(W))
 
     return loss
 
@@ -339,6 +339,9 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
         if early_stopping is not None and loaded_checkpoint['early_stopping'] is not None:
             early_stopping.load_state_dict(loaded_checkpoint['early_stopping'])
 
+        logger.info('Setting random state.')
+        utils.set_rng_state(loaded_checkpoint['random_state'])
+
         if (validation_tracker is None) ^ (loaded_checkpoint['validation_tracker'] is None):
             raise RuntimeError('There is a mismatch between the current validation_tracker and '
                                'the saved one.')
@@ -347,15 +350,16 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
             validation_tracker.load_state_dict(loaded_checkpoint['validation_tracker'])
 
     input_shape = None
+    early_stop_triggered = False
 
     for epoch in iterator:
         if epoch < start_epoch:
             # Skip previous epochs (happens when loading an existing checkpoint)
-            print(f'Skipping epoch {epoch + 1}')
+            logger.debug(f'Skipping epoch {epoch + 1}')
             continue
 
         current_attack_eps = epoch_attack_epsilons[epoch]
-        print(f'Epoch {epoch + 1}')
+        logger.debug(f'Epoch {epoch + 1}')
 
         # Training phase
         for x, target in train_loader:
@@ -370,20 +374,20 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
             if attack is None:
                 x_adv = x
             else:
-                #print(f'Adversarial with eps {current_attack_eps}')
+                assert current_attack_eps > 0
                 x_adv = adversarial_training(x, target, model, attack, attack_ratio, current_attack_eps)
 
             # Compute the outputs
             y_pred = model(x_adv)
 
             # Compute the standard (or adversarial) loss
-            # Note: The loss isn't divided by the batch size, although some losses
+            # Note: The loss isn't divided by the batch size, although some loss functions
             # (such as CrossEntropy with mean reduction) do it anyway
             loss = loss_function(y_pred, target)
 
             # Add the L1 loss
             if l1_regularization != 0:
-                loss += l1_loss(model, input_shape, device, l1_regularization)
+                loss += l1_loss(model, input_shape, device) * l1_regularization
 
             optimiser.zero_grad()
             loss.backward()
@@ -393,16 +397,17 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
             # to summing all losses and calling .backward() once
             # Note: unlike adversarial eps, rs_eps does not grow with the number of epochs
             if rs_regularization != 0 and (epoch + 1) >= rs_start_epoch:
-                #print(f'RS with eps {rs_eps}')
                 if rs_minibatch_size is None:
-                    rs = rs_loss(model, x, epsilon=rs_eps) * rs_regularization
+                    rs = cumulative_rs_loss(model, x, epsilon=rs_eps) / len(x) * rs_regularization
                     rs.backward()
                 else:
                     for minibatch in torch_utils.split_batch(x, rs_minibatch_size):
-                        # Note: RS loss isn't divided by the batch size
-                        rs = rs_loss(model, minibatch,
-                                     epsilon=rs_eps) * rs_regularization
+                        # We divide by len(x) so that overall, the sum of all rs values is
+                        # cumulative_rs / batch_size, i.e. average_rs
+                        rs = cumulative_rs_loss(model, minibatch,
+                                     epsilon=rs_eps) / len(x) * rs_regularization
                         rs.backward()
+                del rs
 
             # Update the weights
             optimiser.step()
@@ -430,32 +435,32 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
 
                     if l1_regularization != 0:
                         assert input_shape is not None
-                        val_loss += l1_loss(model, input_shape, device, l1_regularization)
+                        val_loss += l1_loss(model, input_shape, device) * l1_regularization
 
                     if rs_regularization != 0 and (epoch + 1) >= rs_start_epoch:
                         if rs_minibatch_size is None:
-                            rs = rs_loss(model, x_val, epsilon=rs_eps) * rs_regularization
+                            rs = cumulative_rs_loss(model, x_val, epsilon=rs_eps) / len(x_val) * rs_regularization
                             val_loss += rs
                         else:
                             for minibatch_val in torch_utils.split_batch(x_val, rs_minibatch_size):
-                                rs = rs_loss(model, minibatch_val,
-                                                epsilon=rs_eps) * rs_regularization
+                                rs = cumulative_rs_loss(model, minibatch_val,
+                                                epsilon=rs_eps) / len(x_val) * rs_regularization
                                 val_loss += rs
+                        del rs
 
-            iterator.set_description('Training | Validation Loss: {:.3e}'.format(
+            iterator.set_description('Training | Validation Set Loss: {:.5e}'.format(
                 val_loss.cpu().detach().item()))
 
             if validation_tracker is not None:
                 validation_tracker(val_loss, model)
 
             if early_stopping is not None:
-                print('Checking early stopping. Loss: ', val_loss)
                 early_stopping(val_loss)
 
                 if early_stopping.stop:
-                    print('Early stop triggered')
                     logger.debug('Early stop triggered.')
-                    break
+                    # Early stop: break at the end of the loop
+                    early_stop_triggered = True
 
         if (checkpoint_path is not None) and (epoch + 1) % checkpoint_every == 0:
             if not pathlib.Path(checkpoint_path).exists():
@@ -463,18 +468,22 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
 
             # Note: We use 1-indexing for epochs
             current_epoch_path = pathlib.Path(checkpoint_path) / f'{epoch + 1}.check'
-            print(f'Saving checkpoint to {current_epoch_path}')
+
             torch.save({
                 'optimiser' : optimiser.state_dict(),
                 'epoch' : epoch, # Epochs are stored internally using 0-indexing
                 'model' : model.state_dict(),
                 'early_stopping' : None if early_stopping is None else early_stopping.state_dict(),
+                'random_state' : utils.get_rng_state(),
                 'validation_tracker' : None if validation_tracker is None else validation_tracker.state_dict()
             }, current_epoch_path)
 
+        if early_stop_triggered:
+            break
+
     if validation_tracker is not None:
-        print('Loading best state dict')
-        logger.debug('Validation tracker: Loading best state dict.')
+        assert validation_tracker.best_state_dict is not None
+        logger.info('Validation tracker: Loading best state dict.')
         model.load_state_dict(validation_tracker.best_state_dict)
 
 class StartStopDataset(torch.utils.data.Dataset):
@@ -563,7 +572,6 @@ class ValidationTracker:
         if self.best_loss is None or val_loss < self.best_loss:
             self.best_loss = val_loss
             self.best_state_dict = model.state_dict()
-        print('Tracking best loss: ', self.best_loss)
 
     def state_dict(self):
         return {
@@ -590,6 +598,12 @@ class EarlyStopping:
             allow_different_config (bool) : If True, loading a state_dict with different values
                                             for patience and delta will not throw an error.
         """
+
+        if patience <= 0:
+            raise ValueError('patience must be positive.')
+        if delta < 0:
+            raise ValueError('delta must be non-negative.')
+
         self.patience = patience
         self.counter = 0
         self.best_loss = None
@@ -600,7 +614,6 @@ class EarlyStopping:
     def __call__(self, val_loss):
         val_loss = val_loss.cpu().detach().item()
 
-        print('Pre-counter: ', self.counter)
         if self.best_loss is None:
             # First call
             self.best_loss = val_loss
@@ -615,8 +628,6 @@ class EarlyStopping:
             if self.counter >= self.patience:
                 # Too many calls without improvement, stop
                 self.stop = True
-        print('Best loss: ', self.best_loss)
-        print('Counter: ', self.counter)
 
     def state_dict(self):
         return {

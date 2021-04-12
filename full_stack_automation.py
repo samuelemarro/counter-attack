@@ -19,6 +19,8 @@ adversarial_ratio = 1 # Madry replaces all genuines with adversarials
 weight_pruning_threshold = 1e-3
 relu_pruning_threshold = 0.9
 
+# TODO: Passare anche il seed!
+
 
 def run_test(domain, architecture, test_name):
     logger.debug('Starting test for %s-%s-%s', domain, architecture,
