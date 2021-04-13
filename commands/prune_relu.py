@@ -1,19 +1,16 @@
 import logging
 
 import click
-import numpy as np
 import torch
 import torch.nn as nn
 
 import parsing
 import pruning
-import tests
-import torch_utils
 import utils
 
 logger = logging.getLogger(__name__)
 
-# TODO: Debuggare
+# Note: prune_relu uses the "training" attack configuration.
 
 @click.command()
 @click.argument('domain', type=click.Choice(parsing.domains))
@@ -84,9 +81,8 @@ def prune_relu(**kwargs):
         logger.warning(
             'This command is recommended to be used with non-test datasets.')
 
-    if kwargs['threshold'] < 0.5:
-        logger.warning('By using a threshold smaller than 0.5, a lot of unstable ReLUs will be treated as stable. '
-                    'Is this intentional?')
+    if kwargs['threshold'] <= 0.5:
+        raise click.BadArgumentUsage('threshold must be in (0.5, 1).')
 
     dataset = parsing.parse_dataset(kwargs['domain'], kwargs['dataset'],
                                     dataset_edges=(kwargs['start'], kwargs['stop']))

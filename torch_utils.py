@@ -81,26 +81,28 @@ class ReLUCounter(nn.ReLU):
     def __init__(self):
         super().__init__()
         self.positive_counter = None
-        self.negative_counter = None
+        self.nonpositive_counter = None
 
     def forward(self, x):
         if self.training:
             logger.warning('ReLUCounter is not designed for training.')
 
         if self.positive_counter is None:
+            assert self.nonpositive_counter is None
+
             self.positive_counter = torch.zeros(
                 x.shape[1:], dtype=torch.long, device=x.device)
-            self.negative_counter = torch.zeros(
+            self.nonpositive_counter = torch.zeros(
                 x.shape[1:], dtype=torch.long, device=x.device)
 
         positive = (x > 0).long().sum(dim=0)
-        negative = (x < 0).long().sum(dim=0)
+        nonpositive = (x <= 0).long().sum(dim=0)
 
         assert positive.shape == self.positive_counter.shape
-        assert negative.shape == self.negative_counter.shape
+        assert nonpositive.shape == self.nonpositive_counter.shape
 
         self.positive_counter += positive
-        self.negative_counter += negative
+        self.nonpositive_counter += nonpositive
 
         return torch.relu(x)
 

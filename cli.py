@@ -68,6 +68,7 @@ def main():
 # TODO: Rifare tutti gli addestramenti
 
 # TODO: Nell'originale di Xiao e Madry non usano manco la normalisation
+# TODO: Nell'originale hanno un ReLU al fondo (devo anche aggiungerlo io a Wong?)
 
 # Appunto: conv_to_matrix preserva il grafo dei gradienti e fare la l1 sul linear è equivalente a fare una l1 sulla conv e
 # moltiplicare per la dimensione (senza channel) dell'output. Nota però che linearized_model non è
@@ -102,8 +103,6 @@ Lista dei moduli ancora da controllare
     - evasion.py [p]
     - mip.py
     - perfect_approximation.py [p]
-    - prune_relu.py [da fare, ha un breaking]
-    - prune_weights.py
     - train_approximator.py [p]
     - tune_mip.py [p?]
 - models
@@ -169,7 +168,7 @@ Lista dei moduli ancora da controllare
 
 Paths:
 - train_classifier (100%)
-- prune_relu
+- prune_relu (90%)
 - prune_weights (100%)
 - attack (100%)
 - compare (100%)

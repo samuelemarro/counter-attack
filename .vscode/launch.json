@@ -1016,5 +1016,30 @@
                 "0.05"
             ]
         },
+        {
+            "name" : "ReLU Pruning",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "prune-relu",
+                "cifar10",
+                "c",
+                "std:train",
+                "pgd",
+                "linf",
+                "1",
+                "0.1",
+                "trained-models/best-classifiers/cifar10-c.pth",
+                "0.75",
+                "zrelu-pruned.pth",
+                "--stop",
+                "50",
+                "--deterministic",
+                "--seed",
+                "0"
+            ]
+        }
     ]
 }

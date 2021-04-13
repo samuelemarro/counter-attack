@@ -60,7 +60,7 @@ def recursive_converter(sequential, num_samples_threshold):
             total_relus += layer_total_relus
             replaced_relus += layer_replaced_relus
         elif isinstance(layer, torch_utils.ReLUCounter):
-            zero_mask = layer.negative_counter >= num_samples_threshold
+            zero_mask = layer.nonpositive_counter >= num_samples_threshold
             linear_mask = layer.positive_counter >= num_samples_threshold
             assert zero_mask.shape == linear_mask.shape
             assert not (zero_mask & linear_mask).any()
@@ -88,9 +88,9 @@ def prune_relu(model, dataloader, attack, attack_ratio, epsilon, threshold, devi
         labels = labels.to(device)
         num_samples += len(images)
 
-        training.adversarial_training(images, labels, model, attack, attack_ratio, epsilon)
+        images = training.adversarial_training(images, labels, model, attack, attack_ratio, epsilon)
         counter_model(images)
 
-    num_samples_threshold = int(num_samples * threshold)
+    num_samples_threshold = num_samples * threshold
 
     return recursive_converter(counter_model, num_samples_threshold)
