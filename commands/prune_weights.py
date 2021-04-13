@@ -1,10 +1,10 @@
-import click
 import logging
-import numpy as np
+
+import click
 import torch
 
 import parsing
-import torch_utils
+import pruning
 import utils
 
 logger = logging.getLogger(__name__)
@@ -28,27 +28,12 @@ def prune_weights(**kwargs):
         utils.enable_determinism()
 
     model = parsing.parse_model(kwargs['domain'], kwargs['architecture'],
-                              kwargs['original_state_dict_path'], True, kwargs['masked_relu'], False, load_weights=True)
+                                kwargs['original_state_dict_path'], True,
+                                kwargs['masked_relu'], False, load_weights=True)
 
-    # TODO: Debuggare
-    simplified_model = torch_utils.unpack_sequential(model, ignore=[torch_utils.Normalisation])
-
-    all_parameters = 0
-    prunable_parameters = 0
-
-    threshold = kwargs['threshold']
-
-    with torch.no_grad():
-        for param in simplified_model.parameters():
-            if param.dtype == torch.bool:
-                continue
-
-            all_parameters += np.prod(list(param.shape))
-            below_threshold = torch.abs(param) < threshold
-            prunable_parameters += len(torch.nonzero(below_threshold))
-            param[below_threshold] = 0.0
+    pruned_count, parameter_count = pruning.prune_weights(model, kwargs['threshold'])
 
     logger.info(
-        'Pruned %s out of %s parameters.', prunable_parameters, all_parameters)
+        'Pruned %s out of %s parameters.', pruned_count, parameter_count)
 
     torch.save(model.state_dict(), kwargs['save_to'])

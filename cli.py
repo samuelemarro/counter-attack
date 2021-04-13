@@ -61,6 +61,7 @@ def main():
 
 # TODO: Breaking bug: ReLU Pruning viene fatto in maniera diversa. Confrontare quello e weight pruning con l'originale
 # TODO: Perché l'implementazione originale ha anche un modello masked?
+# TODO: prune-weights guarda solo i weights (non bias)
 
 # TODO: Valori corretti delle data augmentations
 # TODO: Rifare tutti gli addestramenti
@@ -79,6 +80,8 @@ def main():
 # ogni pixel di output è influenzato esclusivamente dalla regione che avrebbe considerato la convoluzione.
 
 # TODO: GLI ADDESTRAMENTI VANNO FATTI CON CHOOSE-BEST E DETERMINISTIC
+# TODO: TUTTO VA FATTO CON DETERMINISTIC E SEED
+# TODO: I risultati dell'attacco vanno salvati!
 
 # Appunto: Se uso un dataloader multi-worker con delle data augmentations, c'è un bug molto comune
 # https://www.reddit.com/r/MachineLearning/comments/mocpgj/p_using_pytorch_numpy_a_bug_that_plagues/
@@ -157,12 +160,16 @@ Lista dei moduli ancora da controllare
     - remove_failed
     - misclassified
     - misclassified_outputs
+    - set_seed
+    - get_rng_state
+    - set_rng_state
+    - enable_determinism
 - default_attack_configuration.cfg
 
 Paths:
-- train_classifier (quasi fatto)
+- train_classifier (100%)
 - prune_relu
-- prune_weights
+- prune_weights (100%)
 - attack (100%)
 - compare (100%)
 - mip

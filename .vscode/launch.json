@@ -1001,5 +1001,20 @@
                 "trained-models/best-classifiers/cifar10-c.pth"
             ]
         },
+        {
+            "name" : "Weight Pruning",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "prune-weights",
+                "cifar10",
+                "c",
+                "trained-models/best-classifiers/cifar10-c.pth",
+                "weight-pruned.pth",
+                "0.05"
+            ]
+        },
     ]
 }
