@@ -63,16 +63,21 @@ class MaskedReLU(nn.Module):
         # that would require using boolean indexing, which
         # causes a CUDA synchronization (causing major slowdowns)
 
-        if self.training:
-            logger.warning('MaskedReLU is not designed for training.')
+        if self.training or self.always_linear.requires_grad or self.always_zero.requires_grad:
+            raise NotImplementedError('MaskedReLU is not designed for training.')
 
         output = torch.relu(x)
 
+        # Expand the batch dimension to match x
+        expand_size = [len(x)] + [-1] * len(x.shape[1:])
+        always_zero = self.always_zero.unsqueeze(0).expand(*expand_size)
+        always_linear = self.always_linear.unsqueeze(0).expand(*expand_size)
+
         # always_zero masking
-        output = utils.fast_boolean_choice(output, 0, self.always_zero, reshape=False)
+        output = utils.fast_boolean_choice(output, torch.zeros_like(x), always_zero, reshape=False)
 
         # always_linear masking
-        output = utils.fast_boolean_choice(output, x, self.always_linear, reshape=False)
+        output = utils.fast_boolean_choice(output, x, always_linear, reshape=False)
 
         return output
 

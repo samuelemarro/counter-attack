@@ -85,6 +85,8 @@ def main():
 # TODO: TUTTO VA FATTO CON DETERMINISTIC E SEED
 # TODO: I risultati dell'attacco vanno salvati!
 
+# TODO: Se uso MaskedReLU in un modello obiettivo di attacco non-MIP, devo debuggare questo caso
+
 # Appunto: Se uso un dataloader multi-worker con delle data augmentations, c'è un bug molto comune
 # https://www.reddit.com/r/MachineLearning/comments/mocpgj/p_using_pytorch_numpy_a_bug_that_plagues/
 
@@ -168,7 +170,7 @@ Lista dei moduli ancora da controllare
 
 Paths:
 - train_classifier (100%)
-- prune_relu (90%)
+- prune_relu (100%)
 - prune_weights (100%)
 - attack (100%)
 - compare (100%)

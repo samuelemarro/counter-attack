@@ -200,12 +200,15 @@ def fast_boolean_choice(a, b, filter_, reshape=True):
     assert len(a) == len(b) == len(filter_)
 
     if reshape:
+        assert len(filter_.shape) == 1
+
         pre_expansion_shape = [len(filter_)] + ([1] * (len(a.shape) - 1))
         filter_ = filter_.reshape(*pre_expansion_shape)
 
         post_expansion_shape = [len(filter_)] + list(a.shape[1:])
         filter_ = filter_.expand(*post_expansion_shape)
 
+    assert a.shape == b.shape == filter_.shape
     filter_ = filter_.float()
 
     return filter_ * b + (1 - filter_) * a

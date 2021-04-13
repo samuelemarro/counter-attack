@@ -1040,6 +1040,23 @@
                 "--seed",
                 "0"
             ]
+        },
+        {
+            "name" : "Accuracy MaskedReLU",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "accuracy",
+                "cifar10",
+                "c",
+                "std:test",
+                "--masked-relu",
+                "--state-dict-path",
+                "zrelu-pruned.pth",
+                "--deterministic"
+            ]
         }
     ]
 }
