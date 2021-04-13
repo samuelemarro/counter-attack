@@ -1057,6 +1057,28 @@
                 "zrelu-pruned.pth",
                 "--deterministic"
             ]
+        },
+        {
+            "name" : "Accuracy Batch Size + CPU Threads",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "accuracy",
+                "cifar10",
+                "c",
+                "std:test",
+                "--state-dict-path",
+                "trained-models/best-classifiers/cifar10-c.pth",
+                "--batch-size",
+                "200",
+                "--device",
+                "cpu",
+                "--cpu-threads",
+                "1",
+                "--deterministic"
+            ]
         }
     ]
 }

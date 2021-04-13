@@ -309,7 +309,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
         for image, label in zip(x, y):
             image = image.detach().cpu().numpy()
-            label = label.detach().cpu().numpy().item()
+            label = label.detach().cpu().item()
 
             adversarial, _ = self.mip_attack(image, label)
 
@@ -337,7 +337,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
         for image, label, starting_point in zip(x, y, starting_points):
             image = image.detach().cpu().numpy()
-            label = label.detach().cpu().numpy().item()
+            label = label.detach().cpu().item()
 
             if starting_point is not None:
                 #print('PyTorch Starting point label (1-indexed): ', utils.get_labels(self.predict, torch.unsqueeze(starting_point, dim=0))[0] + 1)

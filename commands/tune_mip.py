@@ -116,7 +116,7 @@ def tune_mip(**kwargs):
 
     image, label = dataset[tuning_index]
     image = image.detach().cpu().numpy()
-    label = label.detach().cpu().numpy().item()
+    label = label.detach().cpu().item()
 
     if pre_image is not None and np.max(np.abs(image - pre_image)) > 1e-6:
         print(np.max(np.abs(image - pre_image)))
