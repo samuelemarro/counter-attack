@@ -179,9 +179,9 @@ def train_classifier(**kwargs):
             raise click.BadOptionUsage(
                 '--adversarial-ratio', 'Please specify the ratio for adversarial training with --adversarial-ratio.')
 
-        if kwargs['adversarial_ratio'] < 0 or kwargs['adversarial_ratio'] > 1:
+        if kwargs['adversarial_ratio'] <= 0 or kwargs['adversarial_ratio'] > 1:
             raise click.BadOptionUsage(
-                '--adversarial-ratio', '--adversarial-ratio must be between 0 and 1 (inclusive).')
+                '--adversarial-ratio', '--adversarial-ratio must be between 0 (exclusive) and 1 (inclusive).')
 
         if kwargs['adversarial_p'] is None:
             raise click.BadOptionUsage(

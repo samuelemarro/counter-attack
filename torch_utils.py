@@ -96,8 +96,8 @@ class ReLUCounter(nn.ReLU):
         positive = (x > 0).long().sum(dim=0)
         negative = (x < 0).long().sum(dim=0)
 
-        assert positive.shape == self.positive_counter
-        assert negative.shape == self.negative_counter
+        assert positive.shape == self.positive_counter.shape
+        assert negative.shape == self.negative_counter.shape
 
         self.positive_counter += positive
         self.negative_counter += negative

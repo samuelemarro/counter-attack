@@ -62,6 +62,7 @@ def main():
 # TODO: Breaking bug: ReLU Pruning viene fatto in maniera diversa. Confrontare quello e weight pruning con l'originale
 # TODO: Perché l'implementazione originale ha anche un modello masked?
 # TODO: prune-weights guarda solo i weights (non bias)
+# TODO: Debuggare MaskedReLU
 
 # TODO: Valori corretti delle data augmentations
 # TODO: Rifare tutti gli addestramenti

@@ -245,9 +245,14 @@ def cumulative_rs_loss(model, x, epsilon, input_min=0, input_max=1):
 def adversarial_training(x, target, model, attack, attack_ratio, epsilon):
     x = x.clone()
     target = target.clone()
+
     # Pick a portion of the samples (how many depends on attack_ratio)
-    indices = np.random.choice(
-        list(range(len(x))), int(len(x) * attack_ratio), replace=False)
+    if attack_ratio == 1:
+        indices = range(len(x))
+    else:
+        indices = np.random.choice(
+            list(range(len(x))), int(len(x) * attack_ratio), replace=False)
+
     selected_x = x[indices]
     selected_targets = target[indices]
 
