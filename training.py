@@ -200,7 +200,21 @@ def cumulative_rs_loss(model, x, epsilon, input_min=0, input_max=1):
     # RS Loss is designed for networks that are sequences of conv/linear and ReLUs
     layer_index = 0
 
-    for layer in layers:
+    # More than one Normalisation layer is not supported
+    assert len([layer for layer in layers if isinstance(layer, torch_utils.Normalisation)]) == 0
+
+    # Remove the Flatten layer (if existing)
+    assert len([layer for layer in layers if isinstance(layer, nn.Flatten)]) <= 1
+    layers = [layer for layer in layers if not isinstance(layer, nn.Flatten)]
+
+    # Remaining layers must alternate between tuple and ReLU
+    assert all([isinstance(layer, tuple) for i, layer in enumerate(layers) if i % 2 == 0])
+    assert all([isinstance(layer, nn.ReLU) for i, layer in enumerate(layers) if i % 2 == 1])
+    assert isinstance(layers[-1], tuple)
+
+    # Do not compute RS loss on the last layer (since it will
+    # not be fed into a ReLU layer)
+    for layer in layers[:-1]:
         if isinstance(layer, torch_utils.Normalisation):
             raise RuntimeError(
                 'More than one normalisation in the Sequential.')
@@ -237,7 +251,7 @@ def cumulative_rs_loss(model, x, epsilon, input_min=0, input_max=1):
             loss = -torch.sum(torch.tanh(1 + norm_constant * post_linear_lower * post_linear_upper), -1).sum()
             total_loss += loss
             del loss
-        elif not isinstance(layer, nn.Flatten):  # Flatten is ignored
+        else:
             raise NotImplementedError('Unsupported layer')
 
     return total_loss

@@ -59,11 +59,6 @@ def main():
 # TODO: Il preprocessor si basa sulla media di tutti i sample del training set, nonostante parte di essi vengano usati poi
 # per il validation set. Questo non è particolarmente grave, ma è qualcosa su cui riflettere
 
-# TODO: Breaking bug: ReLU Pruning viene fatto in maniera diversa. Confrontare quello e weight pruning con l'originale
-# TODO: Perché l'implementazione originale ha anche un modello masked?
-# TODO: prune-weights guarda solo i weights (non bias)
-# TODO: Debuggare MaskedReLU
-
 # TODO: Valori corretti delle data augmentations
 # TODO: Rifare tutti gli addestramenti
 
@@ -86,6 +81,8 @@ def main():
 # TODO: I risultati dell'attacco vanno salvati!
 
 # TODO: Se uso MaskedReLU in un modello obiettivo di attacco non-MIP, devo debuggare questo caso
+
+# TODO: Se metto la data augmentation per RS training, bisogna anche usarla per prune-relu?
 
 # Appunto: Se uso un dataloader multi-worker con delle data augmentations, c'è un bug molto comune
 # https://www.reddit.com/r/MachineLearning/comments/mocpgj/p_using_pytorch_numpy_a_bug_that_plagues/
