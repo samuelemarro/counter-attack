@@ -4,8 +4,6 @@ import time
 import advertorch
 import numpy as np
 import torch
-# TODO: Remove
-from torch import per_tensor_affine
 import torch.nn as nn
 
 import torch_utils
@@ -14,7 +12,7 @@ import utils
 logger = logging.getLogger(__name__)
 
 # Required libraries:
-# PyCall (installed from the Python package "julia")
+# PyCall (installed from the pip package "julia")
 # JuMP
 # MIPVerify
 
@@ -62,8 +60,6 @@ def module_to_mip(module):
     elif isinstance(module, torch_utils.Normalisation):
         mean = np.squeeze(to_numpy(module.mean))
         std = np.squeeze(to_numpy(module.std))
-
-        assert mean.shape == std.shape == ()
 
         if len(mean.shape) == 0:
             mean = [mean.item()]
@@ -126,40 +122,46 @@ def sequential_to_mip(sequential):
 
     return MIPVerify.Sequential(layers, f'Converted network ({conversion_time})')
 
-# TODO: Return None if the solver times out
-
-# TODO: Retry system (restart n times with higher correction factor)
-# Il test su x9 falliva con correction_factor=1, ricontrollare ora che è 1.25
-
+# TODO: Fare un avviso che dice se ci sono differenze significative tra i vari parameters
 
 class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     _pyjulia_installed = False
 
     def __init__(self, predict, p, targeted, tolerance=1e-6, clip_min=0,
-                clip_max=1, initial_correction_factor=1.05, attempts=3,
-                correction_factor_growth=1.5, retry_absolute_gap=1e-5,
-                tightening_overrides=None, **gurobi_kwargs):
+                clip_max=1, main_parameters=None, tightening_parameters=None,
+                exploration_main_parameters=None, exploration_tightening_parameters=None,
+                correction_factor_schedule=None, main_attempts=1, retry_gap=1e-4,
+                retry_absolute_gap=1e-5, original_if_failed=False):
         super().__init__(predict, None, clip_min, clip_max)
 
-        if tightening_overrides is None:
-            tightening_overrides = dict()
+        if main_parameters is None:
+            main_parameters = dict()
+        if tightening_parameters is None:
+            tightening_parameters = dict()
+        if exploration_main_parameters is None:
+            exploration_main_parameters = dict()
+        if exploration_tightening_parameters is None:
+            exploration_tightening_parameters = dict()
+        if correction_factor_schedule is None:
+            correction_factor_schedule = [1.05]
 
         if not np.isposinf(p):
             raise NotImplementedError('MIPAttack only supports p=1, 2 or inf.')
-
-        self.p = p
 
         # Lazy import
         if not MIPAttack._pyjulia_installed:
             import julia
             julia.install()
 
+        self.p = p
         self.mip_model = sequential_to_mip(predict)
         self.targeted = targeted
-        self.initial_correction_factor = initial_correction_factor
-        self.max_attempts = attempts
-        self.correction_factor_growth = correction_factor_growth
+        self.correction_factor_schedule = correction_factor_schedule
+        self.main_attempts = main_attempts
+        self.retry_gap = retry_gap
         self.retry_absolute_gap = retry_absolute_gap
+        self.original_if_failed = original_if_failed
+        self._checked_model = False
 
         if tolerance == 0:
             logger.warning('MIP\'s tolerance is set to 0. Given the possible numerical errors,'
@@ -168,28 +170,34 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
         self.tolerance = tolerance
 
-        # To avoid modifying the default value
-        tightening_overrides = dict(tightening_overrides)
+        for parameters in [main_parameters, tightening_parameters, exploration_main_parameters, exploration_tightening_parameters]:
+            if 'TimeLimit' in parameters and parameters['TimeLimit'] == 0:
+                parameters['TimeLimit'] = np.inf
 
-        if 'TimeLimit' in gurobi_kwargs and gurobi_kwargs['TimeLimit'] == 0:
-            gurobi_kwargs['TimeLimit'] = np.inf
+        mip_gap = main_parameters['MIPGap'] if 'MIPGap' in main_parameters else 1e-4
+        if mip_gap != retry_gap:
+            logger.warning('Main Solver MIPGap differs from retry_gap: this might '
+                            'interfere with the retry system.')
 
-        if 'TimeLimit' in tightening_overrides and tightening_overrides['TimeLimit'] == 0:
-            tightening_overrides['TimeLimit'] = np.inf
-
-        tightening_kwargs = dict(gurobi_kwargs)
-
-        for key, value in tightening_overrides.items():
-            tightening_kwargs[key] = value
+        mip_gap_abs = main_parameters['MIPGapAbs'] if 'MIPGapAbs' in main_parameters else 1e-5
+        if mip_gap_abs != retry_absolute_gap:
+            logger.warning('Main Solver MIPGapAbs differs from retry_absolute_gap: this might '
+                            'interfere with the retry system.')
 
         from julia import Gurobi
-        self.solver = Gurobi.GurobiSolver(OutputFlag=1, **gurobi_kwargs)
         # TODO: Capire bene come funziona Gurobi.Env()
+        self.main_solver = Gurobi.GurobiSolver(Gurobi.Env(),
+                                                     OutputFlag=0,
+                                                     **main_parameters)
         self.tightening_solver = Gurobi.GurobiSolver(Gurobi.Env(),
                                                      OutputFlag=0,
-                                                     **tightening_kwargs)
-
-        self._checked_model = False
+                                                     **tightening_parameters)
+        self.exploration_main_solver = Gurobi.GurobiSolver(Gurobi.Env(),
+                                                     OutputFlag=0,
+                                                     **exploration_main_parameters)
+        self.exploration_tightening_solver = Gurobi.GurobiSolver(Gurobi.Env(),
+                                                     OutputFlag=0,
+                                                     **exploration_tightening_parameters)
 
     def _check_model(self, image, threshold=1e-3):
         model_device = next(self.predict.parameters()).device
@@ -201,7 +209,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
         return np.max(np.abs(torch_output - julia_output)) <= threshold
 
-    def perform_attempt(self, image, label, starting_point=None, perturbation_size=None):
+    def perform_attempt(self, image, label, main_solver, tightening_solver, perturbation_size):
         from julia import MIPVerify
         from julia import JuMP
 
@@ -220,31 +228,17 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             perturbation = MIPVerify.LInfNormBoundedPerturbationFamily(
                 perturbation_size)
 
-        if starting_point is not None:
-            starting_point = starting_point.transpose([1, 2, 0])
-            starting_point = np.expand_dims(starting_point, 0)
-
         image = image.transpose([1, 2, 0])
         image = np.expand_dims(image, 0)
 
-        """adversarial_result = MIPVerify.find_adversarial_example(self.mip_model,
-                                                                image, target_label, self.solver, norm_order=self.p,
-                                                                tolerance=self.tolerance, invert_target_selection=not self.targeted,
-                                                                tightening_solver=self.tightening_solver, pp=perturbation)"""
-        from julia import Main
-        Main.include('mip_interface.jl')
-
-        adversarial_result = Main.find_adversarial_example(self.mip_model,
-                                    image, target_label, self.solver, norm_order=self.p,
-                                    tolerance=self.tolerance, invert_target_selection=not self.targeted,
-                                    tightening_solver=self.tightening_solver, rebuild=False, pp=perturbation,
-                                    starting_point=starting_point)
+        adversarial_result = MIPVerify.find_adversarial_example(
+            self.mip_model, image, target_label, main_solver,
+            norm_order=self.p, tolerance=self.tolerance,
+            invert_target_selection=not self.targeted,
+            tightening_solver=tightening_solver, pp=perturbation)
 
         adversarial = np.array(JuMP.getvalue(
             adversarial_result['PerturbedInput']))
-
-        elapsed_time = time.clock() - start_time
-        adversarial_result['WallClockTime'] = elapsed_time
 
         # if extra_dimension:
         #    adversarial = np.expand_dims(adversarial, -1)
@@ -254,76 +248,98 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
         # Remove the batch dimension
         adversarial = adversarial.squeeze(axis=0)
-        return adversarial, adversarial_result
 
-    def mip_attack(self, image, label, heuristic_starting_point=None):
-        if not self._checked_model:
-            assert self._check_model(image, threshold=1e-3)
-            self._checked_model = True
+        elapsed_time = time.clock() - start_time
+        return adversarial, adversarial_result, elapsed_time
 
+    def find_perturbation_size(self, image, label, original_perturbation_size):
         from julia import JuMP
 
-        starting_point = heuristic_starting_point
-        perturbation_size = None
-        upper = np.nan
-        lower = 0
-        attempts = 0
-
-        # Initialized by heuristic
-        if starting_point is not None:
-            perturbation_size = np.linalg.norm(
-                    (image - starting_point).flatten(), ord=np.inf).item()
-
-            perturbation_size *= self.initial_correction_factor
-
-            while np.isnan(upper) and attempts < self.max_attempts:
-                attempts += 1
-                logger.debug('Attempt #%s (feasibility).', attempts)
-                adversarial, adversarial_result = self.perform_attempt(image, label, starting_point=starting_point, perturbation_size=perturbation_size)
-                upper = JuMP.getobjectivevalue(adversarial_result['Model'])
-                lower = JuMP.getobjectivebound(adversarial_result['Model'])
-
-                if np.isnan(upper):
-                    # MIP failed to find a feasible solution, relax the perturbation size constraint
-                    perturbation_size *= self.correction_factor_growth
+        for attempt, correction_factor in enumerate(self.correction_factor_schedule):
+            logger.debug('Exploration attempt %s.', attempt)
+            _, adversarial_result, _ = self.perform_attempt(image, label, self.exploration_main_solver, self.exploration_tightening_solver, original_perturbation_size * correction_factor)
+            upper = JuMP.getobjectivevalue(adversarial_result['Model'])
 
             if not np.isnan(upper):
-                starting_point = adversarial
+                return upper
 
-        while ((upper - lower) > self.retry_absolute_gap or np.isnan(upper)) and attempts < self.max_attempts:
-            attempts += 1
-            logger.debug('Attempt #%s (optimality)', attempts)
-            adversarial, adversarial_result = self.perform_attempt(image, label, starting_point=starting_point, perturbation_size=perturbation_size)
+        return None
+
+    def mip_attack(self, image, label, starting_point=None):
+        from julia import JuMP
+        device, dtype = image.device, image.dtype
+
+        image = image.detach().cpu().numpy()
+        label = label.detach().cpu().item()
+
+        # Check that the MIP model actually matches the
+        # PyTorch one
+        if not self._checked_model:
+            assert self._check_model(image, threshold=1e-3)
+            #self._checked_model = True # TODO: Temporaneamente disabilitato
+
+        perturbation_size = None
+        if starting_point is not None:
+            original_perturbation_size = np.linalg.norm(
+                    (image - starting_point).flatten(), ord=np.inf).item()
+            perturbation_size = self.find_perturbation_size(image, label, original_perturbation_size)
+
+        adversarial = None
+        adversarial_result = None
+        elapsed_time = None
+
+        for attempt in range(self.main_attempts):
+            logger.debug('Main attempt %s.', attempt)
+
+            adversarial, adversarial_result, elapsed_time = self.perform_attempt(image, label, self.main_solver, self.tightening_solver, perturbation_size=perturbation_size)
             upper = JuMP.getobjectivevalue(adversarial_result['Model'])
             lower = JuMP.getobjectivebound(adversarial_result['Model'])
 
-            if not np.isnan(upper):
-                starting_point = adversarial
+            if np.isnan(upper):
+                # If the perturbation size is known, MIP must be able
+                # to find an upper bound (the perturbation size)
+                assert perturbation_size is None
+            else:
+                assert perturbation_size is None or upper <= perturbation_size
+                assert upper >= lower
+                # TODO: < o <= ?
+                if upper - lower < self.retry_absolute_gap:
+                    break
 
-        return adversarial, adversarial_result
+                perturbation_size = upper
+
+        # Must have been run at least once
+        assert adversarial is not None
+        assert adversarial_result is not None
+        assert elapsed_time is not None
+
+        if np.any(np.isnan(adversarial)):
+            adversarial = None
+
+        if adversarial is not None:
+            adversarial = torch.from_numpy(adversarial).to(device=device, dtype=dtype)
+
+        return adversarial, adversarial_result, elapsed_time
 
     def perturb(self, x, y=None):
+        if not self.original_if_failed:
+            raise RuntimeError('perturb requires original_if_failed to be True.')
         x, y = self._verify_and_process_inputs(x, y)
 
         adversarials = []
 
         for image, label in zip(x, y):
-            image = image.detach().cpu().numpy()
-            label = label.detach().cpu().item()
+            adversarial, _, _ = self.mip_attack(image, label)
 
-            adversarial, _ = self.mip_attack(image, label)
-
-            if np.any(np.isnan(adversarial)):
-                adversarial = None
-            else:
-                adversarial = torch.from_numpy(adversarial).to(x)
+            # In case of complete failure, return the original image
+            if adversarial is None:
+                adversarial = image
 
             adversarials.append(adversarial)
 
-        # TODO: Ritornare semplicemente adversarials
-        # TODO: Se togli maybe_stack, toglierlo da utils
         return utils.maybe_stack(adversarials, x.shape[1:], device=x.device)
 
+    # TODO: Rinominare
     def perturb_advanced(self, x, y=None, starting_points=None):
         x, y = self._verify_and_process_inputs(x, y)
 
@@ -336,19 +352,12 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             starting_points = [None] * len(x)
 
         for image, label, starting_point in zip(x, y, starting_points):
-            image = image.detach().cpu().numpy()
-            label = label.detach().cpu().item()
-
             if starting_point is not None:
                 #print('PyTorch Starting point label (1-indexed): ', utils.get_labels(self.predict, torch.unsqueeze(starting_point, dim=0))[0] + 1)
                 starting_point = starting_point.detach().cpu().numpy()
 
-            adversarial, adversarial_result = self.mip_attack(
-                image, label, heuristic_starting_point=starting_point)
-            if np.any(np.isnan(adversarial)):
-                adversarial = None
-            else:
-                adversarial = torch.from_numpy(adversarial).to(x)
+            adversarial, adversarial_result, solve_time = self.mip_attack(
+                image, label, starting_point=starting_point)
 
             from julia import JuMP
 
@@ -359,8 +368,6 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             upper = JuMP.getobjectivevalue(adversarial_result['Model'])
             if np.isnan(upper):
                 upper = None
-
-            solve_time = adversarial_result['WallClockTime']
 
             adversarials.append(adversarial)
             lower_bounds.append(lower)

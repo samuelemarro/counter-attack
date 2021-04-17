@@ -1079,6 +1079,28 @@
                 "1",
                 "--deterministic"
             ]
-        }
+        },
+        {
+            "name" : "MIP",
+            "type" : "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/cli.py",
+            "console": "integratedTerminal",
+            "args": [
+                "mip",
+                "cifar10",
+                "c",
+                "std:test",
+                "linf",
+                "--state-dict-path",
+                "trained-models/best-classifiers/cifar10-c.pth",
+                "--stop",
+                "5",
+                "--show",
+                "5",
+                "--pre-adversarial-dataset",
+                "attack_results/cifar_c_pgd_10.zip"
+            ]
+        },
     ]
 }

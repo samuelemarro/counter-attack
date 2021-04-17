@@ -104,7 +104,7 @@ class AdversarialDataset(data.Dataset):
     """
 
     def index_of_genuine(self, genuine, rtol=1e-5, atol=1e-8):
-        assert len(genuine).shape == 3
+        assert len(genuine.shape) == 3
         genuine = genuine.cpu()
 
         for i in range(len(self)):

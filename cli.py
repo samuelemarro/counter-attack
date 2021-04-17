@@ -63,7 +63,7 @@ def main():
 # TODO: Rifare tutti gli addestramenti
 
 # TODO: Nell'originale di Xiao e Madry non usano manco la normalisation
-# TODO: Nell'originale hanno un ReLU al fondo (devo anche aggiungerlo io a Wong?)
+# TODO: Nell'originale hanno un ReLU al fondo (devo anche aggiungerlo io a Wong?) | NON È VERO!
 
 # Appunto: conv_to_matrix preserva il grafo dei gradienti e fare la l1 sul linear è equivalente a fare una l1 sulla conv e
 # moltiplicare per la dimensione (senza channel) dell'output. Nota però che linearized_model non è
@@ -86,6 +86,14 @@ def main():
 
 # Appunto: Se uso un dataloader multi-worker con delle data augmentations, c'è un bug molto comune
 # https://www.reddit.com/r/MachineLearning/comments/mocpgj/p_using_pytorch_numpy_a_bug_that_plagues/
+
+# TODO: confrontare tempi carlini mio vs tranquillo
+
+# TODO: Togliere gli "Is this intentional?"
+
+# TODO: Se cli.py non trova julia, deve fallire silenziosamente
+
+# TODO: Impostare un MipGap (=/= MipGapAbs) appositamente basso? Oppure supportare MipGap anche nel sistema di retry?
 
 """
 Lista dei moduli ancora da controllare
