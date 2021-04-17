@@ -1099,7 +1099,10 @@
                 "--show",
                 "5",
                 "--pre-adversarial-dataset",
-                "attack_results/cifar_c_pgd_10.zip"
+                "attack_results/cifar_c_pgd_10.zip",
+                "--deterministic",
+                "--seed",
+                "0"
             ]
         },
         {
@@ -1123,7 +1126,10 @@
                 "--pre-adversarial-dataset",
                 "attack_results/cifar_c_pgd_10.zip",
                 "--attack-config-file",
-                "flawed_exploration_test.cfg"
+                "flawed_exploration_test.cfg",
+                "--deterministic",
+                "--seed",
+                "0"
             ]
         },
         {
@@ -1147,7 +1153,10 @@
                 "--pre-adversarial-dataset",
                 "attack_results/cifar_c_pgd_10.zip",
                 "--attack-config-file",
-                "complete_failure_test.cfg"
+                "complete_failure_test.cfg",
+                "--deterministic",
+                "--seed",
+                "0"
             ]
         },
         {
@@ -1169,7 +1178,10 @@
                 "--show",
                 "5",
                 "--attack-config-file",
-                "complete_failure_test.cfg"
+                "complete_failure_test.cfg",
+                "--deterministic",
+                "--seed",
+                "0"
             ]
         },
         {
@@ -1193,7 +1205,10 @@
                 "--pre-adversarial-dataset",
                 "attack_results/cifar_c_pgd_10.zip",
                 "--attack-config-file",
-                "partial_bounds_test.cfg"
+                "partial_bounds_test.cfg",
+                "--deterministic",
+                "--seed",
+                "0"
             ]
         }
     ]

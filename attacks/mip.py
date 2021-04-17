@@ -152,6 +152,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         if not MIPAttack._pyjulia_installed:
             import julia
             julia.install()
+            MIPAttack._pyjulia_installed = True
 
         self.p = p
         self.mip_model = sequential_to_mip(predict)
@@ -199,6 +200,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                                                      OutputFlag=0,
                                                      **exploration_tightening_parameters)
 
+
     def _check_model(self, image, threshold=1e-3):
         model_device = next(self.predict.parameters()).device
         torch_output = self.predict(torch.unsqueeze(torch.tensor(image).to(model_device), 0)).detach().cpu().numpy()
@@ -208,6 +210,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         julia_output = self.mip_model(image)
 
         return np.max(np.abs(torch_output - julia_output)) <= threshold
+
 
     def perform_attempt(self, image, label, main_solver, tightening_solver, perturbation_size):
         from julia import MIPVerify
@@ -268,6 +271,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
         return adversarial, lower, upper, elapsed_time
 
+
     def find_perturbation_size(self, image, label, original_perturbation_size):
         from julia import JuMP
 
@@ -279,6 +283,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                 return upper
 
         return None
+
 
     def mip_attack(self, image, label, starting_point=None):
         from julia import JuMP
@@ -331,6 +336,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
         return adversarial, lower, upper, solve_time
 
+
     def perturb(self, x, y=None):
         if not self.original_if_failed:
             raise RuntimeError('perturb requires original_if_failed to be True.')
@@ -348,6 +354,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             adversarials.append(adversarial)
 
         return utils.maybe_stack(adversarials, x.shape[1:], device=x.device)
+
 
     # TODO: Rinominare
     def perturb_advanced(self, x, y=None, starting_points=None):

@@ -87,13 +87,16 @@ def main():
 # Appunto: Se uso un dataloader multi-worker con delle data augmentations, c'è un bug molto comune
 # https://www.reddit.com/r/MachineLearning/comments/mocpgj/p_using_pytorch_numpy_a_bug_that_plagues/
 
-# TODO: confrontare tempi carlini mio vs tranquillo
+# TODO: confrontare tempi carlini mio vs tranquillo [ENTRO GIOVEDI]
 
 # TODO: Togliere gli "Is this intentional?"
 
 # TODO: Se cli.py non trova julia, deve fallire silenziosamente
 
-# TODO: Impostare un MipGap (=/= MipGapAbs) appositamente basso? Oppure supportare MipGap anche nel sistema di retry?
+# TODO: click.IntRange(1) => click.IntRange(1, None)
+# TODO: Controllare .eval() nei vari comandi
+# TODO: I tipi di attacco (standard, evasion...) dovrebbero essere in una sorta di enum?
+# Idem per misclassification_policy
 
 """
 Lista dei moduli ancora da controllare
@@ -108,7 +111,7 @@ Lista dei moduli ancora da controllare
     - cross_validation.py [p]
     - distance_dataset.py [p]
     - evasion.py [p]
-    - mip.py
+    - mip.py [mancano i test generali]
     - perfect_approximation.py [p]
     - train_approximator.py [p]
     - tune_mip.py [p?]
@@ -118,7 +121,7 @@ Lista dei moduli ancora da controllare
     Fatti:
     - AttackDataset (manca la conversione in AdversarialTrainingDataset)
     - AttackComparisonDataset
-    - MIPDataset [mancano i test con fallimenti]
+    - MIPDataset [mancano i test generali]
 - detectors.py [p]
 - full_stack_automation.py [?]
 - full_stack.py [?]
@@ -134,6 +137,7 @@ Lista dei moduli ancora da controllare
     Fatti:
     - attack
     - multiple_attack
+    - mip_test [mancano i test generali]
 - training.py
     Fatti:
     - split_dataset

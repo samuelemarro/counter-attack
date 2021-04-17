@@ -128,14 +128,14 @@ def one_many_adversarial_distance(one, many, p):
 
 def apply_misclassification_policy(model, images, true_labels, policy):
     if policy == 'ignore':
-        return images, true_labels, true_labels
+        return images, true_labels, true_labels.clone()
     else:
         predicted_labels = get_labels(model, images)
         assert predicted_labels.shape == true_labels.shape
 
         if policy == 'remove':
             correct_label = torch.eq(predicted_labels, true_labels)
-            return images[correct_label], true_labels[correct_label], true_labels[correct_label]
+            return images[correct_label], true_labels[correct_label], true_labels[correct_label].clone()
         elif policy == 'use_predicted':
             return images, true_labels, predicted_labels
         else:

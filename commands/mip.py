@@ -64,13 +64,14 @@ def mip(**kwargs):
     if kwargs['cpu_threads'] is not None:
         torch.set_num_threads(kwargs['cpu_threads'])
 
-    if kwargs['seed'] is not None:
-        logger.warning('Remember to set the different seeds for the Gurobi optimizers '
-                       'in the configuration file.')
+    seed = kwargs['seed']
+
+    if seed is not None:
         utils.set_seed(kwargs['seed'])
 
     model = parsing.parse_model(kwargs['domain'], kwargs['architecture'],
-                              kwargs['state_dict_path'], True, kwargs['masked_relu'], False, load_weights=True)
+                                kwargs['state_dict_path'], True, kwargs['masked_relu'],
+                                False, load_weights=True)
     model.eval()
 
     dataset = parsing.parse_dataset(kwargs['domain'], kwargs['dataset'],
@@ -96,6 +97,29 @@ def mip(**kwargs):
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
     attack_kwargs = attack_config.get_arguments(
         'mip', kwargs['domain'], metric, 'standard')
+
+    if seed is not None:
+        # Global seed provided: set it for all solvers that do not
+        # have a custom seed
+
+        config_names = [
+            'main_parameters',
+            'tightening_parameters',
+            'exploration_main_parameters',
+            'exploration_tightening_parameters'
+        ]
+
+        for config_name in config_names:
+            # Create the parameter dict, if necessary
+            if config_name not in attack_kwargs:
+                attack_kwargs[config_name] = dict()
+
+            if 'Seed' in attack_kwargs[config_name]:
+                logger.info('Found custom seed for %s.', config_name)
+            else:
+                logger.info('No custom seed provided for %s. Using '
+                            'the global one.', config_name)
+                attack_kwargs[config_name]['Seed'] = seed
 
     attack = attacks.MIPAttack(model, p, False, **attack_kwargs)
 

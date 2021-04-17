@@ -132,6 +132,7 @@ def mip_test(model, attack, loader, p, misclassification_policy, device, attack_
                                 for i in matching_indices]
 
             assert len(pre_images) == len(images)
+            assert all(image.shape == pre_image.shape for image, pre_image in zip(images, pre_images))
             assert len(pre_adversarials) == len(images)
 
             for i in range(len(pre_images)):

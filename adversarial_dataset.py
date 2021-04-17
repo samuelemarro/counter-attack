@@ -108,7 +108,7 @@ class AdversarialDataset(data.Dataset):
         genuine = genuine.cpu()
 
         for i in range(len(self)):
-            # Using NumPy's isclose() equation
+            # Using NumPy's isclose() inequality
             if (torch.abs(genuine - self.genuines[i]) <= atol + rtol * torch.abs(self.genuines[i])).all():
                 return i
 
