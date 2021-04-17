@@ -112,6 +112,7 @@ def evasion(**kwargs):
     defended_model = detectors.NormalisedDetectorModel(
         model, detector, kwargs['rejection_threshold'])
 
+    # TODO: I parametri sono sbagliati
     evasion_pool = parsing.parse_attack_pool(
         kwargs['evasion_attacks'], kwargs['domain'], kwargs['p'], 'evasion', model, attack_config, kwargs['device'], defended_model=defended_model)
 

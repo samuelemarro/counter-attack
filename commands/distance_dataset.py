@@ -90,6 +90,7 @@ def distance_dataset(**kwargs):
             kwargs['domain'], kwargs['from_genuine'], dataset_edges=(kwargs['start'], kwargs['stop']))
         genuine_loader = torch.utils.data.DataLoader(
             genuine_dataset, kwargs['batch_size'], shuffle=False)
+        # TODO: I parametri sono tutti sbagliati
         genuine_result_dataset = tests.attack_test(
             model, attack_pool, genuine_loader, p, kwargs['misclassification_policy'], kwargs['device'], attack_config, genuine_dataset.start, genuine_dataset.stop, kwargs, None)
 
@@ -107,6 +108,7 @@ def distance_dataset(**kwargs):
 
         adversarial_loader = torch.utils.data.DataLoader(
             adversarial_dataset, kwargs['batch_size'], shuffle=False)
+        # TODO: I parametri sono sbagliati
         adversarial_result_dataset = tests.attack_test(
             model, attack_pool, adversarial_loader, p, False, kwargs['device'], attack_config, adv_start, adv_stop, kwargs, None)
 

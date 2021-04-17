@@ -92,7 +92,7 @@ def attack(**kwargs):
             'Blind trust is activated. This means that the success of the attack will NOT be checked.')
 
     adversarial_dataset = tests.attack_test(model, attack_pool, dataloader, p, kwargs['misclassification_policy'],
-                                            kwargs['device'], kwargs, attack_config, dataset.start, dataset.stop,
+                                            kwargs['device'], attack_config, kwargs, dataset.start, dataset.stop,
                                             None, blind_trust=kwargs['blind_trust'])
     adversarial_dataset.print_stats()
 

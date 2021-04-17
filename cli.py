@@ -118,6 +118,7 @@ Lista dei moduli ancora da controllare
     Fatti:
     - AttackDataset (manca la conversione in AdversarialTrainingDataset)
     - AttackComparisonDataset
+    - MIPDataset [mancano i test con fallimenti]
 - detectors.py [p]
 - full_stack_automation.py [?]
 - full_stack.py [?]
@@ -133,23 +134,23 @@ Lista dei moduli ancora da controllare
     Fatti:
     - attack
     - multiple_attack
-- training.py (in teoria avevo già fatto una prima passata)
+- training.py
     Fatti:
     - split_dataset
     - IndexedDataset
     - StartStopDataset
     - l1_loss
-    - train [manca da pulire i print e un po' di test generali]
+    - train
     - adversarial_training
     - model_to_linear_sequence
-    - EarlyStop [mancano i test generali]
-    - ValidationTracker [mancano i test generali]
-    - conv_to_matrix [mancano i test generali]
-    - rs_loss [mancano i test generali]
-    - _interval_arithmetic [uguale]
-    - _interval_arithmetic_batch [uguale]
-    - _interval_arithmetic_all_batch [uguale]
-    - _compute_bounds_n_layers [mancano i test generali]
+    - EarlyStop
+    - ValidationTracker
+    - conv_to_matrix
+    - rs_loss
+    - _interval_arithmetic
+    - _interval_arithmetic_batch
+    - _interval_arithmetic_all_batch
+    - _compute_bounds_n_layers
 - utils.py
     Fatti:
     - save_zip

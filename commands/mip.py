@@ -55,6 +55,7 @@ def mip(**kwargs):
     parsing.set_log_level(kwargs['log_level'])
 
     if kwargs['deterministic']:
+        logger.warning('Determinism is not guaranteed for Gurobi.')
         if kwargs['seed'] is None:
             logger.warning('Determinism is enabled, but no seed has been provided.')
 
@@ -64,6 +65,8 @@ def mip(**kwargs):
         torch.set_num_threads(kwargs['cpu_threads'])
 
     if kwargs['seed'] is not None:
+        logger.warning('Remember to set the different seeds for the Gurobi optimizers '
+                       'in the configuration file.')
         utils.set_seed(kwargs['seed'])
 
     model = parsing.parse_model(kwargs['domain'], kwargs['architecture'],

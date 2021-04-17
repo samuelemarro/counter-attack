@@ -135,7 +135,8 @@ class AdversarialDataset(data.Dataset):
         print(f'Average Successful Distance: {average_distance}')
 
 class MIPDataset(data.Dataset):
-    def __init__(self, genuines, true_labels, adversarials, lower_bounds, upper_bounds, solve_times, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs):
+    def __init__(self, genuines, labels, true_labels, adversarials, lower_bounds, upper_bounds, solve_times, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs):
+        assert len(genuines) == len(labels)
         assert len(genuines) == len(true_labels)
         assert len(genuines) == len(adversarials)
         assert len(genuines) == len(lower_bounds)
@@ -145,6 +146,7 @@ class MIPDataset(data.Dataset):
                     lower for upper, lower in zip(upper_bounds, lower_bounds)])
 
         self.genuines = [genuine.detach().cpu() for genuine in genuines]
+        self.labels = [label.detach().cpu() for label in labels]
         self.true_labels = [true_label.detach().cpu()
                             for true_label in true_labels]
         self.adversarials = adversarials
@@ -159,7 +161,7 @@ class MIPDataset(data.Dataset):
         self.generation_kwargs = generation_kwargs
 
     def __getitem__(self, idx):
-        return (self.genuines[idx], self.true_labels[idx], self.adversarials[idx], self.lower_bounds[idx], self.upper_bounds[idx], self.solve_times[idx])
+        return (self.genuines[idx], self.labels[idx], self.true_labels[idx], self.adversarials[idx], self.lower_bounds[idx], self.upper_bounds[idx], self.solve_times[idx])
 
     def __len__(self):
         return len(self.genuines)
@@ -171,15 +173,18 @@ class MIPDataset(data.Dataset):
     def print_stats(self):
         absolute_differences = self.absolute_differences
         successful_absolute_differences = np.array(
-            [x for x in absolute_differences if x is None])
+            [diff for diff in absolute_differences if diff is not None])
 
         print('Median Successful Absolute Differences: ',
               np.median(successful_absolute_differences))
         print('Average Successful Absolute Differences: ',
               np.average(successful_absolute_differences))
-        print('Convergence stats:\n')
+
+        print('Convergence stats:')
         for solve_time, absolute_difference in self.convergence_stats:
             print(f'Solve time: {solve_time}, absolute difference: {absolute_difference}')
+
+        print()
 
     @property
     def convergence_stats(self):
