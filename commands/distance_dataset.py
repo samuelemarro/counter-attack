@@ -1,7 +1,6 @@
 import logging
 
 import click
-import numpy as np
 import torch
 
 import adversarial_dataset as ad
