@@ -126,7 +126,7 @@ def mip_test(model, attack, loader, p, misclassification_policy, device, attack_
 
             if any(i == -1 for i in matching_indices):
                 raise RuntimeError('Could not find a matching element in the pre-adversarial dataset '
-                                   'for a genuine. Check that you are using the correct pre-adversarial set.')
+                                   'for a genuine. Check that the correct pre-adversarial set is being used.')
 
             pre_images = [pre_adversarial_dataset.genuines[i]
                           for i in matching_indices]
@@ -152,7 +152,7 @@ def mip_test(model, attack, loader, p, misclassification_policy, device, attack_
             if not all_match:
                 raise RuntimeError('The pre-adversarials refer to different genuines. '
                                    'This can slow down MIP at best and make it fail at worst. '
-                                   'Check that you are using the correct pre-adversarial dataset.')
+                                   'Check that the correct pre-adversarial dataset is being used.')
 
         adversarials, lower_bounds, upper_bounds, solve_times = attack.perturb_advanced(
             images, y=labels, starting_points=pre_adversarials)

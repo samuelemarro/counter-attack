@@ -468,7 +468,7 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
                         del rs
 
             iterator.set_description('Training | Validation Set Loss: {:.5e}'.format(
-                val_loss.cpu().detach().item()))
+                val_loss.detach().cpu().item()))
 
             if validation_tracker is not None:
                 validation_tracker(val_loss, model)
@@ -586,7 +586,7 @@ class ValidationTracker:
         self.best_state_dict = None
 
     def __call__(self, val_loss, model):
-        val_loss = val_loss.cpu().detach().item()
+        val_loss = val_loss.detach().cpu().item()
 
         if self.best_loss is None or val_loss < self.best_loss:
             self.best_loss = val_loss
@@ -631,7 +631,7 @@ class EarlyStopping:
         self.allow_different_config = allow_different_config
 
     def __call__(self, val_loss):
-        val_loss = val_loss.cpu().detach().item()
+        val_loss = val_loss.detach().cpu().item()
 
         if self.best_loss is None:
             # First call

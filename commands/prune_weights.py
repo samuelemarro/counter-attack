@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
               help='If passed, all ReLU layers will be converted to MaskedReLU layers.')
 @click.argument('save_to', type=click.Path(exists=False, file_okay=True, dir_okay=False))
 @click.argument('threshold', type=float)
+@click.option('--device', default='cuda', show_default=True, help='The device where the model will be executed.')
 @click.option('--deterministic', is_flag=True,
               help='If passed, all computations except random number generation are deterministic (but slower).')
 @click.option('--log-level', type=click.Choice(parsing.log_levels), default='info', show_default=True,
@@ -30,6 +31,8 @@ def prune_weights(**kwargs):
     model = parsing.parse_model(kwargs['domain'], kwargs['architecture'],
                                 kwargs['original_state_dict_path'], True,
                                 kwargs['masked_relu'], False, load_weights=True)
+    model.eval()
+    model.to(kwargs['device'])
 
     pruned_count, parameter_count = pruning.prune_weights(model, kwargs['threshold'])
 

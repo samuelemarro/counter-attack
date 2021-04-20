@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 @click.option('--masked-relu', is_flag=True,
               help='If passed, all ReLU layers will be converted to MaskedReLU layers.')
 # TODO: Rimuovere?
-@click.option('--batch-size', type=click.IntRange(1), default=50, show_default=True,
+@click.option('--batch-size', type=click.IntRange(1, None), default=50, show_default=True,
               help='The batch size of the dataset.')
 @click.option('--misclassification-policy', type=click.Choice(parsing.misclassification_policies),
               default='remove', show_default=True, help='The policy that will be applied to deal with '

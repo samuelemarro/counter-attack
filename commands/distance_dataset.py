@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
               help='The source of the genuine dataset. If unspecified, no genuine dataset is used.')
 @click.option('--from-adversarial', default=None,
               help='The source of the adversarial dataset. If unspecified, no adversarial dataset is used.')
-@click.option('--batch-size', type=click.IntRange(1), default=50, show_default=True,
+@click.option('--batch-size', type=click.IntRange(1, None), default=50, show_default=True,
               help='The batch size of the dataset.')
 @click.option('--attack-config-file', type=click.Path(exists=True, file_okay=True, dir_okay=False),
               default='default_attack_configuration.cfg', show_default=True, help='The path to the file containing the '

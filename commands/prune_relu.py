@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 @click.argument('original_state_dict_path', type=click.Path(exists=True, file_okay=True, dir_okay=False))
 @click.argument('threshold', type=float)
 @click.argument('save_to', type=click.Path(exists=False, file_okay=True, dir_okay=False))
-@click.option('--batch-size', type=click.IntRange(1), default=50, show_default=True,
+@click.option('--batch-size', type=click.IntRange(1, None), default=50, show_default=True,
               help='The batch size of the dataset.')
 @click.option('--device', default='cuda', show_default=True, help='The device where the model will be executed.')
 @click.option('--cpu-threads', type=click.IntRange(1, None, False), default=None,

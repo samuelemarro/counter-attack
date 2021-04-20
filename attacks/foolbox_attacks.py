@@ -37,7 +37,7 @@ class FoolboxAttackWrapper(advertorch.attacks.LabelMixin):
         x, y = self._verify_and_process_inputs(x, y)
 
         if 'eps' in kwargs or 'epsilons' in kwargs:
-            logger.warning('You are passing eps/epsilons to a non-epsilon attack. Is this intentional?')
+            logger.warning('Passing eps/epsilons to a non-epsilon attack.')
 
         # Initialization
         if y is None:

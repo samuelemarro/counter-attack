@@ -25,7 +25,7 @@ class AttackPool(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         assert len(pool_attacks) > 0
 
         if len(pool_attacks) == 1:
-            logger.warning('You are creating an AttackPool with only one attack. Is this intentional?')
+            logger.warning('Creating an AttackPool with only one attack.')
 
         logger.debug('Creating attack pool with %s attacks.', len(pool_attacks))
 

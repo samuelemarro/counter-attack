@@ -69,8 +69,7 @@ class BestSampleAttack(attacks.Attack, attacks.LabelMixin):
     def __init__(self, wrapped_model, inner_attack, p, targeted, suppress_warning=False):
         if not suppress_warning:
             if wrapped_model is not inner_attack.predict:
-                logger.warning('BestSampleAttack was passed a model that is different from inner_attack\'s model. '
-                            'Is this intentional?')
+                logger.warning('BestSampleAttack was passed a model that is different from inner_attack\'s model.')
 
         self.wrapped_model = wrapped_model
         self.inner_attack = inner_attack

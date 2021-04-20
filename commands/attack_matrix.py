@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
               help='The path to the state-dict file of the model. If None, a pretrained model will be used (if available).')
 @click.option('--masked-relu', is_flag=True,
               help='If passed, all ReLU layers will be converted to MaskedReLU layers.')
-@click.option('--batch-size', type=click.IntRange(1), default=50, show_default=True,
+@click.option('--batch-size', type=click.IntRange(1, None), default=50, show_default=True,
               help='The batch size of the dataset.')
 @click.option('--device', default='cuda', show_default=True, help='The device where the model will be executed.')
 @click.option('--cpu-threads', type=click.IntRange(1, None, False), default=None,
@@ -98,7 +98,7 @@ def attack_matrix(**kwargs):
             'substitute_state_dict_paths must be as many values as the number of attacks.')
 
     if any(rejection_threshold > 0 for rejection_threshold in rejection_thresholds):
-        logger.warning('You are using a positive rejection threshold. Since Counter-Attack only outputs nonpositive values, '
+        logger.warning('Received a positive rejection threshold. Since Counter-Attack only outputs nonpositive values, '
                     'the detector will never reject an example.')
 
     test_names = []

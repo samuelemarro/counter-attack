@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
               help='The path to the state-dict file of the model. If None, a pretrained model will be used (if available).')
 @click.option('--masked-relu', is_flag=True,
               help='If passed, all ReLU layers will be converted to MaskedReLU layers.')
-@click.option('--batch-size', type=click.IntRange(1), default=50, show_default=True,
+@click.option('--batch-size', type=click.IntRange(1, None), default=50, show_default=True,
               help='The batch size of the dataset.')
 @click.option('--device', default='cuda', show_default=True, help='The device where the model will be executed.')
 @click.option('--cpu-threads', type=click.IntRange(1, None, False), default=None,
@@ -146,7 +146,7 @@ def train_classifier(**kwargs):
     early_stopping = None
     if kwargs['early_stopping'] > 0:
         if kwargs['choose_best'] and kwargs['early_stopping_delta'] != 0:
-            logger.warning('You are using --choose-best and --early-stopping with delta != 0. '
+            logger.warning('Received --choose-best and --early-stopping with delta != 0. '
                            'Remember that with delta != 0, --choose-best and --early-stopping '
                            'track differently the best loss and state_dict.')
         logger.debug('Adding early stopping.')
@@ -158,20 +158,15 @@ def train_classifier(**kwargs):
         adversarial_attack = None
 
         if kwargs['adversarial_ratio'] is not None:
-            logger.warning('You are passing --adversarial-ratio without --adversarial-training. '
-                           'Is this intentional?')
+            logger.warning('Received --adversarial-ratio without --adversarial-training.')
         if kwargs['adversarial_p'] is not None:
-            logger.warning('You are passing --adversarial-p without --adversarial-training. '
-                           'Is this intentional?')
+            logger.warning('Received --adversarial-p without --adversarial-training.')
         if kwargs['adversarial_eps'] is not None:
-            logger.warning('You are passing --adversarial-eps without --adversarial-training. '
-                           'Is this intentional?')
+            logger.warning('Received --adversarial-eps without --adversarial-training.')
         if kwargs['adversarial_eps_growth_epoch'] != 0:
-            logger.warning('You are passing --adversarial-eps-growth-epoch without --adversarial-training. '
-                           'Is this intentional?')
+            logger.warning('Received --adversarial-eps-growth-epoch without --adversarial-training.')
         if kwargs['adversarial_eps_growth_start'] is not None:
-            logger.warning('You are passing --adversarial-eps-growth-start without --adversarial-training. '
-                           'Is this intentional?')
+            logger.warning('Received --adversarial-eps-growth-start without --adversarial-training.')
     else:
         logger.debug('Enabling adversarial training.')
 
@@ -198,10 +193,9 @@ def train_classifier(**kwargs):
                     '(0 is also allowed).')
 
             if kwargs['early_stopping'] > 0:
-                logger.warning('You are using --adversarial-eps-growth-epoch and --early-stopping together. Is this intentional?')
+                logger.warning('Received --adversarial-eps-growth-epoch and --early-stopping together.')
         elif kwargs['adversarial_eps_growth_start'] is not None:
-            logger.warning('You are passing --adversarial-eps-growth-start without --adversarial-eps-growth-epoch. '
-                           'Is this intentional?')
+            logger.warning('Received --adversarial-eps-growth-start without --adversarial-eps-growth-epoch.')
 
         attack_config = utils.read_attack_config_file(
             kwargs['adversarial_cfg_file'])
@@ -212,22 +206,19 @@ def train_classifier(**kwargs):
     # RS loss
     if kwargs['rs_regularization'] == 0:
         if kwargs['rs_eps'] is not None:
-            logger.warning('You are passing --rs-eps without --rs-regularization. '
-                           'Is this intentional?')
+            logger.warning('Received --rs-eps without --rs-regularization.')
         if kwargs['rs_start_epoch'] != 1:
-            logger.warning('You are passing --rs-start_epoch without --rs-regularization. '
-                           'Is this intentional?')
+            logger.warning('Received --rs-start_epoch without --rs-regularization.')
     else:
         if kwargs['rs_eps'] is None:
             raise click.BadOptionUsage(
                 '--rs-eps', 'Please specify the maximum perturbation for RS loss with --rs-eps.')
 
         if kwargs['rs_start_epoch'] > kwargs['epochs']:
-            logger.warning('--rs-start-epoch is higher than the number of epochs. This means that RS loss will never be activated. '
-                           'Is this intentional?')
+            logger.warning('--rs-start-epoch is higher than the number of epochs. This means that RS loss will never be activated.')
 
         if kwargs['rs_start_epoch'] > 1 and kwargs['early_stopping'] > 0:
-            logger.warning('You are using --rs-start-epoch and --early-stopping together. Is this intentional?')
+            logger.warning('Received --rs-start-epoch and --early-stopping together.')
 
     # Use Mean Cross Entropy, consistent with Xiao and Madry's ReLU training technique
     loss = torch.nn.CrossEntropyLoss(reduction='mean')

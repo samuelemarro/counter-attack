@@ -1,8 +1,13 @@
 # PyTorch has some serious bugs concerning dll loading:
 # If PyTorch is loaded before Julia, Julia's import fails.
 # We therefore import Julia before anything else
-import julia
-from julia import Base
+try:
+    import julia
+    from julia import Base
+except ImportError:
+    # Silent failure, if the program actually
+    # needs Julia it will re-raise an error
+    pass
 
 import logging
 
@@ -16,9 +21,6 @@ def main():
     pass
 
 # TODO: Eseguire gli addestramenti adversarial e RS
-# TODO: Linf, L2 -> inf, 2
-
-# TODO: Rimuovere gli attacchi non usati
 
 # Nota: Se negli evasion l'originale viene rifiutato ma l'adversarial no, l'adversarial conta
 # come successo anche se ha mantenuto la stessa label di partenza
@@ -27,9 +29,6 @@ def main():
 # TODO: Tanto logging
 
 # TODO: Formalizzare full_stack.py
-
-# TODO: Finire il debugging di attacks/mip.py
-# TODO: Il comando mip è un comando a sé da debuggare!
 
 # TODO: accuracy.py che fa l'override di dataset per --from-adversarial-dataset non è bellissimo
 # TODO: Droppare completamente il supporto per L2?
@@ -73,22 +72,10 @@ def main():
 
 # TODO: Se uso MaskedReLU in un modello obiettivo di attacco non-MIP, devo debuggare questo caso
 
-# TODO: Se metto la data augmentation per RS training, bisogna anche usarla per prune-relu?
-
 # Appunto: Se uso un dataloader multi-worker con delle data augmentations, c'è un bug molto comune
 # https://www.reddit.com/r/MachineLearning/comments/mocpgj/p_using_pytorch_numpy_a_bug_that_plagues/
 
 # TODO: confrontare tempi carlini mio vs tranquillo [ENTRO GIOVEDI]
-
-# TODO: Togliere gli "Is this intentional?"
-
-# TODO: Se cli.py non trova julia, deve fallire silenziosamente
-
-# TODO: click.IntRange(1) => click.IntRange(1, None)
-# TODO: Controllare .eval() nei vari comandi
-# TODO: I tipi di attacco (standard, evasion...) dovrebbero essere in una sorta di enum?
-# TODO: .cpu().detach() -> .detach().cpu()
-# Idem per misclassification_policy
 
 """
 Lista dei moduli ancora da controllare

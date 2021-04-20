@@ -68,7 +68,7 @@ training_options = [
     click.option('--early-stopping-delta', type=float, default=0, show_default=True,
                  help='The minimum improvement required to reset early stopping\'s patience.'),
     click.option('--shuffle', type=bool, default=True, show_default=True),
-    click.option('--checkpoint-every', type=click.IntRange(1), default=None,
+    click.option('--checkpoint-every', type=click.IntRange(1, None), default=None,
                 help='How often the program saves a checkpoint.'),
     click.option('--load-checkpoint', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None,
                 help='If passed, the program will load an existing checkpoint.'),
@@ -426,7 +426,7 @@ def parse_detector(attack_name, domain, p, attack_type, model, attack_config, de
 
     if attack_type != 'defense':
         logger.warning(
-            f'You are using an attack of type "{attack_type}" for a detector. Is this intentional?')
+            f'Using an attack of type "{attack_type}" for a detector.')
 
     attack = parse_attack(attack_name, domain, p, attack_type,
                         model, attack_config, device, defended_model=None)
