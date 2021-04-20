@@ -212,7 +212,7 @@ def parse_optimiser(optimiser_name, learnable_parameters, options):
 # Targeted FGSM is introduced in
 # http://bengio.abracadoudou.com/publications/pdf/kurakin_2017_iclr_physical.pdf
 
-def parse_attack(attack_name, domain, p, attack_type, model, attack_config, device, defended_model=None):
+def parse_attack(attack_name, domain, p, attack_type, model, attack_config, device, defended_model=None, seed=None):
     logger.debug('Parsing %s attack %s-%s (using defended: %s).', attack_type,
                  attack_name, p, defended_model is not None)
 
@@ -328,7 +328,7 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, devi
         if attack_type == 'evasion':
             raise NotImplementedError('MIP does not support evasion.')
         attack = attacks.MIPAttack(
-            target_model, p, targeted=evade_detector, **kwargs)
+            target_model, p, targeted=evade_detector, seed=seed, **kwargs)
     elif attack_name == 'pgd':
         if metric == 'l2':
             attack = advertorch.attacks.L2PGDAttack(
@@ -394,7 +394,7 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, devi
     return attack
 
 
-def parse_attack_pool(attack_names, domain, p, attack_type, model, attack_config, device, defended_model=None):
+def parse_attack_pool(attack_names, domain, p, attack_type, model, attack_config, device, defended_model=None, seed=None):
     logger.debug('Parsing %s attack pool %s for %s (using defended: %s).', attack_type,
                  attack_names, p, defended_model is not None)
     evade_detector = (attack_type == 'evasion')
@@ -407,7 +407,7 @@ def parse_attack_pool(attack_names, domain, p, attack_type, model, attack_config
     attack_pool = []
     for attack_name in attack_names:
         attack_pool.append(parse_attack(attack_name, domain, p, attack_type,
-                                      model, attack_config, device, defended_model=defended_model))
+                                      model, attack_config, device, defended_model=defended_model, seed=seed))
 
     if len(attack_pool) == 1:
         return attack_pool[0]
@@ -435,8 +435,10 @@ def parse_detector(attack_name, domain, p, attack_type, model, attack_config, de
 
     if use_substitute:
         # TODO: è corretto che use_grad=False?
+        # TODO: Valore di seed
+        seed = None
         substitute_detector = parse_model(
-            domain, substitute_state_dict_path, True, False, load_weights=True, as_detector=True)
+            domain, substitute_state_dict_path, True, False, load_weights=True, as_detector=True, seed=seed)
 
         # The substitute model returns a [batch_size, 1] matrix, while we need a [batch_size] vector
         substitute_detector = torch.nn.Sequential(

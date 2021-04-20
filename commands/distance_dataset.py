@@ -74,7 +74,7 @@ def distance_dataset(**kwargs):
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
 
     attack_pool = parsing.parse_attack_pool(
-        kwargs['attacks'], kwargs['domain'], kwargs['p'], 'standard', model, attack_config, kwargs['device'])
+        kwargs['attacks'], kwargs['domain'], kwargs['p'], 'standard', model, attack_config, kwargs['device'], seed=kwargs['seed'])
 
     p = kwargs['p']
 

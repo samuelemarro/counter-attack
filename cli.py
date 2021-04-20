@@ -24,15 +24,6 @@ def main():
 # come successo anche se ha mantenuto la stessa label di partenza
 # TODO: Testare!
 
-# TODO: Quando non trova il sample di partenza (a causa di bound troppo stretti), fa 7200 secondi sprecati.
-# Contemporaneamente, usare dei bound troppo larghi rallenta incredibilmente l'esecuzione
-# Nota che il fatto che anche se la soluzione è infeasible non è detto che MIP non riesca a trovare uno start
-# Avrei perciò un'idea: se ci fosse un modo per sapere molto velocemente se MIP riesce a trovare uno start, potrei usare
-# un bound minuscolo e crescere da lì
-# Problema #2: nella maggior parte dei casi, sembra che una volta trovato il valore giusto, faccia comunque pena.
-
-# TODO: Devo abbandonare l'idea di sapere subito se un tempo è feasible? Se è così, devo permettere di passare un tempo diverso di esplorazione
-
 # TODO: Tanto logging
 
 # TODO: Formalizzare full_stack.py
@@ -96,6 +87,7 @@ def main():
 # TODO: click.IntRange(1) => click.IntRange(1, None)
 # TODO: Controllare .eval() nei vari comandi
 # TODO: I tipi di attacco (standard, evasion...) dovrebbero essere in una sorta di enum?
+# TODO: .cpu().detach() -> .detach().cpu()
 # Idem per misclassification_policy
 
 """
@@ -104,6 +96,13 @@ Lista dei moduli ancora da controllare
 - attacks
     - k_best_target [p]
     - mip.py
+        Fatti:
+        - __init__
+        - _check_model
+        - _run_mipverify
+        - _mip_success
+        - _find_perturbation_size
+        - _mip_attack
     - random_target [p]
 - commands
     - accuracy.py (quasi fatto)
@@ -111,7 +110,6 @@ Lista dei moduli ancora da controllare
     - cross_validation.py [p]
     - distance_dataset.py [p]
     - evasion.py [p]
-    - mip.py [mancano i test generali]
     - perfect_approximation.py [p]
     - train_approximator.py [p]
     - tune_mip.py [p?]
@@ -192,6 +190,10 @@ Da implementare:
 - compattamento output
 
 """
+
+# Cosa guardare nei test generali?
+# - Pooling nell'AdversarialDataset
+# - Funzionamento attacchi e attack_test
 
 
 main.add_command(commands.accuracy)

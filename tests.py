@@ -10,7 +10,7 @@ import adversarial_dataset
 logger = logging.getLogger(__name__)
 
 # TODO: A volte attack_config è prima di generation_kwargs, a volte dopo
-
+SIMILARITY_THRESHOLD = 1e-6
 
 def accuracy(model, loader, device):
     correct_count = 0
@@ -123,9 +123,11 @@ def mip_test(model, attack, loader, p, misclassification_policy, device, attack_
         else:
             matching_indices = pre_adversarial_dataset.index_of_genuines(
                 images)
+
             if any(i == -1 for i in matching_indices):
                 raise RuntimeError('Could not find a matching element in the pre-adversarial dataset '
                                    'for a genuine. Check that you are using the correct pre-adversarial set.')
+
             pre_images = [pre_adversarial_dataset.genuines[i]
                           for i in matching_indices]
             pre_adversarials = [pre_adversarial_dataset.adversarials[i]
@@ -136,13 +138,16 @@ def mip_test(model, attack, loader, p, misclassification_policy, device, attack_
             assert len(pre_adversarials) == len(images)
 
             for i in range(len(pre_images)):
+                assert pre_images[i].shape == images[i].shape
                 pre_images[i] = pre_images[i].to(device)
+
                 if pre_adversarials[i] is not None:
+                    assert pre_adversarials[i].shape == images[i].shape
                     pre_adversarials[i] = pre_adversarials[i].to(device)
 
             # Check that the images are the same
             all_match = all([torch.max(torch.abs(image - pre_image))
-                             < 1e-6 for image, pre_image in zip(images, pre_images)])
+                             < SIMILARITY_THRESHOLD for image, pre_image in zip(images, pre_images)])
 
             if not all_match:
                 raise RuntimeError('The pre-adversarials refer to different genuines. '

@@ -83,7 +83,7 @@ def attack(**kwargs):
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
 
     attack_pool = parsing.parse_attack_pool(
-        kwargs['attacks'], kwargs['domain'], kwargs['p'], kwargs['attack_type'], model, attack_config, kwargs['device'])
+        kwargs['attacks'], kwargs['domain'], kwargs['p'], kwargs['attack_type'], model, attack_config, kwargs['device'], seed=kwargs['seed'])
 
     p = kwargs['p']
 

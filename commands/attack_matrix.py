@@ -114,7 +114,7 @@ def attack_matrix(**kwargs):
                 model, detector, rejection_threshold)
 
             evasion_attack = parsing.parse_attack(
-                evasion_attack_name, kwargs['domain'], kwargs['p'], 'evasion', model, attack_config, kwargs['device'], defended_model=defended_model)
+                evasion_attack_name, kwargs['domain'], kwargs['p'], 'evasion', model, attack_config, kwargs['device'], defended_model=defended_model, seed=kwargs['seed'])
 
             test_name = f'{evasion_attack_name} vs {counter_attack_name}'
 

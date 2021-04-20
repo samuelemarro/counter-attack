@@ -58,7 +58,7 @@ def tune_mip(**kwargs):
 
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
     attack = parsing.parse_attack(
-        'mip', kwargs['domain'], kwargs['p'], 'standard', model, attack_config, 'cpu')
+        'mip', kwargs['domain'], kwargs['p'], 'standard', model, attack_config, 'cpu', seed=kwargs['seed'])
 
     # TODO: model.cpu()?
 

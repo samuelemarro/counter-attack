@@ -114,7 +114,7 @@ def evasion(**kwargs):
 
     # TODO: I parametri sono sbagliati
     evasion_pool = parsing.parse_attack_pool(
-        kwargs['evasion_attacks'], kwargs['domain'], kwargs['p'], 'evasion', model, attack_config, kwargs['device'], defended_model=defended_model)
+        kwargs['evasion_attacks'], kwargs['domain'], kwargs['p'], 'evasion', model, attack_config, kwargs['device'], defended_model=defended_model, seed=kwargs['seed'])
 
     adversarial_dataset = tests.attack_test(
         model, evasion_pool, dataloader, p, kwargs['misclassification_policy'], kwargs['device'], attack_config, dataset.start, dataset.stop, kwargs, defended_model)

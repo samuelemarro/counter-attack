@@ -81,7 +81,7 @@ def compare(**kwargs):
 
     for attack_name in attack_names:
         attack = parsing.parse_attack(
-            attack_name, kwargs['domain'], p, 'standard', model, attack_config, device)
+            attack_name, kwargs['domain'], p, 'standard', model, attack_config, device, seed=kwargs['seed'])
         attacks.append(attack)
 
     result_dataset = tests.multiple_attack_test(model, attack_names, attacks, dataloader, p,

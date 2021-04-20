@@ -92,7 +92,7 @@ def prune_relu(**kwargs):
     attack_config = utils.read_attack_config_file(kwargs['attack_config_file'])
 
     attack_pool = parsing.parse_attack_pool(
-        kwargs['attacks'], kwargs['domain'], kwargs['p'], 'training', model, attack_config, device)
+        kwargs['attacks'], kwargs['domain'], kwargs['p'], 'training', model, attack_config, device, seed=kwargs['seed'])
 
     converted_model, total_relus, replaced_relus = pruning.prune_relu(
         model, dataloader, attack_pool, kwargs['adversarial_ratio'],

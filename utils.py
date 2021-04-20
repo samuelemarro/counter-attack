@@ -243,6 +243,10 @@ def show_images(images, adversarials, limit=None, model=None):
                 successful_images.append(image)
                 successful_adversarials.append(adversarial)
 
+        if len(successful_adversarials) == 0:
+            logger.warning('No successful adversarials. Skipping show_images.')
+            return
+
         successful_images = torch.stack(successful_images)
         successful_adversarials = torch.stack(successful_adversarials)
 

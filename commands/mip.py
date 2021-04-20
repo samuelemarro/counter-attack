@@ -56,6 +56,7 @@ def mip(**kwargs):
 
     if kwargs['deterministic']:
         logger.warning('Determinism is not guaranteed for Gurobi.')
+
         if kwargs['seed'] is None:
             logger.warning('Determinism is enabled, but no seed has been provided.')
 
@@ -98,33 +99,14 @@ def mip(**kwargs):
     attack_kwargs = attack_config.get_arguments(
         'mip', kwargs['domain'], metric, 'standard')
 
-    if seed is not None:
-        # Global seed provided: set it for all solvers that do not
-        # have a custom seed
+    attack = attacks.MIPAttack(model, p, False, seed=seed, **attack_kwargs)
 
-        config_names = [
-            'main_parameters',
-            'tightening_parameters',
-            'exploration_main_parameters',
-            'exploration_tightening_parameters'
-        ]
+    mip_dataset = tests.mip_test(
+        model, attack, dataloader, p,
+        kwargs['misclassification_policy'], kwargs['device'], attack_config,
+        kwargs, start=dataset.start, stop=dataset.stop,
+        pre_adversarial_dataset=pre_adversarial_dataset)
 
-        for config_name in config_names:
-            # Create the parameter dict, if necessary
-            if config_name not in attack_kwargs:
-                attack_kwargs[config_name] = dict()
-
-            if 'Seed' in attack_kwargs[config_name]:
-                logger.info('Found custom seed for %s.', config_name)
-            else:
-                logger.info('No custom seed provided for %s. Using '
-                            'the global one.', config_name)
-                attack_kwargs[config_name]['Seed'] = seed
-
-    attack = attacks.MIPAttack(model, p, False, **attack_kwargs)
-
-    mip_dataset = tests.mip_test(model, attack, dataloader, p, kwargs['misclassification_policy'], kwargs['device'], attack_config, kwargs,
-                                 start=dataset.start, stop=dataset.stop, pre_adversarial_dataset=pre_adversarial_dataset)
     mip_dataset.print_stats()
 
     if kwargs['save_to'] is not None:

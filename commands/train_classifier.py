@@ -207,7 +207,7 @@ def train_classifier(**kwargs):
             kwargs['adversarial_cfg_file'])
 
         adversarial_attack = parsing.parse_attack_pool(
-            kwargs['adversarial_training'], kwargs['domain'], kwargs['adversarial_p'], 'training', model, attack_config, kwargs['device'])
+            kwargs['adversarial_training'], kwargs['domain'], kwargs['adversarial_p'], 'training', model, attack_config, kwargs['device'], seed=kwargs['seed'])
 
     # RS loss
     if kwargs['rs_regularization'] == 0:
