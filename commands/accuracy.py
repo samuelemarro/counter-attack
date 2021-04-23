@@ -45,7 +45,7 @@ def accuracy(**kwargs):
         torch.set_num_threads(kwargs['cpu_threads'])
 
     model = parsing.parse_model(kwargs['domain'], kwargs['architecture'],
-                              kwargs['state_dict_path'], True, kwargs['masked_relu'], False, load_weights=True)
+                              kwargs['state_dict_path'], False, kwargs['masked_relu'], False, load_weights=True)
     model.eval()
 
     dataset = parsing.parse_dataset(kwargs['domain'], kwargs['dataset'], dataset_edges=(

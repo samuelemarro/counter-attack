@@ -18,8 +18,6 @@ logger = logging.getLogger(__name__)
 @click.argument('dataset', type=click.Path(exists=True, file_okay=True, dir_okay=False))
 @click.argument('epochs', type=click.IntRange(1, None))
 @click.argument('save_to', type=click.Path(exists=False, file_okay=True, dir_okay=False))
-@click.option('--state-dict-path', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None,
-              help='The path to the state-dict file of the model. If None, a pretrained model will be used (if available).')
 @click.option('--masked-relu', is_flag=True,
               help='If passed, all ReLU layers will be converted to MaskedReLU layers.')
 @click.option('--batch-size', type=click.IntRange(1, None), default=50, show_default=True,
@@ -52,8 +50,8 @@ def train_approximator(**kwargs):
     if kwargs['seed'] is not None:
         utils.set_seed(kwargs['seed'])
 
-    model = parsing.parse_model(kwargs['domain'], kwargs['architecture'], kwargs['state_dict_path'],
-                              True, kwargs['masked_relu'], True, load_weights=False, as_detector=True)
+    model = parsing.parse_model(kwargs['domain'], kwargs['architecture'], None,
+                              False, kwargs['masked_relu'], True, load_weights=False, as_detector=True)
     model.train()
 
     train_dataset = parsing.parse_dataset(

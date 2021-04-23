@@ -69,7 +69,7 @@ def attack_matrix(**kwargs):
         utils.set_seed(kwargs['seed'])
 
     model = parsing.parse_model(kwargs['domain'], kwargs['architecture'],
-                              kwargs['state_dict_path'], True, kwargs['masked_relu'], False, load_weights=True)
+                              kwargs['state_dict_path'], False, kwargs['masked_relu'], False, load_weights=True)
     model.eval()
     model.to(kwargs['device'])
 

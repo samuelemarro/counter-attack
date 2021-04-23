@@ -29,7 +29,7 @@ def prune_weights(**kwargs):
         utils.enable_determinism()
 
     model = parsing.parse_model(kwargs['domain'], kwargs['architecture'],
-                                kwargs['original_state_dict_path'], True,
+                                kwargs['original_state_dict_path'], False,
                                 kwargs['masked_relu'], False, load_weights=True)
     model.eval()
     model.to(kwargs['device'])
