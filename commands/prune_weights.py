@@ -10,7 +10,7 @@ import utils
 logger = logging.getLogger(__name__)
 
 @click.command()
-@click.argument('domain')
+@click.argument('domain', type=click.Choice(parsing.domains))
 @click.argument('architecture', type=click.Choice(parsing.architectures))
 @click.argument('original_state_dict_path')
 @click.option('--masked-relu', is_flag=True,
