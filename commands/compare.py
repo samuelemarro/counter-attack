@@ -45,6 +45,8 @@ logger = logging.getLogger(__name__)
               help='The seed for random generation. If unspecified, the current time is used as seed.')
 @click.option('--deterministic', is_flag=True,
               help='If passed, all computations except random number generation are deterministic (but slower).')
+@click.option('--show', type=click.IntRange(1, None), default=None,
+              help='The number of adversarials to be shown. If unspecified, no adversarials are shown.')
 @click.option('--log-level', type=click.Choice(parsing.log_levels), default='info', show_default=True,
               help='The minimum logging level.')
 def compare(**kwargs):
@@ -183,6 +185,14 @@ def compare(**kwargs):
         for winner, loser_dict in victory_matrix.items():
             for loser, rate in loser_dict.items():
                 print('{} beats {}: {:.2f}%'.format(winner, loser, rate * 100.0))
+
+    if kwargs['show'] is not None:
+        print()
+        print('Showing top results')
+        best_results = result_dataset.simulate_pooling(attack_names)
+
+        utils.show_images(best_results.genuines,
+                          best_results.adversarials, limit=kwargs['show'], model=model)
 
     if kwargs['save_to'] is not None:
         utils.save_zip(result_dataset, kwargs['save_to'])
