@@ -306,8 +306,6 @@ def l1_loss(model, input_shape, device):
 
     return loss
 
-# TODO prima dei test generali: controllare se ci sono TODO in giro
-
 # Note: Xiao and Madry's ReLU training technique also supports sparse weight initialization,
 # which is however disabled by default
 
@@ -471,7 +469,7 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
                 val_loss.detach().cpu().item()))
 
             if validation_tracker is not None:
-                validation_tracker(val_loss, model)
+                validation_tracker(val_loss, model, epoch)
 
             if early_stopping is not None:
                 early_stopping(val_loss)
@@ -502,7 +500,9 @@ def train(model, train_loader, optimiser, loss_function, max_epochs, device, val
 
     if validation_tracker is not None:
         assert validation_tracker.best_state_dict is not None
-        logger.info('Validation tracker: Loading best state dict.')
+        assert validation_tracker.best_epoch != -1
+
+        logger.info('Validation tracker: Loading best state dict (epoch %s).', validation_tracker.best_epoch + 1)
         model.load_state_dict(validation_tracker.best_state_dict)
 
 class StartStopDataset(torch.utils.data.Dataset):
@@ -584,23 +584,27 @@ class ValidationTracker:
     def __init__(self):
         self.best_loss = None
         self.best_state_dict = None
+        self.best_epoch = -1
 
-    def __call__(self, val_loss, model):
+    def __call__(self, val_loss, model, epoch):
         val_loss = val_loss.detach().cpu().item()
 
         if self.best_loss is None or val_loss < self.best_loss:
             self.best_loss = val_loss
             self.best_state_dict = model.state_dict()
+            self.best_epoch = epoch
 
     def state_dict(self):
         return {
             'best_loss' : self.best_loss,
-            'best_state_dict' : self.best_state_dict
+            'best_state_dict' : self.best_state_dict,
+            'best_epoch' : self.best_epoch
         }
 
     def load_state_dict(self, state_dict):
         self.best_loss = state_dict['best_loss']
-        self.best_state_dict = state_dict['best_state_dict'] 
+        self.best_state_dict = state_dict['best_state_dict']
+        self.best_epoch = state_dict['best_epoch']
 
 class EarlyStopping:
     """
