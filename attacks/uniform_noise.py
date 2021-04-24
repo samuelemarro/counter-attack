@@ -4,6 +4,8 @@ import torch
 
 import utils
 
+MAX_DISTANCE = 1e8
+
 class UniformNoiseAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     def __init__(self, predict, p, targeted, eps=0.3, count=100, clip_min=0, clip_max=1):
         super().__init__(predict, None, clip_min, clip_max)
@@ -26,7 +28,7 @@ class UniformNoiseAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixi
 
         with torch.no_grad():
             best_adversarials = x.clone()
-            best_distances = torch.ones((batch_size,), device=x.device) * np.inf
+            best_distances = torch.ones((batch_size,), device=x.device) * MAX_DISTANCE
 
             for _ in range(self.count):
                 noise = torch.rand(x.shape, device=x.device)
