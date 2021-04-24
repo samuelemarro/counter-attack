@@ -39,7 +39,7 @@ class CounterAttackDetector(Detector):
 
         assert len(distances) == len(x)
 
-        labels = utils.get_labels(self.model, x)
+        labels = utils.get_labels(self.model, x).detach()
         successful = utils.misclassified(
             self.model, adversarials, labels, False).detach()
 

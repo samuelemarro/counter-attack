@@ -23,7 +23,7 @@ def accuracy(model, loader, device):
         images = images.to(device)
         true_labels = true_labels.to(device)
 
-        predicted_labels = utils.get_labels(model, images)
+        predicted_labels = utils.get_labels(model, images).detach()
 
         correct = torch.eq(predicted_labels, true_labels)
         correct_count += len(torch.nonzero(correct))

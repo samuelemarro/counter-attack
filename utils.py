@@ -130,7 +130,7 @@ def apply_misclassification_policy(model, images, true_labels, policy):
     if policy == 'ignore':
         return images, true_labels, true_labels.clone()
     else:
-        predicted_labels = get_labels(model, images)
+        predicted_labels = get_labels(model, images).detach()
         assert predicted_labels.shape == true_labels.shape
 
         if policy == 'remove':
@@ -260,7 +260,7 @@ def show_images(images, adversarials, limit=None, model=None):
             labels = [None] * len(successful_images)
             adversarial_labels = [None] * len(successful_images)
         elif len(successful_images) > 0:
-            labels = get_labels(model, successful_images)
+            labels = get_labels(model, successful_images).detach()
             adversarial_labels = get_labels(model, successful_adversarials)
         else:
             labels = []
@@ -342,7 +342,7 @@ def create_label_dataset(model, images, batch_size):
         # Convert to tensor
         image_batch = torch.stack(image_batch).squeeze(0)
 
-        label_batch = get_labels(model, image_batch)
+        label_batch = get_labels(model, image_batch).detach()
         labels += list(label_batch)
 
     labels = torch.stack(labels)
