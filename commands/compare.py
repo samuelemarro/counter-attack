@@ -96,11 +96,19 @@ def compare(**kwargs):
 
     if kwargs['show'] is not None:
         print()
-        print('Showing top results')
+        print('Showing top results.')
         best_results = result_dataset.simulate_pooling(attack_names)
 
         utils.show_images(best_results.genuines,
                           best_results.adversarials, limit=kwargs['show'], model=model)
+
+        for attack_name in attack_names:
+            print(f'Showing results for {attack_name}.')
+
+            attack_results = result_dataset.simulate_pooling([attack_name])
+
+            utils.show_images(attack_results.genuines,
+                              attack_results.adversarials, limit=kwargs['show'], model=model)
 
     if kwargs['save_to'] is not None:
         utils.save_zip(result_dataset, kwargs['save_to'])
