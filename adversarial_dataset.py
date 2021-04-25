@@ -239,12 +239,8 @@ class AttackComparisonDataset(data.Dataset):
     def __len__(self):
         return len(self.genuines)
 
-    def to_adversarial_dataset(self, attack_name):
-        if attack_name not in self.attack_names:
-            raise ValueError(f'attack_name must be one of {self.attack_names}.')
-        adversarials = [attack_result[attack_name]
-                        for attack_result in self.attack_results]
-        return AdversarialDataset(self.genuines, self.labels, self.true_labels, adversarials, self.p, self.misclassification_policy, self.attack_configuration, self.start, self.stop, self.generation_kwargs)
+    def to_adversarial_dataset(self, attack_names):
+        return self.simulate_pooling(attack_names)
 
     def simulate_pooling(self, selected_attacks):
         # Note: if multiple results have the same distance, it returns
