@@ -57,6 +57,11 @@ def attack_test(model, attack, loader, p, misclassification_policy, device, atta
         images, true_labels, labels = utils.apply_misclassification_policy(
             model, images, true_labels, misclassification_policy)
 
+        if len(images) == 0:
+            assert misclassification_policy == 'remove'
+            logger.warning('0 images left after removing misclassified, skipping batch.')
+            continue
+
         adversarials = attack.perturb(images, y=labels).detach()
         assert adversarials.shape == images.shape
 
@@ -116,6 +121,11 @@ def mip_test(model, attack, loader, p, misclassification_policy, device, attack_
 
         images, true_labels, labels = utils.apply_misclassification_policy(
             model, images, true_labels, misclassification_policy)
+
+        if len(images) == 0:
+            assert misclassification_policy == 'remove'
+            logger.warning('0 images left after removing misclassified, skipping batch.')
+            continue
 
         if pre_adversarial_dataset is None:
             pre_images = None
@@ -213,6 +223,11 @@ def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p
         images, true_labels, labels = utils.apply_misclassification_policy(
             model, images, true_labels, misclassification_policy)
 
+        if len(images) == 0:
+            assert misclassification_policy == 'remove'
+            logger.warning('0 images left after removing misclassified, skipping batch.')
+            continue
+
         attack_results = [dict() for _ in range(len(images))]
 
         for test_name, attack, defended_model in zip(test_names, attacks, defended_models):
@@ -266,6 +281,11 @@ def multiple_attack_test(model, attack_names, attacks, loader, p, misclassificat
         # be the same as true_labels, depending on the misclassification policy)
         images, true_labels, labels = utils.apply_misclassification_policy(
             model, images, true_labels, misclassification_policy)
+
+        if len(images) == 0:
+            assert misclassification_policy == 'remove'
+            logger.warning('0 images left after removing misclassified, skipping batch.')
+            continue
 
         attack_results = [dict() for _ in range(len(images))]
 

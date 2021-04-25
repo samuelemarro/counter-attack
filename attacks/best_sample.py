@@ -23,7 +23,7 @@ class BestSampleTracker:
         self.found_adversarial = torch.zeros(
             [len(genuines)], device=genuines.device, dtype=torch.bool)
         self.best_distances = torch.zeros(
-            [len(genuines)], device=genuines.device)
+            [len(genuines)], device=genuines.device, dtype=genuines.dtype)
 
 
 class BestSampleWrapper(nn.Module):
@@ -51,9 +51,10 @@ class BestSampleWrapper(nn.Module):
 
             distances = utils.adversarial_distance(
                 self.tracker.genuines, x, self.tracker.p)
-            better_distances = distances < self.tracker.best_distances
+            better_distance = distances < self.tracker.best_distances
+
             # Replace only if successful and with a better distance
-            replace = successful & (better_distances | (
+            replace = successful & (better_distance | (
                 ~self.tracker.found_adversarial))
 
             self.tracker.best = utils.fast_boolean_choice(

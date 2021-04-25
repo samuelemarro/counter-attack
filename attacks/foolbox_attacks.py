@@ -91,8 +91,6 @@ class BrendelBethgeAttack(FoolboxAttackWrapper):
         else:
             raise NotImplementedError('Unsupported metric.')
 
-        self.torch_model = model
-
         super().__init__(model, foolbox_attack, targeted,
                          clip_min=clip_min, clip_max=clip_max)
 
@@ -120,12 +118,15 @@ class BrendelBethgeAttack(FoolboxAttackWrapper):
                 else:
                     init_attack = self.foolbox_attack.init_attack
 
+                # Always pass the entire batch to an attack (mostly for BestSample tracking reasons)
                 fallback_adversarials = init_attack(self.foolbox_model, x, criterion, epsilons=None)[1]
 
                 starting_points[fallback] = fallback_adversarials[fallback]
 
-        return super().perturb(x, y=y, starting_points=starting_points)
+        # If starting_points is None, it will default to BrendelBethge's default behaviour
+        # (which is to initialize all of them with LinearSearchBlendedUniformNoiseAttack)
 
+        return super().perturb(x, y=y, starting_points=starting_points)
 
 class DeepFoolAttack(FoolboxAttackWrapper):
     def __init__(

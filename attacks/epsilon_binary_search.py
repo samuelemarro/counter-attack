@@ -3,6 +3,8 @@ import torch
 import attacks
 import utils
 
+MAX_DISTANCE = 1e8
+
 # N.B.: This implementation updates eps based only on whether the attack was successful.
 # Whether the attack found a better distance does not influence the eps update.
 
@@ -10,7 +12,7 @@ class EpsilonBinarySearchAttack(attacks.AdvertorchWrapper):
     def __init__(self, inner_attack, p, targeted=False, min_eps=0, max_eps=1, eps_initial_search_steps=9, eps_binary_search_steps=9):
         if not isinstance(inner_attack, attacks.EpsilonAttack):
             raise ValueError('inner_attack must be an EpsilonAttack.')
-        
+
         super().__init__(inner_attack)
 
         self.p = p
@@ -36,12 +38,12 @@ class EpsilonBinarySearchAttack(attacks.AdvertorchWrapper):
             y = self._get_predicted_label(x)
 
         best_adversarials = x.clone()
-        N = x.shape[0]
+        batch_size = len(x)
 
-        eps_lower_bound = torch.ones((N,), device=x.device) * self.min_eps
-        eps_upper_bound = torch.ones((N,), device=x.device) * self.max_eps
+        eps_lower_bound = torch.ones((batch_size,), device=x.device) * self.min_eps
+        eps_upper_bound = torch.ones((batch_size,), device=x.device) * self.max_eps
         best_distances = torch.ones(
-            (N), device=x.device) * torch.finfo(x.dtype).max
+            (batch_size), device=x.device) * MAX_DISTANCE
 
         initial_search_eps = eps_upper_bound.clone()
         for _ in range(self.eps_initial_search_steps):
@@ -53,9 +55,9 @@ class EpsilonBinarySearchAttack(attacks.AdvertorchWrapper):
             successful = self.successful(adversarials, y).detach()
 
             distances = utils.adversarial_distance(x, adversarials, self.p)
-            better_distances = distances < best_distances
+            better_distance = distances < best_distances
 
-            replace = successful & better_distances
+            replace = successful & better_distance
 
             best_adversarials = utils.fast_boolean_choice(
                 best_adversarials, adversarials, replace)
@@ -75,8 +77,8 @@ class EpsilonBinarySearchAttack(attacks.AdvertorchWrapper):
             successful = self.successful(adversarials, y).detach()
 
             distances = utils.adversarial_distance(x, adversarials, self.p)
-            better_distances = distances < best_distances
-            replace = successful & better_distances
+            better_distance = distances < best_distances
+            replace = successful & better_distance
 
             best_adversarials = utils.fast_boolean_choice(
                 best_adversarials, adversarials, replace)

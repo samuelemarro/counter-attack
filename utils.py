@@ -104,7 +104,7 @@ def adversarial_distance(genuines, adversarials, p):
     assert genuines.shape == adversarials.shape
 
     if len(genuines) == 0:
-        return torch.zeros([0.], device=genuines.device)
+        return torch.zeros([0], device=genuines.device)
     else:
         # pairwise_distance only accepts 2D tensors
         genuines = genuines.flatten(1)
@@ -160,12 +160,14 @@ def misclassified(model, adversarials, labels, has_detector):
 
     adversarial_predictions = model(adversarials)
     assert len(adversarial_predictions) == len(adversarials)
+    assert len(adversarial_predictions.shape) == 2
 
     return misclassified_outputs(adversarial_predictions, labels, has_detector)
 
 
 def misclassified_outputs(outputs, labels, has_detector):
     assert len(outputs) == len(labels)
+    assert len(outputs.shape) == 2
 
     adversarial_labels = torch.argmax(outputs, axis=1)
     assert adversarial_labels.shape == labels.shape
@@ -218,6 +220,7 @@ def get_labels(model, images):
     model_device = next(model.parameters()).device
     outputs = model(images.to(model_device))
     assert len(outputs) == len(images)
+    assert len(outputs.shape) == 2
 
     return torch.argmax(outputs, axis=1).to(images.device)
 
@@ -228,6 +231,9 @@ def replace_active(from_, to, active, filter_):
 
     replace_to = active.clone()
     replace_to[active] = filter_
+
+    assert to[replace_to].shape == from_[filter_].shape
+
     to[replace_to] = from_[filter_]
 
 
@@ -332,6 +338,7 @@ def clip_adversarial(adversarial, genuine, epsilon, input_min=0, input_max=1):
     return torch.clip(adversarial, min=input_min, max=input_max)
 
 def create_label_dataset(model, images, batch_size):
+    # TODO: Debuggare quando si passa a questo stack
     image_dataset = torch.utils.data.TensorDataset(images)
     dataloader = torch.utils.data.DataLoader(
         image_dataset, batch_size=batch_size)
@@ -362,6 +369,7 @@ def powerset(iterable, allow_empty):
 
 def set_seed(seed):
     logger.info('Setting seed.')
+    # Note: For higher versions of Torch, manual_seed_all is supported
     torch.manual_seed(seed)
     np.random.seed(seed)
     random.seed(seed)

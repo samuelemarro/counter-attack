@@ -54,13 +54,15 @@ def perfect_approximation(**kwargs):
     relative_differences = []
 
     for (perfect_genuine, perfect_distance), (approximate_genuine, approximate_distance) in zip(perfect_distance_dataset, approximate_distance_dataset):
-        if np.average(np.abs(perfect_genuine - approximate_genuine)) > 1e5:
+        # TODO: Sostituire con una costante
+        if np.max(np.abs(perfect_genuine - approximate_genuine)) > 1e-5:
             raise click.BadArgumentUsage(
                 'Datasets don\'t match (different genuine images).')
 
         if approximate_distance is None:
             continue
 
+        # TODO: Qui probabilmente serve qualche tolerance
         if approximate_distance < perfect_distance:
             raise click.BadArgumentUsage(
                 'Invalid datasets (approximate is better than perfect).')
