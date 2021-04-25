@@ -11,7 +11,8 @@ def main(domain, architecture, test_name, start, stop):
     assert stop > start
 
     dataset = 'std:test'
-    attacks = '"[bim, brendel, carlini, pgd, uniform]"'
+    # TODO: Anche deepfool?
+    attacks = '"[bim, brendel, carlini, deepfool, fast_gradient, pgd, uniform]"'
     p = 'linf'
     seed = 0
     # Attacks are run on CPU, so there's no point in using higher batch sizes
@@ -22,7 +23,7 @@ def main(domain, architecture, test_name, start, stop):
     no_stats_argument = '--no-stats'
 
     if test_name == 'relu':
-        state_dict_path = f'trained-models/relu/relu-pruned/{domain}-{architecture}.pth'
+        state_dict_path = f'trained-models/{test_name}/relu-pruned/{domain}-{architecture}.pth'
         masked_relu_argument = '--masked-relu'
     else:
         state_dict_path = f'trained-models/classifiers/{test_name}/{domain}-{architecture}.pth'
@@ -51,7 +52,8 @@ def main(domain, architecture, test_name, start, stop):
         mip_command = f'python cli.py mip {domain} {architecture} {dataset} {p} '
         mip_command += f'--state-dict-path {state_dict_path} {masked_relu_argument} '
         mip_command += f'--batch-size {batch_size} --device {device} --cpu-threads {cpu_threads} '
-        mip_command += f'--pre-adversarial-dataset {compare_results_path}'
+        mip_command += f'--pre-adversarial-dataset {compare_results_path} '
+        mip_command += f'--misclassification-policy {misclassification_policy} '
         mip_command += f'--start {start} --stop {stop} --save-to {mip_results_path} '
         mip_command += f'--deterministic --seed {seed} '
 
