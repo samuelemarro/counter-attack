@@ -4,6 +4,7 @@ import click
 import numpy as np
 import torch
 
+import adversarial_dataset
 import attacks
 import parsing
 import tests
@@ -85,6 +86,10 @@ def mip(**kwargs):
     else:
         pre_adversarial_dataset = utils.load_zip(
             kwargs['pre_adversarial_dataset'])
+
+        if isinstance(pre_adversarial_dataset, adversarial_dataset.AttackComparisonDataset):
+            # Use the best results to compute an adversarial dataset
+            pre_adversarial_dataset = pre_adversarial_dataset.to_adversarial_dataset(pre_adversarial_dataset.attack_names)
 
     p = kwargs['p']
 
