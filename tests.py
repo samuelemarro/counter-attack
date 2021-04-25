@@ -140,16 +140,24 @@ def mip_test(model, attack, loader, p, misclassification_policy, device, attack_
 
             pre_images = [pre_adversarial_dataset.genuines[i]
                           for i in matching_indices]
+            pre_labels = [pre_adversarial_dataset.labels[i]
+                         for i in matching_indices]
+            pre_true_labels = [pre_adversarial_dataset.true_labels[i]
+                         for i in matching_indices]
             pre_adversarials = [pre_adversarial_dataset.adversarials[i]
                                 for i in matching_indices]
 
-            assert len(pre_images) == len(images)
-            assert all(image.shape == pre_image.shape for image, pre_image in zip(images, pre_images))
+            assert len(pre_images) == len(labels) == len(true_labels) == len(images)
             assert len(pre_adversarials) == len(images)
 
             for i in range(len(pre_images)):
                 assert pre_images[i].shape == images[i].shape
                 pre_images[i] = pre_images[i].to(device)
+                pre_labels[i] = pre_labels[i].to(device)
+                pre_true_labels[i] = pre_true_labels[i].to(device)
+
+                assert torch.eq(labels[i], pre_labels[i])
+                assert torch.eq(pre_labels[i], pre_true_labels[i])
 
                 if pre_adversarials[i] is not None:
                     assert pre_adversarials[i].shape == images[i].shape
