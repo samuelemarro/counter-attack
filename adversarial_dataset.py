@@ -6,6 +6,9 @@ import torch.utils.data as data
 
 import utils
 
+DISTANCE_ATOL = 5e-7
+MEDIAN_AVERAGE_ATOL = DISTANCE_ATOL
+
 class AdversarialDataset(data.Dataset):
     def __init__(self, genuines, labels, true_labels, adversarials, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs):
         assert len(genuines) == len(labels)
@@ -273,7 +276,19 @@ class AttackComparisonDataset(data.Dataset):
 
         return AdversarialDataset(self.genuines, self.labels, self.true_labels, best_adversarials, self.p, self.misclassification_policy, self.attack_configuration, self.start, self.stop, self.generation_kwargs)
 
-    def attack_ranking_stats(self, attack_name):
+    def attack_ranking_stats(self, attack_name, atol=DISTANCE_ATOL):
+        # Note: Some ex aequo results might be treated differently depending on the
+        # attack considered. For example, suppose that after a test the resulting
+        # distances are:
+        # bim: 1.01
+        # pgd: 1.00
+        # uniform: 0.99
+        # and that the equality threshold is 0.005
+        # All three will be considered ex aequo, but
+        # - bim will be ex aequo with pgd and worse than uniform      --> 2° ex aequo
+        # - pgd will be ex aequo with both bim and pgd                --> 1° ex aequo
+        # - uniform will be ex aequo with pgd and better than uniform --> 1° ex aequo
+
         attack_positions = dict()
         for i in range(len(self.attack_names)):
             attack_positions[i] = 0
@@ -298,31 +313,21 @@ class AttackComparisonDataset(data.Dataset):
 
                 assert len(attack_result) == len(distances)
 
-                attack_distance_pairs = list(
-                    zip(attack_result.keys(), distances))
+                attack_distance = distances[self.attack_names.index(attack_name)]
 
-                # Sort by distance in ascending order (lower distance = better)
-                # If two attacks have the same distance, priority is given to the
-                # queried attack
-                ordering = lambda pair: (pair[1], 0 if pair[0] == attack_name else 1)
-                attack_distance_pairs = sorted(
-                    attack_distance_pairs, key=ordering)
+                better_distance_count = np.count_nonzero([distance < attack_distance - atol for distance in distances])
+                same_distance_count = np.count_nonzero([np.abs(distance - attack_distance) <= atol for distance in distances])
+                worse_distance_count = np.count_nonzero([distance > attack_distance + atol for distance in distances])
 
-                sorted_test_names = [x[0] for x in attack_distance_pairs]
+                assert same_distance_count >= 1
+                assert better_distance_count + same_distance_count + worse_distance_count == len(self.attack_names)
 
-                attack_ranking = sorted_test_names.index(attack_name)
-                attack_distance = attack_distance_pairs[attack_ranking][1]
-
-                # Check if the result was ex aequo
-                same_distance = [torch.eq(distance, attack_distance) for distance in distances]
-                assert sum(same_distance) >= 1
-
-                ex_aequo = sum(same_distance) >= 2
+                ex_aequo = same_distance_count > 1
 
                 if ex_aequo:
-                    attack_positions[str(attack_ranking) + '_ex_aequo'] += 1
+                    attack_positions[str(better_distance_count) + '_ex_aequo'] += 1
                 else:
-                    attack_positions[attack_ranking] += 1
+                    attack_positions[better_distance_count] += 1
 
         assert sum(count for count in attack_positions.values()
                    ) == len(self.genuines)
@@ -333,7 +338,7 @@ class AttackComparisonDataset(data.Dataset):
 
         return attack_positions
 
-    def pairwise_comparison(self):
+    def pairwise_comparison(self, atol=DISTANCE_ATOL):
         victory_matrix = dict()
 
         # Initialize the matrix
@@ -371,9 +376,16 @@ class AttackComparisonDataset(data.Dataset):
                 for winner_attack, winner_distance in attack_distance_pairs:
                     for loser_attack, loser_distance in attack_distance_pairs:
                         # An attack beats another if it finds a strictly smaller
-                        # distance
-                        if winner_distance < loser_distance:
+                        # distance (taking numerical precision into account)
+                        if winner_distance < loser_distance - atol:
+                            assert winner_attack != loser_attack
                             victory_matrix[winner_attack][loser_attack] += 1
+
+        for winner_attack, losers in victory_matrix.items():
+            for loser_attack in losers.keys():
+                assert 0 <= victory_matrix[winner_attack][loser_attack] <= len(self.genuines)
+                assert 0 <= victory_matrix[loser_attack][winner_attack] <= len(self.genuines)
+                assert victory_matrix[winner_attack][loser_attack] + victory_matrix[loser_attack][winner_attack] <= len(self.genuines)
 
         # Convert absolute numbers to relative
         for loser_dict in victory_matrix.values():
@@ -381,3 +393,114 @@ class AttackComparisonDataset(data.Dataset):
                 loser_dict[key2] /= len(self.genuines)
 
         return victory_matrix
+
+    def print_stats(self,
+                    median_average_atol=MEDIAN_AVERAGE_ATOL,
+                    attack_ranking_atol=DISTANCE_ATOL,
+                    pairwise_comparison_atol=DISTANCE_ATOL):
+        print('===Standard Result===')
+        complete_pool = self.simulate_pooling(self.attack_names)
+        complete_pool.print_stats()
+        print()
+
+        # How much does a single attack contribute to the overall quality?
+        print('===Attack Dropping Effects===')
+
+        for attack_name in self.attack_names:
+            other_attack_names = [x for x in self.attack_names if x != attack_name]
+            other_adversarial_dataset = self.simulate_pooling(
+                other_attack_names)
+
+            print(f'Without {attack_name}:')
+
+            other_adversarial_dataset.print_stats()
+            print()
+
+        attack_powerset = utils.powerset(self.attack_names, False)
+
+        print('===Pool Stats===')
+        for attack_set in attack_powerset:
+            print(f'Pool {attack_set}:')
+
+            pool_adversarial_dataset = self.simulate_pooling(attack_set)
+            pool_adversarial_dataset.print_stats()
+            print()
+
+        print()
+        print('===Best Pools===')
+        print()
+
+        for n in range(1, len(self.attack_names) + 1):
+            print(f'==Pool of size {n}==')
+            print()
+
+            n_size_sets = [
+                subset for subset in attack_powerset if len(subset) == n]
+            n_size_pools = [self.simulate_pooling(
+                subset) for subset in n_size_sets]
+
+            attack_success_rates = np.array(
+                [x.attack_success_rate for x in n_size_pools])
+            median_distances = np.array(
+                [np.median(x.successful_distances) for x in n_size_pools])
+            average_distances = np.array(
+                [np.average(x.successful_distances) for x in n_size_pools])
+
+            best_success_rate = np.max(attack_success_rates)
+            best_indices_by_success_rate = [i for i in range(len(n_size_pools)) if attack_success_rates[i] == best_success_rate]
+
+            print(f'Best pools of size {n} by success rate:')
+            for index in best_indices_by_success_rate:
+                print(f'{n_size_sets[index]}:')
+                n_size_pools[index].print_stats()
+                print('===')
+            print()
+
+            best_median_distance = np.min(median_distances)
+            best_indices_by_median_distance = [i for i in range(len(n_size_pools))
+                if np.abs(median_distances[i] - best_median_distance) < median_average_atol]
+
+            print(f'Best pools of size {n} by successful median distance (atol={median_average_atol}):')
+            for index in best_indices_by_median_distance:
+                print(f'{n_size_sets[index]}:')
+                n_size_pools[index].print_stats()
+                print('===')
+            print()
+
+            best_average_distance = np.min(average_distances)
+            best_indices_by_average_distance = [i for i in range(len(n_size_pools))
+                if np.abs(average_distances[i] - best_average_distance) < median_average_atol]
+
+            print(f'Best pools of size {n} by successful average distance (atol={median_average_atol}):')
+            for index in best_indices_by_average_distance:
+                print(f'{n_size_sets[index]}:')
+                n_size_pools[index].print_stats()
+                print('===')
+            print()
+
+        print('===Attack Ranking Stats===')
+
+        for attack_name in self.attack_names:
+            print(f'Attack {attack_name} (atol={attack_ranking_atol}):')
+
+            attack_ranking_stats = self.attack_ranking_stats(attack_name, atol=attack_ranking_atol)
+
+            for position in range(len(self.attack_names)):
+                print('The attack is {}°: {:.2f}%'.format(
+                    position + 1, attack_ranking_stats[position] * 100.0))
+                print('The attack is {}° ex aequo: {:.2f}%'.format(
+                    position + 1, attack_ranking_stats[str(position) + '_ex_aequo'] * 100.0))
+
+            print('The attack fails: {:.2f}%'.format(
+                attack_ranking_stats['failure'] * 100.0))
+            print()
+
+        print()
+        print('===One vs One Comparison===')
+        print('atol=', pairwise_comparison_atol)
+
+        victory_matrix = self.pairwise_comparison(atol=pairwise_comparison_atol)
+
+        for winner, loser_dict in victory_matrix.items():
+            for loser, rate in loser_dict.items():
+                print('{} beats {}: {:.2f}%'.format(winner, loser, rate * 100.0))
