@@ -239,8 +239,11 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, devi
     if attack_type == 'evasion' and defended_model is None:
         raise ValueError('Evasion attacks require a defended model.')
 
-    binary_search = 'enable_binary_search' in kwargs and kwargs['enable_binary_search']
+    binary_search = kwargs.pop('enable_binary_search', False)
     return_best = kwargs.pop('return_best', False)
+
+    if return_best and attack_name == 'carlini' and np.isposinf(p):
+        raise NotImplementedError('Carlini Linf does not support return_best.')
 
     if attack_type != 'evasion' and defended_model is not None:
         raise ValueError(
@@ -255,8 +258,6 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, devi
 
     if evade_detector:
         num_classes += 1
-
-    kwargs.pop('enable_binary_search', None)
 
     if binary_search:
         logger.debug('Enabling binary search for %s.', attack_name)
@@ -284,7 +285,8 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, devi
         target_model = model
 
     # TODO: Check compatibility between evasion and return_best
-    if return_best and not (attack_name == 'carlini' and np.isposinf(p)):
+
+    if return_best:
         logger.debug('Wrapping in BestSampleWrapper.')
         target_model = attacks.BestSampleWrapper(target_model)
 
@@ -379,8 +381,7 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, devi
             attack, p, targeted=evade_detector, **binary_search_kwargs)
 
     # Complete the best sample wrapping
-    # Carlini Linf does not support BestSample
-    if return_best and not (attack_name == 'carlini' and np.isposinf(p)):
+    if return_best:
         logger.debug('Finalizing best sample wrapping.')
         suppress_warning = attack_name in fb_binary_search_attacks
         attack = attacks.BestSampleAttack(
