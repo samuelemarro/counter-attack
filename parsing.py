@@ -347,9 +347,9 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, devi
 
     # Add support for epsilon
     if attack_name in epsilon_attacks:
-        if attack_name in ['bim', 'pgd']:
+        if attack_name in ['bim', 'pgd', 'fast_gradient']:
             unsqueeze = False
-        elif attack_name in ['fast_gradient', 'uniform']:
+        elif attack_name in ['uniform']:
             unsqueeze = True
         else:
             raise ValueError(
