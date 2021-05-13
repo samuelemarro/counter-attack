@@ -157,7 +157,7 @@ def mip_test(model, attack, loader, p, misclassification_policy, device, attack_
                 pre_true_labels[i] = pre_true_labels[i].to(device)
 
                 assert torch.eq(labels[i], pre_labels[i])
-                assert torch.eq(pre_labels[i], pre_true_labels[i])
+                assert torch.eq(true_labels[i], pre_true_labels[i])
 
                 if pre_adversarials[i] is not None:
                     assert pre_adversarials[i].shape == images[i].shape
