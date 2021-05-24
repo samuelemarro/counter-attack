@@ -66,7 +66,7 @@ logger = logging.getLogger(__name__)
 @click.option('--adversarial-eps-growth-start', type=float, default=None,
               help='The initial value of eps. Ignored if --adversarial-eps-growth-epoch is unspecified. '
               'Required if --adversarial-eps-growth-epoch is specified.')
-@click.option('--adversarial-cfg-file', type=click.Path(exists=True, file_okay=True, dir_okay=False),
+@click.option('--attack-config-file', type=click.Path(exists=True, file_okay=True, dir_okay=False),
               default='default_attack_configuration.cfg', show_default=True,
               help='The path to the attack configuration file for adversarial training. Ignored if adversarial training is disabled.')
 @click.option('--seed', type=int, default=None,
@@ -195,7 +195,7 @@ def train_classifier(**kwargs):
             logger.warning('Received --adversarial-eps-growth-start without --adversarial-eps-growth-epoch.')
 
         attack_config = utils.read_attack_config_file(
-            kwargs['adversarial_cfg_file'])
+            kwargs['attack_config_file'])
 
         adversarial_attack = parsing.parse_attack_pool(
             kwargs['adversarial_training'], kwargs['domain'], kwargs['adversarial_p'], 'training', model, attack_config, kwargs['device'], seed=kwargs['seed'])

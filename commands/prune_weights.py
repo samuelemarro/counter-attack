@@ -1,4 +1,5 @@
 import logging
+import pathlib
 
 import click
 import torch
@@ -13,10 +14,10 @@ logger = logging.getLogger(__name__)
 @click.argument('domain', type=click.Choice(parsing.domains))
 @click.argument('architecture', type=click.Choice(parsing.architectures))
 @click.argument('original_state_dict_path')
-@click.option('--masked-relu', is_flag=True,
-              help='If passed, all ReLU layers will be converted to MaskedReLU layers.')
 @click.argument('save_to', type=click.Path(exists=False, file_okay=True, dir_okay=False))
 @click.argument('threshold', type=float)
+@click.option('--masked-relu', is_flag=True,
+              help='If passed, all ReLU layers will be converted to MaskedReLU layers.')
 @click.option('--device', default='cuda', show_default=True, help='The device where the model will be executed.')
 @click.option('--deterministic', is_flag=True,
               help='If passed, all computations except random number generation are deterministic (but slower).')
@@ -39,4 +40,6 @@ def prune_weights(**kwargs):
     logger.info(
         'Pruned %s out of %s parameters.', pruned_count, parameter_count)
 
-    torch.save(model.state_dict(), kwargs['save_to'])
+    save_to = kwargs['save_to']
+    pathlib.Path(save_to).parent.mkdir(parents=True, exist_ok=True)
+    torch.save(model.state_dict(), save_to)

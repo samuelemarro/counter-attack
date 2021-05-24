@@ -1,4 +1,5 @@
 import logging
+import pathlib
 
 import click
 import torch
@@ -100,4 +101,6 @@ def prune_relu(**kwargs):
 
     print(f'Replaced {replaced_relus} ReLUs out of {total_relus}.')
 
-    torch.save(converted_model.state_dict(), kwargs['save_to'])
+    save_to = kwargs['save_to']
+    pathlib.Path(save_to).parent.mkdir(parents=True, exist_ok=True)
+    torch.save(converted_model.state_dict(), save_to)
