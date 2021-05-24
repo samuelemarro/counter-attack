@@ -82,8 +82,8 @@ def main(domain, architecture, test_name):
         os.system(training_command)
 
     if test_name == 'relu':
-        weight_pruned_state_dict = f'trained-models/{test_name}/weight-pruned/{domain}-{architecture}.pth'
-        relu_pruned_state_dict = f'trained-models/{test_name}/relu-pruned/{domain}-{architecture}.pth'
+        weight_pruned_state_dict = f'trained-models/classifiers/{test_name}/weight-pruned/{domain}-{architecture}.pth'
+        relu_pruned_state_dict = f'trained-models/classifiers/{test_name}/relu-pruned/{domain}-{architecture}.pth'
 
         if os.path.exists(weight_pruned_state_dict):
             print('Skipping Weight Pruning')
@@ -106,6 +106,23 @@ def main(domain, architecture, test_name):
 
             print(f'ReLU Pruning | Running command\n"{relu_pruning_command}".')
             os.system(relu_pruning_command)
+
+    def compute_accuracy(path, masked_relu):
+        if masked_relu:
+            masked_relu_argument = '--masked-relu '
+        else:
+            masked_relu_argument = ''
+        os.system(f'python cli.py accuracy {domain} {architecture} std:test --state-dict-path {path} {masked_relu_argument} --batch-size {batch_size} --deterministic')
+
+    print('Standard accuracy:')
+    compute_accuracy(standard_state_dict, False)
+
+    if test_name == 'relu':
+        print('Weight pruned accuracy:')
+        compute_accuracy(weight_pruned_state_dict, False)
+
+        print('ReLU pruned accuracy:')
+        compute_accuracy(relu_pruned_state_dict, True)
 
 if __name__ == '__main__':
     main()
