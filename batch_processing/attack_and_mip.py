@@ -1,14 +1,19 @@
 import click
 import os
+import sys
+sys.path.append('.')
+import utils
 
 @click.command()
 @click.argument('domain', type=click.Choice(['cifar10', 'mnist']))
-@click.argument('architecture', type=click.Choice(['a', 'b', 'c']))
+@click.argument('architecture', type=click.Choice(['a', 'b', 'c', 'b2', 'b3', 'b4']))
 @click.argument('test_name', type=click.Choice(['standard', 'adversarial', 'relu']))
 @click.argument('start', type=click.IntRange(0, None))
 @click.argument('stop', type=click.IntRange(1, None))
 def main(domain, architecture, test_name, start, stop):
     assert stop > start
+
+    print(f'Attacking {domain} {architecture} ({test_name}, {start}-{stop})')
 
     dataset = 'std:test'
     # TODO: Anche deepfool?
@@ -23,7 +28,7 @@ def main(domain, architecture, test_name, start, stop):
     no_stats_argument = '--no-stats'
 
     if test_name == 'relu':
-        state_dict_path = f'trained-models/{test_name}/relu-pruned/{domain}-{architecture}.pth'
+        state_dict_path = f'trained-models/classifiers/{test_name}/relu-pruned/{domain}-{architecture}.pth'
         masked_relu_argument = '--masked-relu'
     else:
         state_dict_path = f'trained-models/classifiers/{test_name}/{domain}-{architecture}.pth'
@@ -48,6 +53,8 @@ def main(domain, architecture, test_name, start, stop):
 
     if os.path.exists(mip_results_path):
         print('Skipping MIP')
+        mip_results = utils.load_zip(mip_results_path)
+        mip_results.print_stats()
     else:
         mip_command = f'python cli.py mip {domain} {architecture} {dataset} {p} '
         mip_command += f'--state-dict-path {state_dict_path} {masked_relu_argument} '
