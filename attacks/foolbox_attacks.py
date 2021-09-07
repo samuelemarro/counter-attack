@@ -9,7 +9,7 @@ import torch
 
 logger = logging.getLogger(__name__)
 
-class FoolboxAttackWrapper(advertorch.attacks.LabelMixin):
+class FoolboxAttackWrapper(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     def __init__(self, model, foolbox_attack, targeted, clip_min=0, clip_max=1):
         # Get the device from the model. This is only possible if the
         # model does not contain both CPU and CUDA tensors
@@ -46,7 +46,8 @@ class FoolboxAttackWrapper(advertorch.attacks.LabelMixin):
         criterion = self.get_criterion(y)
 
         # foolbox_attack returns (adv, clipped_adv, success)
-        return self.foolbox_attack(self.foolbox_model, x, criterion, epsilons=None, **kwargs)[1]
+        result = self.foolbox_attack(self.foolbox_model, x, criterion, epsilons=None, **kwargs)
+        return result[1]
 
 class BrendelBethgeAttack(FoolboxAttackWrapper):
     def __init__(
@@ -55,9 +56,8 @@ class BrendelBethgeAttack(FoolboxAttackWrapper):
             p,
             clip_min = 0,
             clip_max = 1,
-            targeted=False,
-            init_attack_class = fb.attacks.LinearSearchBlendedUniformNoiseAttack,
-            init_attack_kwargs: Optional[dict] = None,
+            targeted = False,
+            init_attack = None,
             overshoot: float = 1.1,
             steps: int = 1000,
             lr: float = 1e-3,
@@ -67,10 +67,7 @@ class BrendelBethgeAttack(FoolboxAttackWrapper):
             tensorboard: Union[Literal[False], None, str] = False,
             binary_search_steps: int = 10):
     
-        if init_attack_kwargs is None:
-            init_attack_kwargs = dict()
-        
-        init_attack = init_attack_class(**init_attack_kwargs)
+        self.init_attack = init_attack
 
         if p == 2:
             foolbox_attack = fb.attacks.L2BrendelBethgeAttack(
@@ -109,58 +106,61 @@ class BrendelBethgeAttack(FoolboxAttackWrapper):
         else:
             return ~same_label
 
-    def perturb(self, x, y=None, starting_points=None):
-        x, y = self._verify_and_process_inputs(x, y)
+    def run_init_attack(self, x, y):
+        assert len(x) == len(y)
 
-        criterion = self.get_criterion(y)
-
-        if self.foolbox_attack.init_attack is None:
+        if self.init_attack is None:
             # BrendelBethge's default init_attack is LinearSearchBlendedUniformNoiseAttack
             # with default parameters.
             init_attack = fb.attacks.LinearSearchBlendedUniformNoiseAttack()
         else:
-            init_attack = self.foolbox_attack.init_attack
+            init_attack = self.init_attack
+        
+        if isinstance(init_attack, fb.attacks.base.Attack):
+            criterion = self.get_criterion(y)
+            adversarials = init_attack(self.foolbox_model, x, criterion, epsilons=None)[1]
+        elif isinstance(init_attack, advertorch.attacks.Attack):
+            adversarials = init_attack(x, y=y)
+        else:
+            raise NotImplementedError
+        
+        assert adversarials.shape == x.shape
+
+        return adversarials
+
+    def perturb(self, x, y=None, starting_points=None):
+        x, y = self._verify_and_process_inputs(x, y)
 
         if starting_points is None:
-            starting_points = init_attack(self.foolbox_model, x, criterion, epsilons=None)[1]
+            starting_points = self.run_init_attack(x, y)
         else:
+            assert starting_points.shape == x.shape
+
             # Foolbox's implementation of Brendel&Bethge requires all starting points to be successful
             # adversarials. Since that is not always the case, we use Brendel&Bethge's init_attack
             # to initialize the unsuccessful starting_points
-            fallback = ~self.successful(x, y)
+            fallback = ~self.successful(starting_points, y)
 
-            if fallback.any():
-                # Always pass the entire batch to an attack (mostly for BestSample tracking reasons)
-                fallback_adversarials = init_attack(self.foolbox_model, x, criterion, epsilons=None)[1]
+            fallback_adversarials = self.run_init_attack(x[fallback], y[fallback])
+            starting_points[fallback] = fallback_adversarials
 
-                starting_points[fallback] = fallback_adversarials[fallback]
+        successful_starting = self.successful(starting_points, y)
 
-        # If starting_points is None, it will default to BrendelBethge's default behaviour
-        # (which is to initialize all of them with LinearSearchBlendedUniformNoiseAttack)
+        num_failures = torch.count_nonzero(~successful_starting)
 
-        successful_starting = self.successful(x, y)
-        
-        starting_points = [starting_points[i] if successful_starting[i] else None for i in range(len(x))]
+        if num_failures > 0:
+            logger.warning(f'Failed to initialize {num_failures} starting points.')
 
-        assert len(starting_points) == len(x)
+        adversarials = torch.zeros_like(x)
 
-        adversarials = []
+        # For failed starting points, use the original images (which will be treated as failures)
+        adversarials[~successful_starting] = x[~successful_starting]
 
-        for image, label, starting_point in zip(x, y, starting_points):
-            if starting_point is None:
-                # Could not find a starting point, failure
-                logger.warning('Failed to find a starting point for Brendel&Bethge.')
-                # Use the original image as adversarial (which will be treated as a failure)
-                adversarial = image
-            else:
-                image = torch.unsqueeze(image)
-                label = torch.unsqueeze(label)
-                starting_point = torch.unsqueeze(starting_point)
-                adversarial = super().perturb(x, y=y, starting_points=starting_points)[0]
+        # For successful starting points, run the attack and store the results
+        computed_adversarials = super().perturb(x[successful_starting], y=y[successful_starting], starting_points=starting_points[successful_starting])
+        adversarials[successful_starting] = computed_adversarials
 
-            adversarials.append(adversarial)
-    
-        return torch.stack(adversarials)
+        return adversarials
 
 class DeepFoolAttack(FoolboxAttackWrapper):
     def __init__(

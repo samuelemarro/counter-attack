@@ -17,7 +17,7 @@ import utils
 logger = logging.getLogger(__name__)
 
 domains = ['cifar10', 'mnist']
-architectures = ['a', 'b', 'c', 'wong_small', 'wong_large']
+architectures = ['a', 'b', 'c', 'wong_small', 'wong_large', 'b2', 'b3', 'b4']
 attack_types = ['defense', 'evasion', 'standard', 'training']
 supported_attacks = ['bim', 'brendel', 'carlini',
                      'deepfool', 'fast_gradient', 'mip', 'pgd', 'uniform']
@@ -212,7 +212,7 @@ def parse_optimiser(optimiser_name, learnable_parameters, options):
 # Targeted FGSM is introduced in
 # http://bengio.abracadoudou.com/publications/pdf/kurakin_2017_iclr_physical.pdf
 
-def parse_attack(attack_name, domain, p, attack_type, model, attack_config, device, defended_model=None, seed=None):
+def parse_attack(attack_name, domain, p, attack_type, model, attack_config, device, defended_model=None, seed=None, parameter_overrides=None, suppress_blended_warning=False):
     logger.debug('Parsing %s attack %s-%s (using defended: %s).', attack_type,
                  attack_name, p, defended_model is not None)
 
@@ -231,6 +231,12 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, devi
         attack_name, domain, metric, attack_type)
 
     logger.debug('Loaded attack kwargs: %s.', kwargs)
+
+    if parameter_overrides is not None:
+        logger.debug('Applying parameter overrides: %s.', parameter_overrides)
+        for key, value in parameter_overrides.items():
+            kwargs[key] = value
+        logger.debug('New kwargs: %s.', kwargs)
 
     if attack_name == 'uniform' and metric != 'linf':
         logger.warning('UniformAttack is designed for the LInf metric. Are you sure that you '
@@ -300,8 +306,27 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, devi
         else:
             raise NotImplementedError(
                 f'Unsupported attack "{attack_name}" for "{metric}".')
+    elif attack_name == 'blended_noise':
+        if not suppress_blended_warning:
+            logger.warning('blended_noise is supposed to be used only as a starting point for brendel. To suppress this warning, '
+            'use suppress_blended_warning=True.')
+
+        attack = attacks.LinearSearchBlendedUniformNoiseAttack(target_model, **kwargs)
     elif attack_name == 'brendel':
-        attack = attacks.BrendelBethgeAttack(target_model, p, **kwargs)
+        # Brendel supports passing an init_attack, which we need to parse
+        if return_best:
+            logger.warning('Brendel&Bethge already has a form of return_best behaviour.')
+
+        if 'init_attack' in kwargs:
+            init_attack_name = kwargs.pop('init_attack')
+            init_attack_parameter_overrides = kwargs.pop('init_attack_parameter_overrides', None)
+            init_attack = parse_attack(init_attack_name, domain, p, attack_type, target_model, attack_config, device,
+                                       defended_model=defended_model, seed=seed, parameter_overrides=init_attack_parameter_overrides,
+                                       suppress_blended_warning=True)
+        else:
+            init_attack = None
+
+        attack = attacks.BrendelBethgeAttack(target_model, p, init_attack=init_attack, **kwargs)
     elif attack_name == 'carlini':
         if metric == 'l2':
             attack = advertorch.attacks.CarliniWagnerL2Attack(
