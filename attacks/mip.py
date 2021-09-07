@@ -306,7 +306,8 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             self.mip_model, mip_image, target_label, main_solver,
             norm_order=self.p, tolerance=self.tolerance,
             invert_target_selection=not self.targeted,
-            tightening_solver=tightening_solver, pp=perturbation)
+            tightening_solver=tightening_solver, pp=perturbation,
+            rebuild=True, cache_model=False)
 
         adversarial = np.array(JuMP.getvalue(
             adversarial_result['PerturbedInput']))
@@ -452,8 +453,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
             if upper is not None:
                 # Found an upper bound
-
-                assert perturbation_size is None or upper <= perturbation_size
+                assert perturbation_size is None or upper <= perturbation_size + SIMILARITY_THRESHOLD
                 assert adversarial is not None
                 assert upper > 0
                 assert lower >= 0
@@ -463,7 +463,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                 assert np.abs(linf_distance - upper) < SIMILARITY_THRESHOLD
 
                 if self._mip_success(lower, upper):
-                    # The bounds were successful, stop future attempts
+                    # The bounds were successful, avoid further attempts
                     assert perturbation_size is None or linf_distance <= perturbation_size + ATTACK_IMPROVEMENT_THRESHOLD
                     break
 
