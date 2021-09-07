@@ -53,10 +53,11 @@ class BrendelBethgeAttack(FoolboxAttackWrapper):
             self,
             model,
             p,
-            clip_min=0,
-            clip_max=1,
+            clip_min = 0,
+            clip_max = 1,
             targeted=False,
-            init_attack: Optional[fb.attacks.base.MinimizationAttack] = None,
+            init_attack_class = fb.attacks.LinearSearchBlendedUniformNoiseAttack,
+            init_attack_kwargs: Optional[dict] = None,
             overshoot: float = 1.1,
             steps: int = 1000,
             lr: float = 1e-3,
@@ -65,6 +66,12 @@ class BrendelBethgeAttack(FoolboxAttackWrapper):
             momentum: float = 0.8,
             tensorboard: Union[Literal[False], None, str] = False,
             binary_search_steps: int = 10):
+    
+        if init_attack_kwargs is None:
+            init_attack_kwargs = dict()
+        
+        init_attack = init_attack_class(**init_attack_kwargs)
+
         if p == 2:
             foolbox_attack = fb.attacks.L2BrendelBethgeAttack(
                 init_attack=init_attack,
@@ -94,30 +101,35 @@ class BrendelBethgeAttack(FoolboxAttackWrapper):
         super().__init__(model, foolbox_attack, targeted,
                          clip_min=clip_min, clip_max=clip_max)
 
+    def successful(self, x, y):
+        same_label = torch.eq(torch.argmax(self.foolbox_model(x), dim=1), y)
+
+        if self.targeted:
+            return same_label
+        else:
+            return ~same_label
+
     def perturb(self, x, y=None, starting_points=None):
         x, y = self._verify_and_process_inputs(x, y)
-        # Foolbox's implementation of Brendel&Bethge requires all starting points to be successful
-        # adversarials. Since that is not always the case, we use Brendel&Bethge's init_attack
-        # to initialize the unsuccessful starting_points
-        if starting_points is not None:
-            same_label = torch.eq(torch.argmax(self.foolbox_model(starting_points), dim=1), y)
 
-            # fallback is equal to ~successful
-            if self.targeted:
-                fallback = ~same_label
-            else:
-                fallback = same_label
+        criterion = self.get_criterion(y)
+
+        if self.foolbox_attack.init_attack is None:
+            # BrendelBethge's default init_attack is LinearSearchBlendedUniformNoiseAttack
+            # with default parameters.
+            init_attack = fb.attacks.LinearSearchBlendedUniformNoiseAttack()
+        else:
+            init_attack = self.foolbox_attack.init_attack
+
+        if starting_points is None:
+            starting_points = init_attack(self.foolbox_model, x, criterion, epsilons=None)[1]
+        else:
+            # Foolbox's implementation of Brendel&Bethge requires all starting points to be successful
+            # adversarials. Since that is not always the case, we use Brendel&Bethge's init_attack
+            # to initialize the unsuccessful starting_points
+            fallback = ~self.successful(x, y)
 
             if fallback.any():
-                criterion = self.get_criterion(y)
-
-                if self.foolbox_attack.init_attack is None:
-                    # BrendelBethge's default init_attack is LinearSearchBlendedUniformNoiseAttack
-                    # with default parameters.
-                    init_attack = fb.attacks.LinearSearchBlendedUniformNoiseAttack()
-                else:
-                    init_attack = self.foolbox_attack.init_attack
-
                 # Always pass the entire batch to an attack (mostly for BestSample tracking reasons)
                 fallback_adversarials = init_attack(self.foolbox_model, x, criterion, epsilons=None)[1]
 
@@ -126,7 +138,29 @@ class BrendelBethgeAttack(FoolboxAttackWrapper):
         # If starting_points is None, it will default to BrendelBethge's default behaviour
         # (which is to initialize all of them with LinearSearchBlendedUniformNoiseAttack)
 
-        return super().perturb(x, y=y, starting_points=starting_points)
+        successful_starting = self.successful(x, y)
+        
+        starting_points = [starting_points[i] if successful_starting[i] else None for i in range(len(x))]
+
+        assert len(starting_points) == len(x)
+
+        adversarials = []
+
+        for image, label, starting_point in zip(x, y, starting_points):
+            if starting_point is None:
+                # Could not find a starting point, failure
+                logger.warning('Failed to find a starting point for Brendel&Bethge.')
+                # Use the original image as adversarial (which will be treated as a failure)
+                adversarial = image
+            else:
+                image = torch.unsqueeze(image)
+                label = torch.unsqueeze(label)
+                starting_point = torch.unsqueeze(starting_point)
+                adversarial = super().perturb(x, y=y, starting_points=starting_points)[0]
+
+            adversarials.append(adversarial)
+    
+        return torch.stack(adversarials)
 
 class DeepFoolAttack(FoolboxAttackWrapper):
     def __init__(
