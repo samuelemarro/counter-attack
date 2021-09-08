@@ -244,20 +244,31 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         self.original_if_failed = original_if_failed
         self.mip_model = sequential_to_mip(predict)
 
-        from julia import Gurobi
-        self.main_solver = Gurobi.GurobiSolver(
-                                    OutputFlag=0,
-                                    **main_parameters)
-        self.tightening_solver = Gurobi.GurobiSolver(
-                                    OutputFlag=0,
-                                    **tightening_parameters)
-        self.exploration_main_solver = Gurobi.GurobiSolver(
-                                    OutputFlag=0,
-                                    **exploration_main_parameters)
-        self.exploration_tightening_solver = Gurobi.GurobiSolver(
-                                    OutputFlag=0,
-                                    **exploration_tightening_parameters)
+        self.main_parameters = main_parameters
+        self.tightening_parameters = tightening_parameters
+        self.exploration_main_parameters = exploration_main_parameters
+        self.exploration_tightening_parameters = exploration_tightening_parameters
 
+    def _get_solver(self, original_parameters, attempt):
+        from julia import Gurobi
+        parameters = dict(original_parameters)
+
+        if 'Seed' in parameters:
+            parameters['Seed'] = parameters['Seed'] + attempt
+
+        return Gurobi.GurobiSolver(OutputFlag=0, **parameters)
+
+    def get_main_solver(self, attempt):
+        return self._get_solver(self.main_parameters, attempt)
+
+    def get_tightening_solver(self, attempt):
+        return self._get_solver(self.tightening_parameters, attempt)
+
+    def get_exploration_main_solver(self, attempt):
+        return self._get_solver(self.exploration_main_parameters, attempt)
+
+    def get_exploration_tightening_solver(self, attempt):
+        return self._get_solver(self.exploration_tightening_parameters, attempt)
 
     def _check_model(self, image, threshold=OUTPUT_SIMILARITY_THRESHOLD):
         model_device = next(self.predict.parameters()).device
@@ -373,8 +384,8 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             adversarial, lower, upper, elapsed_time = self._run_mipverify(
                 image,
                 label,
-                self.exploration_main_solver,
-                self.exploration_tightening_solver,
+                self.get_exploration_main_solver(attempt),
+                self.get_exploration_tightening_solver(attempt),
                 original_perturbation_size * correction_factor)
 
             if upper is not None:
@@ -447,8 +458,8 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             adversarial, lower, upper, solve_time = self._run_mipverify(
                 image,
                 label,
-                self.main_solver,
-                self.tightening_solver,
+                self.get_main_solver(attempt),
+                self.get_tightening_solver(attempt),
                 perturbation_size=perturbation_size)
 
             if upper is not None:
