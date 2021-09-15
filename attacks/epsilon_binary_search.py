@@ -9,7 +9,7 @@ MAX_DISTANCE = 1e8
 # Whether the attack found a better distance does not influence the eps update.
 
 class EpsilonBinarySearchAttack(attacks.AdvertorchWrapper):
-    def __init__(self, inner_attack, p, targeted=False, min_eps=0, max_eps=1, eps_initial_search_steps=9, eps_binary_search_steps=9):
+    def __init__(self, inner_attack, p, targeted=False, min_eps=0, max_eps=1, eps_initial_search_steps=9, eps_initial_search_factor=0.5, eps_binary_search_steps=9):
         if not isinstance(inner_attack, attacks.EpsilonAttack):
             raise ValueError('inner_attack must be an EpsilonAttack.')
 
@@ -21,6 +21,7 @@ class EpsilonBinarySearchAttack(attacks.AdvertorchWrapper):
         self.min_eps = min_eps
         self.max_eps = max_eps
         self.eps_initial_search_steps = eps_initial_search_steps
+        self.eps_initial_search_factor = eps_initial_search_factor
         self.eps_binary_search_steps = eps_binary_search_steps
 
     def perturb_standard(self, x, y, eps):
@@ -68,8 +69,8 @@ class EpsilonBinarySearchAttack(attacks.AdvertorchWrapper):
             eps_upper_bound = utils.fast_boolean_choice(
                 eps_upper_bound, initial_search_eps, successful)
 
-            # Halve eps, regardless of the success
-            initial_search_eps = initial_search_eps / 2
+            # Reduce eps, regardless of the success
+            initial_search_eps = initial_search_eps * self.eps_initial_search_factor
 
         for _ in range(self.eps_binary_search_steps):
             eps = (eps_lower_bound + eps_upper_bound) / 2

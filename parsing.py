@@ -17,7 +17,7 @@ import utils
 logger = logging.getLogger(__name__)
 
 domains = ['cifar10', 'mnist']
-architectures = ['a', 'b', 'c', 'wong_small', 'wong_large', 'b2', 'b3', 'b4']
+architectures = ['a', 'b', 'c', 'wong_small', 'wong_large', 'b2', 'b3', 'b4', 'b5']
 attack_types = ['defense', 'evasion', 'standard', 'training']
 supported_attacks = ['bim', 'brendel', 'carlini',
                      'deepfool', 'fast_gradient', 'mip', 'pgd', 'uniform']
@@ -280,6 +280,7 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, devi
     min_eps = kwargs.pop('min_eps', None)
     max_eps = kwargs.pop('max_eps', None)
     eps_initial_search_steps = kwargs.pop('eps_initial_search_steps', None)
+    eps_initial_search_factor = kwargs.pop('eps_initial_search_factor', None)
     eps_binary_search_steps = kwargs.pop('eps_binary_search_steps', None)
 
     # Pop epsilon attack arguments
@@ -399,6 +400,8 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, devi
             binary_search_kwargs['max_eps'] = max_eps
         if eps_initial_search_steps is not None:
             binary_search_kwargs['eps_initial_search_steps'] = eps_initial_search_steps
+        if eps_initial_search_factor is not None:
+            binary_search_kwargs['eps_initial_search_factor'] = eps_initial_search_factor
         if eps_binary_search_steps is not None:
             binary_search_kwargs['eps_binary_search_steps'] = eps_binary_search_steps
 
