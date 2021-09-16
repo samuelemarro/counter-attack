@@ -246,10 +246,13 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, devi
         raise ValueError('Evasion attacks require a defended model.')
 
     binary_search = kwargs.pop('enable_binary_search', False)
-    return_best = kwargs.pop('return_best', False)
 
-    if return_best and attack_name == 'carlini' and np.isposinf(p):
-        raise NotImplementedError('Carlini Linf does not support return_best.')
+    if attack_name == 'carlini' and np.isposinf(p):
+        # Carlini Linf uses a custom return_best implementaton,
+        # which is enabled if kwargs['return_best'] is True.
+        wrap_return_best = False
+    else:
+        wrap_return_best = kwargs.pop('return_best', False)
 
     if attack_type != 'evasion' and defended_model is not None:
         raise ValueError(
@@ -293,7 +296,7 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, devi
 
     # TODO: Check compatibility between evasion and return_best
 
-    if return_best:
+    if wrap_return_best:
         logger.debug('Wrapping in BestSampleWrapper.')
         target_model = attacks.BestSampleWrapper(target_model)
 
@@ -315,8 +318,8 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, devi
         attack = attacks.LinearSearchBlendedUniformNoiseAttack(target_model, **kwargs)
     elif attack_name == 'brendel':
         # Brendel supports passing an init_attack, which we need to parse
-        if return_best:
-            logger.warning('Brendel&Bethge already has a form of return_best behaviour.')
+        if wrap_return_best:
+            raise RuntimeError('Brendel&Bethge already has a form of return_best behaviour.')
 
         if 'init_attack' in kwargs:
             init_attack_name = kwargs.pop('init_attack')
@@ -333,9 +336,15 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, devi
             attack = advertorch.attacks.CarliniWagnerL2Attack(
                 target_model, num_classes, targeted=evade_detector, **kwargs)
         elif metric == 'linf':
-            cuda_optimized = device == 'cuda'
+            if device == 'cuda':
+                cuda_optimized = True
+            elif device == 'cpu':
+                cuda_optimized = False
+            else:
+                raise NotImplementedError
+
             attack = attacks.get_carlini_linf_attack(target_model, num_classes,
-                targeted=evade_detector, return_best=return_best, cuda_optimized=cuda_optimized, **kwargs)
+                targeted=evade_detector, cuda_optimized=cuda_optimized, **kwargs)
         else:
             raise NotImplementedError(
                 f'Unsupported attack "{attack_name}" for "{metric}".')
@@ -409,7 +418,7 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, devi
             attack, p, targeted=evade_detector, **binary_search_kwargs)
 
     # Complete the best sample wrapping
-    if return_best:
+    if wrap_return_best:
         logger.debug('Finalizing best sample wrapping.')
         suppress_warning = attack_name in fb_binary_search_attacks
         attack = attacks.BestSampleAttack(
