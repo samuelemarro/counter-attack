@@ -33,35 +33,56 @@ class BestSampleWrapper(nn.Module):
         self.training = model.training
         self.tracker = None
 
-    def forward(self, x):
+    def forward(self, x, active_mask=None):
         if self.tracker is None:
             raise RuntimeError('No best sample tracker set.')
-
-        assert len(x) == len(self.tracker.genuines)
 
         # Don't detach here: attacks might require the gradients
         outputs = self.model(x)
 
+        relevant_labels = self.tracker.labels
+        relevant_genuines = self.tracker.genuines
+        relevant_best_distances = self.tracker.best_distances
+        relevant_found_adversarial = self.tracker.found_adversarial
+
+        if active_mask is not None:
+            # Boolean indexing causes a CUDA sync, which is why we do it only
+            # if absolutely necessary
+            relevant_labels = relevant_labels[active_mask]
+            relevant_genuines = relevant_genuines[active_mask]
+            relevant_best_distances = relevant_best_distances[active_mask]
+            relevant_found_adversarial = relevant_found_adversarial[active_mask]
+
+            # x doesn't need to be masked, since len(x) == torch.count_nonzero(active_mask)
+
         with torch.no_grad():
             adversarial_labels = torch.argmax(outputs, dim=1)
             if self.tracker.targeted:
-                successful = torch.eq(adversarial_labels, self.tracker.labels)
+                successful = torch.eq(adversarial_labels, relevant_labels)
             else:
-                successful = ~torch.eq(adversarial_labels, self.tracker.labels)
+                successful = ~torch.eq(adversarial_labels, relevant_labels)
 
             distances = utils.adversarial_distance(
-                self.tracker.genuines, x, self.tracker.p)
-            better_distance = distances < self.tracker.best_distances
+                relevant_genuines, x, self.tracker.p)
+            better_distance = distances < relevant_best_distances
 
             # Replace only if successful and with a better distance
             replace = successful & (better_distance | (
-                ~self.tracker.found_adversarial))
+                ~relevant_found_adversarial))
 
-            self.tracker.best = utils.fast_boolean_choice(
-                self.tracker.best, x, replace)
-            self.tracker.best_distances = utils.fast_boolean_choice(
-                self.tracker.best_distances, distances, replace)
-            self.tracker.found_adversarial = self.tracker.found_adversarial | replace
+            new_found_adversarial = relevant_found_adversarial | replace
+
+            if active_mask is None:
+                self.tracker.best = utils.fast_boolean_choice(
+                    self.tracker.best, x, replace)
+                self.tracker.best_distances = utils.fast_boolean_choice(
+                    self.tracker.best_distances, distances, replace)
+                self.tracker.found_adversarial = new_found_adversarial
+            else:
+                # A masked replacement requires a different function
+                utils.replace_active(x, self.tracker.best, active_mask, replace)
+                utils.replace_active(distances, self.tracker.best_distances, active_mask, replace)
+                self.tracker.found_adversarial[active_mask] = new_found_adversarial
 
         return outputs
 
