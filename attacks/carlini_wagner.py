@@ -277,7 +277,7 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
 
         x = replicate_input(x)
         batch_size = len(x)
-        best_adversarials = x.clone()
+        final_adversarials = x.clone()
         best_distances = torch.ones((batch_size,),
                                     device=x.device) * MAX_DISTANCE
 
@@ -293,7 +293,7 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
         prev_adversarials = x.clone()
 
         while torch.any(active):
-            adversarials = self._run_attack(
+            new_adversarials = self._run_attack(
                 x[active],
                 y[active],
                 initial_const,
@@ -302,17 +302,17 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
 
             # Store the adversarials for the next iteration,
             # even if they failed
-            prev_adversarials[active] = adversarials
+            prev_adversarials[active] = new_adversarials
 
-            adversarial_outputs = self.predict(adversarials)
+            adversarial_outputs = self.predict(new_adversarials)
             successful = self._successful(adversarial_outputs, y[active]).detach()
 
             # If the Linf distance is lower than tau and the adversarial
             # is successful, use it as the new tau
             linf_distances = torch.max(
-                torch.abs(adversarials - x[active]).flatten(1),
+                torch.abs(new_adversarials - x[active]).flatten(1),
                 dim=1)[0]
-            assert linf_distances.shape == (len(adversarials),)
+            assert linf_distances.shape == (len(new_adversarials),)
 
             linf_lower = linf_distances < taus[active]
 
@@ -324,8 +324,8 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
             # Save the remaining adversarials
             if self.return_best:
                 better_distance = linf_distances < best_distances[active]
-                utils.replace_active(adversarials,
-                                     best_adversarials,
+                utils.replace_active(new_adversarials,
+                                     final_adversarials,
                                      active,
                                      successful & better_distance)
                 utils.replace_active(linf_distances,
@@ -333,8 +333,8 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
                                      active,
                                      successful & better_distance)
             else:
-                utils.replace_active(adversarials,
-                                     best_adversarials,
+                utils.replace_active(new_adversarials,
+                                     final_adversarials,
                                      active,
                                      successful)
 
@@ -348,7 +348,7 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
             drop = low_tau | (~successful)
             active[active] = ~drop
 
-        return best_adversarials
+        return final_adversarials
 
 
 class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
@@ -516,7 +516,7 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
 
         x = replicate_input(x)
         batch_size = len(x)
-        best_adversarials = x.clone()
+        final_adversarials = x.clone()
         best_distances = torch.ones((batch_size,),
                                     device=x.device) * MAX_DISTANCE
 
@@ -536,7 +536,7 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
         i = 0
 
         while max_tau > self.min_tau:
-            adversarials = self._run_attack(
+            new_adversarials = self._run_attack(
                 x,
                 y,
                 initial_const,
@@ -545,15 +545,15 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
 
             # Store the adversarials for the next iteration,
             # even if they failed
-            prev_adversarials = adversarials
+            prev_adversarials = new_adversarials
 
-            adversarial_outputs = self.predict(adversarials)
+            adversarial_outputs = self.predict(new_adversarials)
             successful = self._successful(adversarial_outputs, y).detach()
 
             # If the Linf distance is lower than tau and the adversarial
             # is successful, use it as the new tau
             linf_distances = torch.max(
-                torch.abs(adversarials - x).flatten(1),
+                torch.abs(new_adversarials - x).flatten(1),
                 dim=1)[0]
             linf_lower = linf_distances < taus
 
@@ -569,7 +569,7 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
             if not self.update_inactive:
                 replace = replace & active
 
-            best_adversarials = utils.fast_boolean_choice(best_adversarials, adversarials, replace)
+            final_adversarials = utils.fast_boolean_choice(final_adversarials, new_adversarials, replace)
 
             if self.return_best:
                 best_distances = utils.fast_boolean_choice(best_distances, linf_distances, replace)
@@ -592,4 +592,4 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
 
             i += 1
 
-        return best_adversarials
+        return final_adversarials
