@@ -184,8 +184,6 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
         assert len(x) == len(taus)
         batch_size = len(x)
         computed_adversarials = x.clone().detach()
-        best_distances = torch.ones((batch_size,),
-                                    device=x.device) * MAX_DISTANCE
 
         if self.warm_start:
             starting_atanh = self._get_arctanh_x(prev_adversarials.clone())
@@ -389,8 +387,6 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
         assert len(x) == len(taus)
         batch_size = len(x)
         computed_adversarials = x.clone().detach()
-        best_distances = torch.ones((batch_size,),
-                                    device=x.device) * MAX_DISTANCE
 
         if self.warm_start:
             starting_atanh = self._get_arctanh_x(prev_adversarials.clone())
@@ -427,7 +423,6 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
                     self.clip_min,
                     self.clip_max).detach()
 
-                # TODO: replace è inutile
                 replace = torch.ones((batch_size,), dtype=torch.bool, device=x.device)
 
                 if not self.update_inactive:
