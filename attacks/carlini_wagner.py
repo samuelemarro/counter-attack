@@ -537,8 +537,7 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
             final_adversarials = utils.fast_boolean_choice(final_adversarials, new_adversarials, replace)
 
             taus *= self.tau_factor
-            # TODO: max_tau può essere calcolato usando un max
-            max_tau *= self.tau_factor
+            max_tau = taus.max()
 
             if self.reduce_const:
                 initial_const /= 2
