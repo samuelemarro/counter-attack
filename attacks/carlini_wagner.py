@@ -12,11 +12,13 @@ MAX_DISTANCE = 100000.0
 SMALL_LOSS_COEFFICIENT = 0.0001
 
 def get_carlini_linf_attack(target_model, num_classes, cuda_optimized=True, **kwargs):
+    # return CarliniWagnerCUDALinfAttack(target_model, num_classes, **kwargs) # Temp
     if cuda_optimized:
         return CarliniWagnerCUDALinfAttack(target_model, num_classes, **kwargs)
     else:
         return CarliniWagnerCPULinfAttack(target_model, num_classes, **kwargs)
 
+# TODO: Cleanup
 
 class CarliniWagnerLinfAttack(attacks.Attack, attacks.LabelMixin):
     """
@@ -43,15 +45,13 @@ class CarliniWagnerLinfAttack(attacks.Attack, attacks.LabelMixin):
     :param clip_min: mininum value per input dimension.
     :param clip_max: maximum value per input dimension.
     :param loss_fn: loss function
-    :param return_best: if True, return the best adversarial found, else
-        return the the last adversarial found.
     """
     def __init__(self, predict, num_classes, min_tau=1 / 256,
                  initial_tau=1, tau_factor=0.9, initial_const=1e-5,
                  max_const=20, const_factor=2, reduce_const=False,
                  warm_start=True, targeted=False, learning_rate=5e-3,
                  max_iterations=1000, abort_early=True, clip_min=0.,
-                 clip_max=1., loss_fn=None, return_best=True):
+                 clip_max=1., loss_fn=None):
         """Carlini Wagner LInfinity Attack implementation in pytorch."""
         if loss_fn is not None:
             warnings.warn(
@@ -76,7 +76,6 @@ class CarliniWagnerLinfAttack(attacks.Attack, attacks.LabelMixin):
         self.learning_rate = learning_rate
         self.max_iterations = max_iterations
         self.abort_early = abort_early
-        self.return_best = return_best
 
     def _get_arctanh_x(self, x):
         # Carlini's original implementation uses a slightly different formula because
@@ -85,7 +84,7 @@ class CarliniWagnerLinfAttack(attacks.Attack, attacks.LabelMixin):
                        min=0., max=1.) * 2 - 1
         return torch_arctanh(result * ONE_MINUS_EPS)
 
-    def _outputs_and_loss(self, x, modifiers, starting_atanh, y, const, taus):
+    def _outputs_and_loss(self, x, modifiers, starting_atanh, y, const, taus, active_mask=None):
         # If you're comparing with Carlini's original implementation, x
         # is the name that has been given to tf.tanh(timg)/2, while
         # adversarials is the name that has been given to tf.tanh(modifier + simg)/2, aka newimg
@@ -94,7 +93,7 @@ class CarliniWagnerLinfAttack(attacks.Attack, attacks.LabelMixin):
 
         assert x.shape == adversarials.shape
 
-        outputs = self.predict(adversarials)
+        outputs = self.predict(adversarials, active_mask=active_mask)
         assert outputs.shape == (adversarials.shape[0], self.num_classes)
 
         y_onehot = to_one_hot(y, self.num_classes).float()
@@ -166,8 +165,6 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
     :param clip_min: mininum value per input dimension.
     :param clip_max: maximum value per input dimension.
     :param loss_fn: loss function
-    :param return_best: if True, return the best adversarial found, else
-        return the the last adversarial found.
     """
 
     def __init__(self, predict, num_classes, min_tau=1 / 256,
@@ -175,17 +172,18 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
                  max_const=20, const_factor=2, reduce_const=False,
                  warm_start=True, targeted=False, learning_rate=5e-3,
                  max_iterations=1000, abort_early=True, clip_min=0.,
-                 clip_max=1., loss_fn=None, return_best=True):
+                 clip_max=1., loss_fn=None):
         super().__init__(predict, num_classes, min_tau=min_tau,
                         initial_tau=initial_tau, tau_factor=tau_factor, initial_const=initial_const,
                         max_const=max_const, const_factor=const_factor, reduce_const=reduce_const,
                         warm_start=warm_start, targeted=targeted, learning_rate=learning_rate,
                         max_iterations=max_iterations, abort_early=abort_early, clip_min=clip_min,
-                        clip_max=clip_max, loss_fn=loss_fn, return_best=return_best)
+                        clip_max=clip_max, loss_fn=loss_fn)
 
-    def _run_attack(self, x, y, initial_const, taus, prev_adversarials):
+    def _run_attack(self, x, y, initial_const, taus, prev_adversarials, outer_active_mask):
         assert len(x) == len(taus)
         batch_size = len(x)
+        # TODO: Rename it to final_adversarials
         best_adversarials = x.clone().detach()
         best_distances = torch.ones((batch_size,),
                                     device=x.device) * MAX_DISTANCE
@@ -203,44 +201,35 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
         optimizer = optim.Adam([modifiers], lr=self.learning_rate)
 
         const = initial_const
+        
+        # Used for best_sample tracking
+        active_mask = outer_active_mask.clone()
 
         while torch.any(active) and const < self.max_const:
             # We add an extra iteration because adversarials
             # are not saved until the next iteration
             for _ in range(self.max_iterations + 1):
+                # Only the elements of active_mask where outer_active_mask is True are changed
+                active_mask[outer_active_mask] = active
+
                 outputs, losses = self._outputs_and_loss(
                     x[active],
                     modifiers[active],
                     starting_atanh[active],
                     y[active],
                     const,
-                    taus[active])
+                    taus[active],
+                    active_mask=active_mask)
 
                 adversarials = tanh_rescale(
                     starting_atanh[active] + modifiers[active],
                     self.clip_min,
                     self.clip_max).detach()
 
+                # TODO: Move in abort_early
                 successful = self._successful(outputs, y[active]).detach()
 
-                if self.return_best:
-                    distances = torch.max(
-                        torch.abs(
-                            x[active] - adversarials
-                        ).flatten(1),
-                        dim=1)[0]
-                    better_distance = distances < best_distances[active]
-
-                    utils.replace_active(adversarials,
-                                     best_adversarials,
-                                     active,
-                                     successful & better_distance)
-                    utils.replace_active(distances,
-                                     best_distances,
-                                     active,
-                                     successful & better_distance)
-                else:
-                    best_adversarials[active] = adversarials
+                best_adversarials[active] = adversarials
 
                 # Update the modifiers
                 # Note: this will update the modifiers of adversarials that might be
@@ -298,13 +287,14 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
                 y[active],
                 initial_const,
                 taus[active],
-                prev_adversarials[active].clone()).detach()
+                prev_adversarials[active].clone(),
+                outer_active_mask=active).detach()
 
             # Store the adversarials for the next iteration,
             # even if they failed
             prev_adversarials[active] = new_adversarials
 
-            adversarial_outputs = self.predict(new_adversarials)
+            adversarial_outputs = self.predict(new_adversarials, active_mask=active)
             successful = self._successful(adversarial_outputs, y[active]).detach()
 
             # If the Linf distance is lower than tau and the adversarial
@@ -322,21 +312,10 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
                                  linf_lower & successful)
 
             # Save the remaining adversarials
-            if self.return_best:
-                better_distance = linf_distances < best_distances[active]
-                utils.replace_active(new_adversarials,
-                                     final_adversarials,
-                                     active,
-                                     successful & better_distance)
-                utils.replace_active(linf_distances,
-                                     best_distances,
-                                     active,
-                                     successful & better_distance)
-            else:
-                utils.replace_active(new_adversarials,
-                                     final_adversarials,
-                                     active,
-                                     successful)
+            utils.replace_active(new_adversarials,
+                                 final_adversarials,
+                                 active,
+                                 successful)
 
             taus *= self.tau_factor
 
@@ -376,8 +355,6 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
     :param clip_min: mininum value per input dimension.
     :param clip_max: maximum value per input dimension.
     :param loss_fn: loss function
-    :param return_best: if True, return the best adversarial found, else
-        return the the last adversarial found.
     :param tau_check: how often the attack checks if it can stop
         inside the tau loop. The check will be performed every tau_check
         iterations. 0 disables checking.
@@ -396,7 +373,7 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
                  max_const=20, const_factor=2, reduce_const=False,
                  warm_start=True, targeted=False, learning_rate=5e-3,
                  max_iterations=1000, abort_early=True, clip_min=0.,
-                 clip_max=1., loss_fn=None, return_best=True,
+                 clip_max=1., loss_fn=None,
                  tau_check=1, const_check=1, inner_check=1000,
                  update_inactive=False):
         super().__init__(predict, num_classes, min_tau=min_tau,
@@ -404,14 +381,14 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
                         max_const=max_const, const_factor=const_factor, reduce_const=reduce_const,
                         warm_start=warm_start, targeted=targeted, learning_rate=learning_rate,
                         max_iterations=max_iterations, abort_early=abort_early, clip_min=clip_min,
-                        clip_max=clip_max, loss_fn=loss_fn, return_best=return_best)
+                        clip_max=clip_max, loss_fn=loss_fn)
 
         self.tau_check = tau_check
         self.const_check = const_check
         self.inner_check = inner_check
         self.update_inactive = update_inactive
 
-    def _run_attack(self, x, y, initial_const, taus, prev_adversarials):
+    def _run_attack(self, x, y, initial_const, taus, prev_adversarials, active):
         assert len(x) == len(taus)
         batch_size = len(x)
         best_adversarials = x.clone().detach()
@@ -427,7 +404,6 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
 
         # An array of booleans that stores which samples have not converged
         # yet
-        active = torch.ones((batch_size,), dtype=torch.bool, device=x.device)
         optimizer = optim.Adam([modifiers], lr=self.learning_rate)
 
         const = initial_const
@@ -439,6 +415,8 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
             # We add an extra iteration because adversarials are
             # not saved until the next iteration
             for k in range(self.max_iterations + 1):
+                # Note: unlike the CPU version, the CUDA version updates and calls the model
+                # on all samples, including inactive ones
                 outputs, losses = self._outputs_and_loss(
                     x,
                     modifiers,
@@ -454,27 +432,17 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
 
                 successful = self._successful(outputs, y).detach()
 
-                if self.return_best:
-                    distances = torch.max(
-                        torch.abs(
-                            x - adversarials
-                        ).flatten(1),
-                        dim=1)[0]
-                    better_distance = distances < best_distances
-                    replace = successful & better_distance
-                else:
-                    replace = torch.ones((batch_size,), dtype=torch.bool, device=x.device)
+                # TODO: replace è inutile
+                replace = torch.ones((batch_size,), dtype=torch.bool, device=x.device)
 
                 if not self.update_inactive:
                     replace = replace & active
 
                 best_adversarials = utils.fast_boolean_choice(best_adversarials, adversarials, replace)
 
-                if self.return_best:
-                    best_distances = utils.fast_boolean_choice(best_distances, distances, replace)
-
                 # Update the modifiers
                 total_loss = torch.sum(losses)
+                #total_loss = torch.sum(losses[active]) # Temp
                 optimizer.zero_grad()
                 total_loss.backward()
                 optimizer.step()
@@ -487,7 +455,7 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
 
                     active = active & ~(successful & small_loss)
 
-                    if (k + 1) % self.inner_check == 0 and self.inner_check != 0:
+                    if self.inner_check != 0 and (k + 1) % self.inner_check == 0:
                         # Causes an implicit sync point
                         if not active.any():
                             # Break from both loops
@@ -497,7 +465,7 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
             if stop_search:
                 break
 
-            if self.abort_early and (j + 1) % self.const_check == 0 and self.const_check != 0:
+            if self.abort_early and self.const_check != 0 and (j + 1) % self.const_check == 0:
                 # Causes an implicit sync point
                 if not active.any():
                     break
@@ -541,7 +509,8 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
                 y,
                 initial_const,
                 taus,
-                prev_adversarials.clone()).detach()
+                prev_adversarials.clone(),
+                active).detach()
 
             # Store the adversarials for the next iteration,
             # even if they failed
@@ -560,21 +529,15 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
             taus = utils.fast_boolean_choice(taus, linf_distances, linf_lower & successful)
 
             # Save the remaining adversarials
-            if self.return_best:
-                better_distance = linf_distances < best_distances
-                replace = successful & better_distance
-            else:
-                replace = successful
+            replace = successful
 
             if not self.update_inactive:
                 replace = replace & active
 
             final_adversarials = utils.fast_boolean_choice(final_adversarials, new_adversarials, replace)
 
-            if self.return_best:
-                best_distances = utils.fast_boolean_choice(best_distances, linf_distances, replace)
-
             taus *= self.tau_factor
+            # TODO: max_tau può essere calcolato usando un max
             max_tau *= self.tau_factor
 
             if self.reduce_const:
@@ -585,7 +548,7 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
             drop = low_tau | (~successful)
             active = active & (~drop)
 
-            if (i + 1) % self.tau_check == 0 and self.tau_check != 0:
+            if self.tau_check != 0 and (i + 1) % self.tau_check == 0:
                 # Causes an implicit sync point
                 if not active.any():
                     break

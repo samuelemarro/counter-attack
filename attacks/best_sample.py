@@ -45,7 +45,10 @@ class BestSampleWrapper(nn.Module):
         relevant_best_distances = self.tracker.best_distances
         relevant_found_adversarial = self.tracker.found_adversarial
 
-        if active_mask is not None:
+        if active_mask is None:
+            assert len(x) == len(self.tracker.genuines)
+        else:
+            assert len(x) == torch.count_nonzero(active_mask)
             # Boolean indexing causes a CUDA sync, which is why we do it only
             # if absolutely necessary
             relevant_labels = relevant_labels[active_mask]
