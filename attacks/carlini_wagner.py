@@ -183,8 +183,7 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
     def _run_attack(self, x, y, initial_const, taus, prev_adversarials, outer_active_mask):
         assert len(x) == len(taus)
         batch_size = len(x)
-        # TODO: Rename it to final_adversarials
-        best_adversarials = x.clone().detach()
+        computed_adversarials = x.clone().detach()
         best_distances = torch.ones((batch_size,),
                                     device=x.device) * MAX_DISTANCE
 
@@ -229,7 +228,7 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
                 # TODO: Move in abort_early
                 successful = self._successful(outputs, y[active]).detach()
 
-                best_adversarials[active] = adversarials
+                computed_adversarials[active] = adversarials
 
                 # Update the modifiers
                 # Note: this will update the modifiers of adversarials that might be
@@ -255,7 +254,7 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
             # Give more weight to the output loss
             const *= self.const_factor
 
-        return best_adversarials
+        return computed_adversarials
 
     def perturb(self, x, y=None):
         x, y = self._verify_and_process_inputs(x, y)
@@ -391,7 +390,7 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
     def _run_attack(self, x, y, initial_const, taus, prev_adversarials, active):
         assert len(x) == len(taus)
         batch_size = len(x)
-        best_adversarials = x.clone().detach()
+        computed_adversarials = x.clone().detach()
         best_distances = torch.ones((batch_size,),
                                     device=x.device) * MAX_DISTANCE
 
@@ -438,7 +437,7 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
                 if not self.update_inactive:
                     replace = replace & active
 
-                best_adversarials = utils.fast_boolean_choice(best_adversarials, adversarials, replace)
+                computed_adversarials = utils.fast_boolean_choice(computed_adversarials, adversarials, replace)
 
                 # Update the modifiers
                 total_loss = torch.sum(losses)
@@ -473,7 +472,7 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
             # Give more weight to the output loss
             const *= self.const_factor
 
-        return best_adversarials
+        return computed_adversarials
 
     def perturb(self, x, y=None):
         x, y = self._verify_and_process_inputs(x, y)
