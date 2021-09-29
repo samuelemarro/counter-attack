@@ -225,9 +225,6 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
                     self.clip_min,
                     self.clip_max).detach()
 
-                # TODO: Move in abort_early
-                successful = self._successful(outputs, y[active]).detach()
-
                 computed_adversarials[active] = adversarials
 
                 # Update the modifiers
@@ -244,6 +241,7 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
                 # samples with a small loss (the current adversarials
                 # are saved regardless of whether they are dropped)
                 if self.abort_early:
+                    successful = self._successful(outputs, y[active]).detach()
                     small_loss = losses < SMALL_LOSS_COEFFICIENT * const
 
                     active[active] = ~(successful & small_loss)
@@ -429,8 +427,6 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
                     self.clip_min,
                     self.clip_max).detach()
 
-                successful = self._successful(outputs, y).detach()
-
                 # TODO: replace è inutile
                 replace = torch.ones((batch_size,), dtype=torch.bool, device=x.device)
 
@@ -450,6 +446,7 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
                 # samples with a small loss (the current adversarials
                 # are saved regardless of whether they are dropped)
                 if self.abort_early:
+                    successful = self._successful(outputs, y).detach()
                     small_loss = losses < SMALL_LOSS_COEFFICIENT * const
 
                     active = active & ~(successful & small_loss)
