@@ -16,6 +16,11 @@ def get_carlini_linf_attack(target_model, num_classes, cuda_optimized=True, **kw
     if cuda_optimized:
         return CarliniWagnerCUDALinfAttack(target_model, num_classes, **kwargs)
     else:
+        # Remove CUDA-specific arguments
+        kwargs.pop('tau_check', None)
+        kwargs.pop('const_check', None)
+        kwargs.pop('inner_check', None)
+
         return CarliniWagnerCPULinfAttack(target_model, num_classes, **kwargs)
 
 # TODO: Cleanup
