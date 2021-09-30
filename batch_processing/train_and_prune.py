@@ -1,14 +1,38 @@
-import click
+import pathlib
 import os
+
+import click
 
 # Parametri originali Madry per CIFAR10 (che usava range 0-255): step size 2, 10 step
 # Però in teoria il gradiente è già scalato
+
+def get_latest_checkpoint(path):
+    checkpoint_folder = path + '-checkpoint'
+
+    latest_checkpoint = None
+    latest_checkpoint_value = -1
+
+    for checkpoint in pathlib.Path(checkpoint_folder).glob('*.check'):
+        if checkpoint.is_file():
+            try:
+                converted = int(checkpoint.stem)
+            except:
+                converted = None
+
+            if converted is not None:
+                if converted > latest_checkpoint_value:
+                    latest_checkpoint = checkpoint
+                    latest_checkpoint_value = converted
+    
+    print(latest_checkpoint)
+    return latest_checkpoint
 
 @click.command()
 @click.argument('domain', type=click.Choice(['cifar10', 'mnist']))
 @click.argument('architecture', type=click.Choice(['a', 'b', 'c']))
 @click.argument('test_name', type=click.Choice(['standard', 'adversarial', 'relu']))
-def main(domain, architecture, test_name):
+@click.option('--load-checkpoint', is_flag=True)
+def main(domain, architecture, test_name, load_checkpoint):
     # Common hyperparameters
     training_attack = 'pgd'
     learning_rate = 1e-4
@@ -34,9 +58,12 @@ def main(domain, architecture, test_name):
         rs_regularization = 1e-3
     elif domain == 'mnist':
         # We use Xiao's eps=0.1 hyperparameter set
+        # 0.1, however, causes the models (which are quite small)
+        # to become too inaccurate
+        # We therefore use adversarial_eps = 0.05
         batch_size = 32
 
-        adversarial_eps = 0.1
+        adversarial_eps = 0.05
         l1_regularization = 2e-5
         rs_regularization = 12e-5
     else:
@@ -58,6 +85,8 @@ def main(domain, architecture, test_name):
     if os.path.exists(standard_state_dict):
         print('Skipping Training')
     else:
+        latest_checkpoint = get_latest_checkpoint(standard_state_dict) if load_checkpoint else None
+
         training_command = f'python cli.py train-classifier {domain} {architecture} std:train {epochs} {standard_state_dict} '
         training_command += f'--batch-size {batch_size} --learning-rate {learning_rate} --checkpoint-every {checkpoint_every} '
 
@@ -68,6 +97,10 @@ def main(domain, architecture, test_name):
 
         # Add determinism
         training_command += f'--deterministic --seed {seed} '
+
+        # Load checkpoint
+        if latest_checkpoint is not None:
+            training_command += f'--load-checkpoint {latest_checkpoint} '
 
         if test_name == 'adversarial' or test_name == 'relu':
             training_command += f'--adversarial-training {training_attack} --adversarial-p {adversarial_p} --adversarial-ratio {adversarial_ratio} '
