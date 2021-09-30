@@ -184,8 +184,12 @@ class MIPDataset(data.Dataset):
               np.average(successful_absolute_differences))
 
         print('Convergence stats:')
-        for solve_time, absolute_difference in self.convergence_stats:
-            print(f'Solve time: {solve_time}, absolute difference: {absolute_difference}')
+        for solve_time, lower, upper in zip(self.solve_times, self.lower_bounds, self.upper_bounds):
+            print(f'Solve time: {solve_time}, ', end='')
+            if upper is not None and lower is not None:
+                print(f'absolute difference: {upper - lower}')
+            else:
+                print(f'lower: {lower}, upper: {upper}')
 
         print()
 
