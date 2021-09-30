@@ -224,7 +224,8 @@ def get_labels(model, images):
 
     return torch.argmax(outputs, axis=1).to(images.device)
 
-
+# Implements:
+# to[active][filter] = from[filter]
 def replace_active(from_, to, active, filter_):
     assert len(to) == len(active)
     assert len(from_) == len(filter_)

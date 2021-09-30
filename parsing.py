@@ -247,12 +247,7 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, devi
 
     binary_search = kwargs.pop('enable_binary_search', False)
 
-    if attack_name == 'carlini' and np.isposinf(p):
-        # Carlini Linf uses a custom return_best implementaton,
-        # which is enabled if kwargs['return_best'] is True.
-        wrap_return_best = False
-    else:
-        wrap_return_best = kwargs.pop('return_best', False)
+    return_best = kwargs.pop('return_best', False)
 
     if attack_type != 'evasion' and defended_model is not None:
         raise ValueError(
@@ -296,7 +291,7 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, devi
 
     # TODO: Check compatibility between evasion and return_best
 
-    if wrap_return_best:
+    if return_best:
         logger.debug('Wrapping in BestSampleWrapper.')
         target_model = attacks.BestSampleWrapper(target_model)
 
@@ -318,7 +313,7 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, devi
         attack = attacks.LinearSearchBlendedUniformNoiseAttack(target_model, **kwargs)
     elif attack_name == 'brendel':
         # Brendel supports passing an init_attack, which we need to parse
-        if wrap_return_best:
+        if return_best:
             raise RuntimeError('Brendel&Bethge already has a form of return_best behaviour.')
 
         if 'init_attack' in kwargs:
@@ -418,7 +413,7 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, devi
             attack, p, targeted=evade_detector, **binary_search_kwargs)
 
     # Complete the best sample wrapping
-    if wrap_return_best:
+    if return_best:
         logger.debug('Finalizing best sample wrapping.')
         suppress_warning = attack_name in fb_binary_search_attacks
         attack = attacks.BestSampleAttack(
