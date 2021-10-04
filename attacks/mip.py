@@ -338,6 +338,8 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
         elapsed_time = time.clock() - start_time
 
+        extra_info = {}
+
         lower = JuMP.getobjectivebound(adversarial_result['Model'])
         upper = JuMP.getobjectivevalue(adversarial_result['Model'])
 
@@ -364,7 +366,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             linf_distance = np.max(np.abs(image - adversarial))
             assert np.abs(linf_distance - upper) < SIMILARITY_THRESHOLD
 
-        return adversarial, lower, upper, elapsed_time
+        return adversarial, lower, upper, elapsed_time, extra_info
 
 
     def _mip_success(self, lower, upper):
@@ -384,7 +386,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
         for attempt, correction_factor in enumerate(self.correction_factor_schedule):
             logger.debug('Exploration attempt %s (correction factor: %s).', attempt, correction_factor)
-            adversarial, lower, upper, elapsed_time = self._run_mipverify(
+            adversarial, lower, upper, elapsed_time, extra_info = self._run_mipverify(
                 image,
                 label,
                 self.get_exploration_main_solver(attempt),
@@ -396,7 +398,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
                 if self._mip_success(lower, upper):
                     # Found a successful result: return it
-                    return upper, (adversarial, lower, upper, elapsed_time)
+                    return upper, (adversarial, lower, upper, elapsed_time, extra_info)
                 else:
                     # Found an upper bound without a successful result:
                     # return only the upper bound
@@ -441,24 +443,25 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                 # The exploration was sufficient to find a successful
                 # bound, skip the entire main loop
 
-                adversarial, lower, upper, elapsed_time = successful_result
+                adversarial, lower, upper, elapsed_time, extra_info = successful_result
 
                 assert adversarial is not None
 
                 # Convert to the stored device and dtype
                 adversarial = torch.from_numpy(adversarial).to(device=device, dtype=dtype)
 
-                return adversarial, lower, upper, elapsed_time
+                return adversarial, lower, upper, elapsed_time, extra_info
 
         adversarial = None
         lower = None
         upper = None
         elapsed_time = None
+        extra_info = None
 
         for attempt in range(self.main_attempts):
             logger.debug('Main attempt %s.', attempt)
 
-            adversarial, lower, upper, elapsed_time = self._run_mipverify(
+            adversarial, lower, upper, elapsed_time, extra_info = self._run_mipverify(
                 image,
                 label,
                 self.get_main_solver(attempt),
@@ -491,14 +494,14 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         if adversarial is not None:
             adversarial = torch.from_numpy(adversarial).to(device=device, dtype=dtype)
 
-        return adversarial, lower, upper, elapsed_time
+        return adversarial, lower, upper, elapsed_time, extra_info
 
 
     def perturb(self, x, y=None):
         if not self.original_if_failed:
             raise RuntimeError('perturb requires original_if_failed to be True.')
 
-        adversarials, _, _, _ = self.perturb_advanced(x, y=y)
+        adversarials, _, _, _, _ = self.perturb_advanced(x, y=y)
 
         return utils.maybe_stack(adversarials, x.shape[1:], device=x.device)
 
@@ -512,6 +515,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         lower_bounds = []
         upper_bounds = []
         elapsed_times = []
+        extra_infos = []
 
         if starting_points is None:
             starting_points = [None] * len(x)
@@ -519,7 +523,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         assert len(x) == len(starting_points)
 
         for image, label, starting_point in zip(x, y, starting_points):
-            adversarial, lower, upper, elapsed_time = self._mip_attack(
+            adversarial, lower, upper, elapsed_time, extra_info = self._mip_attack(
                 image, label, starting_point=starting_point)
 
             from julia import JuMP
@@ -548,5 +552,6 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             lower_bounds.append(lower)
             upper_bounds.append(upper)
             elapsed_times.append(elapsed_time)
+            extra_infos.append(extra_info)
 
-        return adversarials, lower_bounds, upper_bounds, elapsed_times
+        return adversarials, lower_bounds, upper_bounds, elapsed_times, extra_infos

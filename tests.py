@@ -112,6 +112,7 @@ def mip_test(model, attack, loader, p, misclassification_policy, device, attack_
     all_lower_bounds = []
     all_upper_bounds = []
     all_elapsed_times = []
+    all_extra_infos = []
 
     for images, true_labels in tqdm(loader, desc='MIP Test'):
         images = images.to(device)
@@ -172,13 +173,14 @@ def mip_test(model, attack, loader, p, misclassification_policy, device, attack_
                                    'This can slow down MIP at best and make it fail at worst. '
                                    'Check that the correct pre-adversarial dataset is being used.')
 
-        adversarials, lower_bounds, upper_bounds, elapsed_times = attack.perturb_advanced(
+        adversarials, lower_bounds, upper_bounds, elapsed_times, extra_infos = attack.perturb_advanced(
             images, y=labels, starting_points=pre_adversarials)
 
         assert len(adversarials) == len(images)
         assert len(adversarials) == len(lower_bounds)
         assert len(adversarials) == len(upper_bounds)
         assert len(adversarials) == len(elapsed_times)
+        assert len(adversarials) == len(extra_infos)
 
         # Move to CPU
         images = images.cpu()
@@ -193,6 +195,7 @@ def mip_test(model, attack, loader, p, misclassification_policy, device, attack_
         all_lower_bounds += list(lower_bounds)
         all_upper_bounds += list(upper_bounds)
         all_elapsed_times += list(elapsed_times)
+        all_extra_infos += list(extra_infos)
 
     assert len(all_images) == len(all_labels)
     assert len(all_images) == len(all_true_labels)
@@ -201,7 +204,7 @@ def mip_test(model, attack, loader, p, misclassification_policy, device, attack_
     assert len(all_images) == len(all_upper_bounds)
     assert len(all_images) == len(all_elapsed_times)
 
-    return adversarial_dataset.MIPDataset(all_images, all_labels, all_true_labels, all_adversarials, all_lower_bounds, all_upper_bounds, all_elapsed_times, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs)
+    return adversarial_dataset.MIPDataset(all_images, all_labels, all_true_labels, all_adversarials, all_lower_bounds, all_upper_bounds, all_elapsed_times, all_extra_infos, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs)
 
 
 def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p, misclassification_policy, device, attack_configuration, start, stop, generation_kwargs):

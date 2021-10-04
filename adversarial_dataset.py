@@ -138,13 +138,14 @@ class AdversarialDataset(data.Dataset):
         print(f'Average Successful Distance: {average_distance}')
 
 class MIPDataset(data.Dataset):
-    def __init__(self, genuines, labels, true_labels, adversarials, lower_bounds, upper_bounds, elapsed_times, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs):
+    def __init__(self, genuines, labels, true_labels, adversarials, lower_bounds, upper_bounds, elapsed_times, extra_infos, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs):
         assert len(genuines) == len(labels)
         assert len(genuines) == len(true_labels)
         assert len(genuines) == len(adversarials)
         assert len(genuines) == len(lower_bounds)
         assert len(genuines) == len(upper_bounds)
         assert len(genuines) == len(elapsed_times)
+        assert len(genuines) == len(extra_infos)
         assert all([upper is None or lower is None or upper >=
                     lower for upper, lower in zip(upper_bounds, lower_bounds)])
 
@@ -156,6 +157,7 @@ class MIPDataset(data.Dataset):
         self.lower_bounds = lower_bounds
         self.upper_bounds = upper_bounds
         self.elapsed_times = elapsed_times
+        self.extra_infos = extra_infos
         self.p = p
         self.misclassification_policy = misclassification_policy
         self.attack_configuration = attack_configuration
