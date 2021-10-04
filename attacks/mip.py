@@ -256,7 +256,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         if 'Seed' in parameters:
             parameters['Seed'] = parameters['Seed'] + attempt
 
-        return Gurobi.GurobiSolver(OutputFlag=0, **parameters)
+        return Gurobi.GurobiSolver(OutputFlag=1, **parameters)
 
     def get_main_solver(self, attempt):
         return self._get_solver(self.main_parameters, attempt)
@@ -313,7 +313,10 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         # MIP expects a batch dimension
         mip_image = np.expand_dims(mip_image, 0)
 
-        adversarial_result = MIPVerify.find_adversarial_example(
+        from julia import Main
+        Main.include('mip_interface.jl')
+
+        adversarial_result = Main.find_adversarial_example(
             self.mip_model, mip_image, target_label, main_solver,
             norm_order=self.p, tolerance=self.tolerance,
             invert_target_selection=not self.targeted,
