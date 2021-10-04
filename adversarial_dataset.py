@@ -138,13 +138,13 @@ class AdversarialDataset(data.Dataset):
         print(f'Average Successful Distance: {average_distance}')
 
 class MIPDataset(data.Dataset):
-    def __init__(self, genuines, labels, true_labels, adversarials, lower_bounds, upper_bounds, solve_times, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs):
+    def __init__(self, genuines, labels, true_labels, adversarials, lower_bounds, upper_bounds, elapsed_times, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs):
         assert len(genuines) == len(labels)
         assert len(genuines) == len(true_labels)
         assert len(genuines) == len(adversarials)
         assert len(genuines) == len(lower_bounds)
         assert len(genuines) == len(upper_bounds)
-        assert len(genuines) == len(solve_times)
+        assert len(genuines) == len(elapsed_times)
         assert all([upper is None or lower is None or upper >=
                     lower for upper, lower in zip(upper_bounds, lower_bounds)])
 
@@ -155,7 +155,7 @@ class MIPDataset(data.Dataset):
         self.adversarials = adversarials
         self.lower_bounds = lower_bounds
         self.upper_bounds = upper_bounds
-        self.solve_times = solve_times
+        self.elapsed_times = elapsed_times
         self.p = p
         self.misclassification_policy = misclassification_policy
         self.attack_configuration = attack_configuration
@@ -164,7 +164,7 @@ class MIPDataset(data.Dataset):
         self.generation_kwargs = generation_kwargs
 
     def __getitem__(self, idx):
-        return (self.genuines[idx], self.labels[idx], self.true_labels[idx], self.adversarials[idx], self.lower_bounds[idx], self.upper_bounds[idx], self.solve_times[idx])
+        return (self.genuines[idx], self.labels[idx], self.true_labels[idx], self.adversarials[idx], self.lower_bounds[idx], self.upper_bounds[idx], self.elapsed_times[idx])
 
     def __len__(self):
         return len(self.genuines)
@@ -184,8 +184,8 @@ class MIPDataset(data.Dataset):
               np.average(successful_absolute_differences))
 
         print('Convergence stats:')
-        for solve_time, lower, upper in zip(self.solve_times, self.lower_bounds, self.upper_bounds):
-            print(f'Solve time: {solve_time}, ', end='')
+        for elapsed_time, lower, upper in zip(self.elapsed_times, self.lower_bounds, self.upper_bounds):
+            print(f'Elapsed time: {elapsed_time}, ', end='')
             if upper is not None and lower is not None:
                 print(f'absolute difference: {upper - lower}')
             else:
@@ -195,7 +195,7 @@ class MIPDataset(data.Dataset):
 
     @property
     def convergence_stats(self):
-        return list(zip(self.solve_times, self.absolute_differences))
+        return list(zip(self.elapsed_times, self.absolute_differences))
 
 
 class AdversarialDistanceDataset(data.Dataset):
