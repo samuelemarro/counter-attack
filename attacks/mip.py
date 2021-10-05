@@ -334,7 +334,6 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
         assert image.shape == adversarial.shape
 
-        extra_info = {}
 
         lower = JuMP.getobjectivebound(adversarial_result['Model'])
         upper = JuMP.getobjectivevalue(adversarial_result['Model'])
@@ -361,6 +360,12 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             # equal to linf_distance
             linf_distance = np.max(np.abs(image - adversarial))
             assert np.abs(linf_distance - upper) < SIMILARITY_THRESHOLD
+
+        extra_info = {
+            'julia_solve_time' : adversarial_result['SolveTime'],
+            'julia_model_building_time' : adversarial_result['ModelBuildingTime'],
+            'julia_total_time' : adversarial_result['TotalTime']
+        }
 
         return adversarial, lower, upper, extra_info
 

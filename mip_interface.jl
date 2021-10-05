@@ -60,26 +60,32 @@ function find_adversarial_example(
             )
             m = d[:Model]
 
-            if adversarial_example_objective == MIPVerify.closest
-                MIPVerify.set_max_indexes(m, d[:Output], d[:TargetIndexes], tolerance = tolerance)
+            model_building_time = @elapsed begin
+                if adversarial_example_objective == MIPVerify.closest
+                    MIPVerify.set_max_indexes(m, d[:Output], d[:TargetIndexes], tolerance = tolerance)
 
-                # Set perturbation objective
-                # NOTE (vtjeng): It is important to set the objective immediately before we carry out
-                # the solve. Functions like `set_max_indexes` can modify the objective.
-                @objective(m, Min, MIPVerify.get_norm(norm_order, d[:Perturbation]))
-            elseif adversarial_example_objective == MIPVerify.worst
-                (maximum_target_var, nontarget_vars) =
-                    MIPVerify.get_vars_for_max_index(d[:Output], d[:TargetIndexes])
-                maximum_nontarget_var = MIPVerify.maximum_ge(nontarget_vars)
-                @objective(m, Max, maximum_target_var - maximum_nontarget_var)
-            else
-                error("Unknown adversarial_example_objective $adversarial_example_objective")
+                    # Set perturbation objective
+                    # NOTE (vtjeng): It is important to set the objective immediately before we carry out
+                    # the solve. Functions like `set_max_indexes` can modify the objective.
+                    @objective(m, Min, MIPVerify.get_norm(norm_order, d[:Perturbation]))
+                elseif adversarial_example_objective == MIPVerify.worst
+                    (maximum_target_var, nontarget_vars) =
+                        MIPVerify.get_vars_for_max_index(d[:Output], d[:TargetIndexes])
+                    maximum_nontarget_var = MIPVerify.maximum_ge(nontarget_vars)
+                    @objective(m, Max, maximum_target_var - maximum_nontarget_var)
+                else
+                    error("Unknown adversarial_example_objective $adversarial_example_objective")
+                end
             end
+
             MIPVerify.setsolver(m, main_solver)
 
             solve_time = @elapsed begin
                 d[:SolveStatus] = solve(m)
             end
+
+            d[:ModelBuildingTime] = model_building_time
+
             d[:SolveTime] = try
                 MIPVerify.getsolvetime(m)
             catch err
