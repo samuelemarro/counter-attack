@@ -380,6 +380,8 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     def _find_perturbation_size(self, image, label, original_perturbation_size):
         from julia import JuMP
 
+        exploration_extra_infos = []
+
         for attempt, correction_factor in enumerate(self.correction_factor_schedule):
             logger.debug('Exploration attempt %s (correction factor: %s).', attempt, correction_factor)
             adversarial, lower, upper, extra_info = self._run_mipverify(
@@ -388,24 +390,31 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                 self.get_exploration_main_solver(attempt),
                 self.get_exploration_tightening_solver(attempt),
                 original_perturbation_size * correction_factor)
+            
+            exploration_extra_infos.append(extra_info)
 
             if upper is not None:
                 # Found an upper bound, which was our objective
 
                 if self._mip_success(lower, upper):
                     # Found a successful result: return it
-                    return upper, (adversarial, lower, upper, extra_info)
+                    return upper, exploration_extra_infos, (adversarial, lower, upper)
                 else:
                     # Found an upper bound without a successful result:
                     # return only the upper bound
-                    return upper, None
+                    return upper, exploration_extra_infos, None
 
-        # Failed to find an upper bound: return None, None
-        return None, None
+        # Failed to find an upper bound: return None
+        return None, exploration_extra_infos, None
 
 
     def _mip_attack(self, image, label, starting_point=None):
         from julia import JuMP
+
+        extra_info = {
+            'exploration' : None,
+            'main' : None
+        }
 
         start_time = time.clock()
 
@@ -435,35 +444,40 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                     (image - starting_point).flatten(), ord=np.inf).item()
 
             # Find a perturbation size
-            perturbation_size, successful_result = self._find_perturbation_size(image, label, original_perturbation_size)
+            perturbation_size, exploration_extra_infos, successful_result = self._find_perturbation_size(image, label, original_perturbation_size)
+
+            extra_info['exploration'] = exploration_extra_infos
 
             if successful_result is not None:
                 # The exploration was sufficient to find a successful
                 # bound, skip the entire main loop
 
-                adversarial, lower, upper, extra_info = successful_result
+                adversarial, lower, upper = successful_result
 
                 assert adversarial is not None
 
                 # Convert to the stored device and dtype
                 adversarial = torch.from_numpy(adversarial).to(device=device, dtype=dtype)
 
-                return adversarial, lower, upper, extra_info
+                elapsed_time = time.clock() - start_time
+                return adversarial, lower, upper, elapsed_time, extra_info
 
         adversarial = None
         lower = None
         upper = None
-        extra_info = None
+        extra_info['main'] = []
 
         for attempt in range(self.main_attempts):
             logger.debug('Main attempt %s.', attempt)
 
-            adversarial, lower, upper, extra_info = self._run_mipverify(
+            adversarial, lower, upper, main_extra_info = self._run_mipverify(
                 image,
                 label,
                 self.get_main_solver(attempt),
                 self.get_tightening_solver(attempt),
                 perturbation_size=perturbation_size)
+
+            extra_info['main'].append(main_extra_info)
 
             if upper is not None:
                 # Found an upper bound
@@ -485,14 +499,13 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                 perturbation_size = upper
 
         # Must have been run at least once
-        assert extra_info is not None
+        assert main_extra_info is not None
 
         # Convert to the stored device and dtype
         if adversarial is not None:
             adversarial = torch.from_numpy(adversarial).to(device=device, dtype=dtype)
 
         elapsed_time = time.clock() - start_time
-
         return adversarial, lower, upper, elapsed_time, extra_info
 
 
