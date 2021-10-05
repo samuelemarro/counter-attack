@@ -78,15 +78,17 @@ function find_adversarial_example(
                 end
             end
 
+            d[:ModelBuildingTime] = model_building_time
+
             MIPVerify.setsolver(m, main_solver)
 
             solve_time = @elapsed begin
                 d[:SolveStatus] = solve(m)
             end
 
-            d[:ModelBuildingTime] = model_building_time
+            d[:WallClockSolveTime] = solve_time
 
-            d[:SolveTime] = try
+            d[:GurobiSolveTime] = try
                 MIPVerify.getsolvetime(m)
             catch err
                 # CBC solver, used for testing, does not implement `getsolvetime`.

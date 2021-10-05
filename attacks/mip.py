@@ -20,6 +20,62 @@ SIMILARITY_THRESHOLD = 1e-5
 OUTPUT_SIMILARITY_THRESHOLD = 1e-5
 ATTACK_IMPROVEMENT_THRESHOLD = 1e-5
 
+# See https://www.gurobi.com/documentation/9.1/refman/attributes.html
+GUROBI_EXTRA_ATTRIBUTES = [
+    ('NumVars', 'int'),
+    ('NumConstrs', 'int'),
+    ('NumSOS', 'int'),
+    ('NumQConstrs', 'int'),
+    ('NumGenConstrs', 'int'),
+    ('NumNZs', 'int'),
+    ('DNumNZs', 'double'),
+    ('NumQNZs', 'int'),
+    ('NumQCNZs', 'int'),
+    ('NumIntVars', 'int'),
+    ('NumBinVars', 'int'),
+    ('NumPWLObjVars', 'int'),
+    ('ModelName', 'string'),
+    ('ModelSense', 'int'),
+    ('ObjCon', 'double'),
+    # ('Fingerprint', 'int'),
+    ('ObjVal', 'double'),
+    ('ObjBound', 'double'),
+    ('ObjBoundC', 'double'),
+    ('PoolObjBound', 'double'),
+    ('PoolObjVal', 'double'),
+    ('MIPGap', 'double'),
+    ('Runtime', 'double'),
+    ('Status', 'int'),
+    ('SolCount', 'int'),
+    ('IterCount', 'double'),
+    ('BarIterCount', 'int'),
+    ('NodeCount', 'double'),
+    ('IsMIP', 'int'),
+    ('IsQP', 'int'),
+    ('IsQCP', 'int'),
+    ('IsMultiObj', 'int'),
+    # ('IISMinimal', 'int'),
+    ('MaxCoeff', 'double'),
+    ('MinCoeff', 'double'),
+    ('MaxBound', 'double'),
+    ('MinBound', 'double'),
+    ('MaxObjCoeff', 'double'),
+    ('MinObjCoeff', 'double'),
+    ('MaxRHS', 'double'),
+    ('MinRHS', 'double'),
+    ('MaxQCCoeff', 'double'),
+    ('MinQCCoeff', 'double'),
+    ('MaxQCLCoeff', 'double'),
+    ('MinQCLCoeff', 'double'),
+    ('MaxQCRHS', 'double'),
+    ('MinQCRHS', 'double'),
+    ('MaxQObjCoeff', 'double'),
+    ('MinQObjCoeff', 'double'),
+    # ('FarkasProof', 'double')
+    # ('Kappa', 'double'),
+    # ('KappaExact', 'double')
+]
+
 def module_to_mip(module, flattened_input):
     from julia import MIPVerify
 
@@ -287,8 +343,11 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
 
     def _run_mipverify(self, image, label, main_solver, tightening_solver, perturbation_size):
+        start_time = time.clock()
+
         from julia import MIPVerify
         from julia import JuMP
+        from julia import Gurobi
 
         assert perturbation_size is None or perturbation_size > 0
 
@@ -362,10 +421,34 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             assert np.abs(linf_distance - upper) < SIMILARITY_THRESHOLD
 
         extra_info = {
-            'julia_solve_time' : adversarial_result['SolveTime'],
-            'julia_model_building_time' : adversarial_result['ModelBuildingTime'],
-            'julia_total_time' : adversarial_result['TotalTime']
+            'times' : {
+                'julia' : {
+                    'gurobi_solve_time' : adversarial_result['GurobiSolveTime'],
+                    'wall_clock_solve_time' : adversarial_result['WallClockSolveTime'],
+                    'model_building_time' : adversarial_result['ModelBuildingTime'],
+                    'total_time' : adversarial_result['TotalTime']
+                }
+            },
+            'gurobi_attributes' : {}
         }
+
+        inner_model = JuMP.internalmodel(adversarial_result['Model']).inner
+
+        def get_gurobi_attribute(name, attribute_type):
+            if attribute_type == 'int':
+                return Gurobi.get_intattr(inner_model, name)
+            elif attribute_type == 'double':
+                return Gurobi.get_dblattr(inner_model, name)
+            elif attribute_type == 'string':
+                return Gurobi.get_strattr(inner_model, name)
+            else:
+                raise NotImplementedError
+
+        for name, attribute_type in GUROBI_EXTRA_ATTRIBUTES:
+            extra_info['gurobi_attributes'][name] = get_gurobi_attribute(name, attribute_type)
+
+        python_elapsed_time = time.clock() - start_time
+        extra_info['times']['python_elapsed_time'] = python_elapsed_time
 
         return adversarial, lower, upper, extra_info
 
