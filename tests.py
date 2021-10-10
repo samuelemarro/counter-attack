@@ -1,4 +1,5 @@
 import logging
+from pathlib import Path
 
 import torch
 from tqdm import tqdm
@@ -96,7 +97,7 @@ def attack_test(model, attack, loader, p, misclassification_policy, device, atta
     return adversarial_dataset.AdversarialDataset(all_images, all_labels, all_true_labels, all_adversarials, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs)
 
 
-def mip_test(model, attack, loader, p, misclassification_policy, device, attack_configuration, generation_kwargs, start, stop, pre_adversarial_dataset=None):
+def mip_test(model, attack, loader, p, misclassification_policy, device, attack_configuration, generation_kwargs, start, stop, pre_adversarial_dataset=None, log_dir=None):
     if attack.targeted:
         raise NotImplementedError('Targeted attack tests are not supported.')
 
@@ -114,7 +115,7 @@ def mip_test(model, attack, loader, p, misclassification_policy, device, attack_
     all_elapsed_times = []
     all_extra_infos = []
 
-    for images, true_labels in tqdm(loader, desc='MIP Test'):
+    for index, (images, true_labels) in tqdm(enumerate(loader), desc='MIP Test'):
         images = images.to(device)
         true_labels = true_labels.to(device)
 
@@ -174,7 +175,7 @@ def mip_test(model, attack, loader, p, misclassification_policy, device, attack_
                                    'Check that the correct pre-adversarial dataset is being used.')
 
         adversarials, lower_bounds, upper_bounds, elapsed_times, extra_infos = attack.perturb_advanced(
-            images, y=labels, starting_points=pre_adversarials)
+            images, y=labels, starting_points=pre_adversarials, log_dir=None if log_dir is None else Path(log_dir) / f'batch_{index}')
 
         assert len(adversarials) == len(images)
         assert len(adversarials) == len(lower_bounds)

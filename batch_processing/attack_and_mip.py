@@ -64,6 +64,8 @@ def main(domain, architecture, test_name, start, stop):
         mip_command += f'--start {start} --stop {stop} --save-to {mip_results_path} '
         mip_command += f'--deterministic --seed {seed} '
 
+        mip_command += f'--log-dir logs/{domain}/{architecture}/{test_name} '
+
         print(f'MIP | Running command\n{mip_command}')
         os.system(mip_command)
 

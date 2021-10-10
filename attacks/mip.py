@@ -1,4 +1,7 @@
 import logging
+import os
+from pathlib import Path
+import tempfile
 import time
 
 import advertorch
@@ -21,7 +24,7 @@ OUTPUT_SIMILARITY_THRESHOLD = 1e-5
 ATTACK_IMPROVEMENT_THRESHOLD = 1e-5
 
 # See https://www.gurobi.com/documentation/9.1/refman/attributes.html
-GUROBI_EXTRA_ATTRIBUTES = [
+GUROBI_MODEL_ATTRIBUTES = [
     ('NumVars', 'int'),
     ('NumConstrs', 'int'),
     ('NumSOS', 'int'),
@@ -305,26 +308,14 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         self.exploration_main_parameters = exploration_main_parameters
         self.exploration_tightening_parameters = exploration_tightening_parameters
 
-    def _get_solver(self, original_parameters, attempt):
+    def _get_solver(self, original_parameters, attempt, log_file):
         from julia import Gurobi
         parameters = dict(original_parameters)
 
         if 'Seed' in parameters:
             parameters['Seed'] = parameters['Seed'] + attempt
 
-        return Gurobi.GurobiSolver(OutputFlag=1, **parameters)
-
-    def get_main_solver(self, attempt):
-        return self._get_solver(self.main_parameters, attempt)
-
-    def get_tightening_solver(self, attempt):
-        return self._get_solver(self.tightening_parameters, attempt)
-
-    def get_exploration_main_solver(self, attempt):
-        return self._get_solver(self.exploration_main_parameters, attempt)
-
-    def get_exploration_tightening_solver(self, attempt):
-        return self._get_solver(self.exploration_tightening_parameters, attempt)
+        return Gurobi.GurobiSolver(OutputFlag=1, LogFile=str(log_file), **parameters)
 
     def _check_model(self, image, threshold=OUTPUT_SIMILARITY_THRESHOLD):
         model_device = next(self.predict.parameters()).device
@@ -342,8 +333,17 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         return np.max(np.abs(torch_output - mip_output)) <= threshold
 
 
-    def _run_mipverify(self, image, label, main_solver, tightening_solver, perturbation_size):
+    def _run_mipverify(self, image, label, main_parameters, tightening_parameters, attempt, perturbation_size, log_dir):
         start_time = time.clock()
+
+        assert not log_dir.exists()
+        log_dir.mkdir(parents=True)
+
+        main_log_file = str(log_dir / 'main.log')
+        main_solver = self._get_solver(main_parameters, attempt, main_log_file)
+
+        tightening_log_file = str(log_dir / 'tightening.log')
+        tightening_solver = self._get_solver(tightening_parameters, attempt, tightening_log_file)
 
         from julia import MIPVerify
         from julia import JuMP
@@ -429,7 +429,8 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                     'total_time' : adversarial_result['TotalTime']
                 }
             },
-            'gurobi_attributes' : {}
+            'gurobi_attributes' : {},
+            'logs' : {}
         }
 
         inner_model = JuMP.internalmodel(adversarial_result['Model']).inner
@@ -444,8 +445,14 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             else:
                 raise NotImplementedError
 
-        for name, attribute_type in GUROBI_EXTRA_ATTRIBUTES:
-            extra_info['gurobi_attributes'][name] = get_gurobi_attribute(name, attribute_type)
+        extra_info['gurobi_attributes']['model'] = {}
+        for name, attribute_type in GUROBI_MODEL_ATTRIBUTES:
+            extra_info['gurobi_attributes']['model'][name] = get_gurobi_attribute(name, attribute_type)
+        
+        with open(main_log_file, 'r') as main_f:
+            extra_info['logs']['main'] = main_f.read()
+        with open(tightening_log_file, 'r') as tightening_f:
+            extra_info['logs']['tightening'] = tightening_f.read()
 
         python_elapsed_time = time.clock() - start_time
         extra_info['times']['python_elapsed_time'] = python_elapsed_time
@@ -465,7 +472,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         return absolute_gap < self.retry_absolute_gap or gap < self.retry_gap
 
 
-    def _find_perturbation_size(self, image, label, original_perturbation_size):
+    def _find_perturbation_size(self, image, label, original_perturbation_size, log_dir):
         from julia import JuMP
 
         exploration_extra_infos = []
@@ -475,9 +482,11 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             adversarial, lower, upper, extra_info = self._run_mipverify(
                 image,
                 label,
-                self.get_exploration_main_solver(attempt),
-                self.get_exploration_tightening_solver(attempt),
-                original_perturbation_size * correction_factor)
+                self.exploration_main_parameters,
+                self.exploration_tightening_parameters,
+                attempt,
+                original_perturbation_size * correction_factor,
+                log_dir / 'exploration_run' / str(attempt))
             
             exploration_extra_infos.append(extra_info)
 
@@ -496,7 +505,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         return None, exploration_extra_infos, None
 
 
-    def _mip_attack(self, image, label, starting_point=None):
+    def _mip_attack(self, image, label, log_dir, starting_point=None):
         from julia import JuMP
 
         extra_info = {
@@ -532,7 +541,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                     (image - starting_point).flatten(), ord=np.inf).item()
 
             # Find a perturbation size
-            perturbation_size, exploration_extra_infos, successful_result = self._find_perturbation_size(image, label, original_perturbation_size)
+            perturbation_size, exploration_extra_infos, successful_result = self._find_perturbation_size(image, label, original_perturbation_size, log_dir)
 
             extra_info['exploration'] = exploration_extra_infos
 
@@ -561,9 +570,11 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             adversarial, lower, upper, main_extra_info = self._run_mipverify(
                 image,
                 label,
-                self.get_main_solver(attempt),
-                self.get_tightening_solver(attempt),
-                perturbation_size=perturbation_size)
+                self.main_parameters,
+                self.tightening_parameters,
+                attempt,
+                perturbation_size,
+                log_dir / 'main_run' / str(attempt))
 
             extra_info['main'].append(main_extra_info)
 
@@ -606,7 +617,14 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         return utils.maybe_stack(adversarials, x.shape[1:], device=x.device)
 
 
-    def perturb_advanced(self, x, y=None, starting_points=None):
+    def perturb_advanced(self, x, y=None, starting_points=None, log_dir=None):
+        if log_dir is None:
+            log_dir = Path(tempfile.mkdtemp())
+        else:
+            log_dir = Path(log_dir)
+            if log_dir.exists():
+                raise ValueError('log_dir must not exist.')
+
         x, y = self._verify_and_process_inputs(x, y)
 
         assert len(x) == len(y)
@@ -622,9 +640,9 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
         assert len(x) == len(starting_points)
 
-        for image, label, starting_point in zip(x, y, starting_points):
+        for index, (image, label, starting_point) in enumerate(zip(x, y, starting_points)):
             adversarial, lower, upper, elapsed_time, extra_info = self._mip_attack(
-                image, label, starting_point=starting_point)
+                image, label, log_dir / f'item_{index}', starting_point=starting_point)
 
             if adversarial is None:
                 if self.original_if_failed:
