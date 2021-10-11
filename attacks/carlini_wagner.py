@@ -27,8 +27,6 @@ def get_carlini_linf_attack(target_model, num_classes, use_best_sample, cuda_opt
 
         return CarliniWagnerCPULinfAttack(target_model, num_classes, use_best_sample=use_best_sample, **kwargs)
 
-# TODO: Cleanup
-
 class CarliniWagnerLinfAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     """
     The Carlini and Wagner LInfinity Attack, https://arxiv.org/abs/1608.04644
@@ -284,8 +282,6 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
         x = replicate_input(x)
         batch_size = len(x)
         final_adversarials = x.clone()
-        best_distances = torch.ones((batch_size,),
-                                    device=x.device) * MAX_DISTANCE
 
         # An array of booleans that stores which samples have not converged
         # yet
@@ -502,8 +498,6 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
         x = replicate_input(x)
         batch_size = len(x)
         final_adversarials = x.clone()
-        best_distances = torch.ones((batch_size,),
-                                    device=x.device) * MAX_DISTANCE
 
         # An array of booleans that stores which samples have not converged
         # yet
