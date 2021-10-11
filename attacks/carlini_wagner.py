@@ -1,30 +1,35 @@
+import logging
 import warnings
 
-import advertorch.attacks as attacks
+import advertorch
 from advertorch.utils import clamp, replicate_input, tanh_rescale, torch_arctanh, to_one_hot
 import torch
 import torch.optim as optim
+
+import attacks
 import utils
+
+logger = logging.getLogger(__name__)
 
 ONE_MINUS_EPS = 0.999999
 TARGET_MULT = 10000.0
 MAX_DISTANCE = 100000.0
 SMALL_LOSS_COEFFICIENT = 0.0001
 
-def get_carlini_linf_attack(target_model, num_classes, cuda_optimized=True, **kwargs):
+def get_carlini_linf_attack(target_model, num_classes, use_best_sample, cuda_optimized=True, **kwargs):
     if cuda_optimized:
-        return CarliniWagnerCUDALinfAttack(target_model, num_classes, **kwargs)
+        return CarliniWagnerCUDALinfAttack(target_model, num_classes, use_best_sample=use_best_sample, **kwargs)
     else:
         # Remove CUDA-specific arguments
         kwargs.pop('tau_check', None)
         kwargs.pop('const_check', None)
         kwargs.pop('inner_check', None)
 
-        return CarliniWagnerCPULinfAttack(target_model, num_classes, **kwargs)
+        return CarliniWagnerCPULinfAttack(target_model, num_classes, use_best_sample=use_best_sample, **kwargs)
 
 # TODO: Cleanup
 
-class CarliniWagnerLinfAttack(attacks.Attack, attacks.LabelMixin):
+class CarliniWagnerLinfAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
     """
     The Carlini and Wagner LInfinity Attack, https://arxiv.org/abs/1608.04644
     This is a base class for the CPU and CUDA versions.
@@ -48,14 +53,15 @@ class CarliniWagnerLinfAttack(attacks.Attack, attacks.LabelMixin):
         min.
     :param clip_min: mininum value per input dimension.
     :param clip_max: maximum value per input dimension.
-    :param loss_fn: loss function
+    :param loss_fn: loss function.
+    :param use_best_sample: pass best_sample tracking data to the model.
     """
     def __init__(self, predict, num_classes, min_tau=1 / 256,
                  initial_tau=1, tau_factor=0.9, initial_const=1e-5,
                  max_const=20, const_factor=2, reduce_const=False,
                  warm_start=True, targeted=False, learning_rate=5e-3,
                  max_iterations=1000, abort_early=True, clip_min=0.,
-                 clip_max=1., loss_fn=None):
+                 clip_max=1., loss_fn=None, use_best_sample=False):
         """Carlini Wagner LInfinity Attack implementation in pytorch."""
         if loss_fn is not None:
             warnings.warn(
@@ -63,6 +69,10 @@ class CarliniWagnerLinfAttack(attacks.Attack, attacks.LabelMixin):
                 " function other than the default. Setting loss_fn manually"
                 " is not effective."
             )
+
+        if isinstance(predict, attacks.BestSampleWrapper) and not use_best_sample:
+            logger.warning('Using best sampling without use_best_sample=True. '
+                           'This might lead to incorrect results.')
 
         loss_fn = None
         super().__init__(predict, loss_fn, clip_min=clip_min, clip_max=clip_max)
@@ -80,6 +90,7 @@ class CarliniWagnerLinfAttack(attacks.Attack, attacks.LabelMixin):
         self.learning_rate = learning_rate
         self.max_iterations = max_iterations
         self.abort_early = abort_early
+        self.use_best_sample = use_best_sample
 
     def _get_arctanh_x(self, x):
         # Carlini's original implementation uses a slightly different formula because
@@ -87,6 +98,12 @@ class CarliniWagnerLinfAttack(attacks.Attack, attacks.LabelMixin):
         result = clamp((x - self.clip_min) / (self.clip_max - self.clip_min),
                        min=0., max=1.) * 2 - 1
         return torch_arctanh(result * ONE_MINUS_EPS)
+
+    def _outputs(self, x, active_mask=None, filter_=None):
+        if self.use_best_sample:
+            return self.predict(x, active_mask=active_mask, filter_=filter_)
+        else:
+            return self.predict(x)
 
     def _outputs_and_loss(self, x, modifiers, starting_atanh, y, const, taus, active_mask=None, filter_=None):
         # If you're comparing with Carlini's original implementation, x
@@ -97,7 +114,7 @@ class CarliniWagnerLinfAttack(attacks.Attack, attacks.LabelMixin):
 
         assert x.shape == adversarials.shape
 
-        outputs = self.predict(adversarials, active_mask=active_mask, filter_=filter_)
+        outputs = self._outputs(adversarials, active_mask=active_mask, filter_=filter_)
         assert outputs.shape == (adversarials.shape[0], self.num_classes)
 
         y_onehot = to_one_hot(y, self.num_classes).float()
@@ -168,7 +185,8 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
         min.
     :param clip_min: mininum value per input dimension.
     :param clip_max: maximum value per input dimension.
-    :param loss_fn: loss function
+    :param loss_fn: loss function.
+    :param use_best_sample: pass best_sample tracking data to the model.
     """
 
     def __init__(self, predict, num_classes, min_tau=1 / 256,
@@ -176,13 +194,13 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
                  max_const=20, const_factor=2, reduce_const=False,
                  warm_start=True, targeted=False, learning_rate=5e-3,
                  max_iterations=1000, abort_early=True, clip_min=0.,
-                 clip_max=1., loss_fn=None):
+                 clip_max=1., loss_fn=None, use_best_sample=False):
         super().__init__(predict, num_classes, min_tau=min_tau,
                         initial_tau=initial_tau, tau_factor=tau_factor, initial_const=initial_const,
                         max_const=max_const, const_factor=const_factor, reduce_const=reduce_const,
                         warm_start=warm_start, targeted=targeted, learning_rate=learning_rate,
                         max_iterations=max_iterations, abort_early=abort_early, clip_min=clip_min,
-                        clip_max=clip_max, loss_fn=loss_fn)
+                        clip_max=clip_max, loss_fn=loss_fn, use_best_sample=use_best_sample)
 
     def _run_attack(self, x, y, initial_const, taus, prev_adversarials, outer_active_mask):
         assert len(x) == len(taus)
@@ -293,7 +311,7 @@ class CarliniWagnerCPULinfAttack(CarliniWagnerLinfAttack):
             # even if they failed
             prev_adversarials[active] = new_adversarials
 
-            adversarial_outputs = self.predict(new_adversarials, active_mask=active)
+            adversarial_outputs = self._outputs(new_adversarials, active_mask=active)
             successful = self._successful(adversarial_outputs, y[active]).detach()
 
             # If the Linf distance is lower than tau and the adversarial
@@ -353,7 +371,8 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
         min.
     :param clip_min: mininum value per input dimension.
     :param clip_max: maximum value per input dimension.
-    :param loss_fn: loss function
+    :param loss_fn: loss function.
+    :param use_best_sample: pass best_sample tracking data to the model.
     :param tau_check: how often the attack checks if it can stop
         inside the tau loop. The check will be performed every tau_check
         iterations. 0 disables checking.
@@ -372,7 +391,7 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
                  max_const=20, const_factor=2, reduce_const=False,
                  warm_start=True, targeted=False, learning_rate=5e-3,
                  max_iterations=1000, abort_early=True, clip_min=0.,
-                 clip_max=1., loss_fn=None,
+                 clip_max=1., loss_fn=None, use_best_sample=False,
                  tau_check=1, const_check=1, inner_check=1000,
                  update_inactive=False):
         super().__init__(predict, num_classes, min_tau=min_tau,
@@ -380,7 +399,7 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
                         max_const=max_const, const_factor=const_factor, reduce_const=reduce_const,
                         warm_start=warm_start, targeted=targeted, learning_rate=learning_rate,
                         max_iterations=max_iterations, abort_early=abort_early, clip_min=clip_min,
-                        clip_max=clip_max, loss_fn=loss_fn)
+                        clip_max=clip_max, loss_fn=loss_fn, use_best_sample=use_best_sample)
 
         self.tau_check = tau_check
         self.const_check = const_check
@@ -514,7 +533,7 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
             # even if they failed
             prev_adversarials = new_adversarials
 
-            adversarial_outputs = self.predict(new_adversarials)
+            adversarial_outputs = self._outputs(new_adversarials, filter_=active)
             successful = self._successful(adversarial_outputs, y).detach()
 
             # If the Linf distance is lower than tau and the adversarial

@@ -338,7 +338,7 @@ def parse_attack(attack_name, domain, p, attack_type, model, attack_config, devi
             else:
                 raise NotImplementedError
 
-            attack = attacks.get_carlini_linf_attack(target_model, num_classes,
+            attack = attacks.get_carlini_linf_attack(target_model, num_classes, return_best,
                 targeted=evade_detector, cuda_optimized=cuda_optimized, **kwargs)
         else:
             raise NotImplementedError(
