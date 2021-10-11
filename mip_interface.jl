@@ -23,81 +23,87 @@ function find_adversarial_example(
     solve_if_predicted_in_targeted = true,
 )::Dict
 
-    total_time = @elapsed begin
-        d = Dict()
+    find_adversarial_example_start_timestamp = time()
+    d = Dict()
 
-        # Calculate predicted index
-        predicted_output = input |> nn
-        num_possible_indexes = length(predicted_output)
-        predicted_index = predicted_output |> MIPVerify.get_max_index
+    # Calculate predicted index
+    predicted_output = input |> nn
+    num_possible_indexes = length(predicted_output)
+    predicted_index = predicted_output |> MIPVerify.get_max_index
 
-        d[:PredictedIndex] = predicted_index
+    d[:PredictedIndex] = predicted_index
 
-        # Set target indexes
-        d[:TargetIndexes] = MIPVerify.get_target_indexes(
-            target_selection,
-            num_possible_indexes,
-            invert_target_selection = invert_target_selection,
+    # Set target indexes
+    d[:TargetIndexes] = MIPVerify.get_target_indexes(
+        target_selection,
+        num_possible_indexes,
+        invert_target_selection = invert_target_selection,
+    )
+    notice(
+        MIPVerify.LOGGER,
+        "Attempting to find adversarial example. Neural net predicted label is $(predicted_index), target labels are $(d[:TargetIndexes])",
+    )
+
+    # Only call solver if predicted index is not found among target indexes.
+    if !(d[:PredictedIndex] in d[:TargetIndexes]) || solve_if_predicted_in_targeted
+        merge!(
+            d,
+            MIPVerify.get_model(
+                nn,
+                input,
+                pp,
+                tightening_solver,
+                tightening_algorithm,
+                rebuild,
+                cache_model,
+            ),
         )
-        notice(
-            MIPVerify.LOGGER,
-            "Attempting to find adversarial example. Neural net predicted label is $(predicted_index), target labels are $(d[:TargetIndexes])",
-        )
+        m = d[:Model]
 
-        # Only call solver if predicted index is not found among target indexes.
-        if !(d[:PredictedIndex] in d[:TargetIndexes]) || solve_if_predicted_in_targeted
-            merge!(
-                d,
-                MIPVerify.get_model(
-                    nn,
-                    input,
-                    pp,
-                    tightening_solver,
-                    tightening_algorithm,
-                    rebuild,
-                    cache_model,
-                ),
-            )
-            m = d[:Model]
+        model_building_start_timestamp = time()
 
-            model_building_time = @elapsed begin
-                if adversarial_example_objective == MIPVerify.closest
-                    MIPVerify.set_max_indexes(m, d[:Output], d[:TargetIndexes], tolerance = tolerance)
+        if adversarial_example_objective == MIPVerify.closest
+            MIPVerify.set_max_indexes(m, d[:Output], d[:TargetIndexes], tolerance = tolerance)
 
-                    # Set perturbation objective
-                    # NOTE (vtjeng): It is important to set the objective immediately before we carry out
-                    # the solve. Functions like `set_max_indexes` can modify the objective.
-                    @objective(m, Min, MIPVerify.get_norm(norm_order, d[:Perturbation]))
-                elseif adversarial_example_objective == MIPVerify.worst
-                    (maximum_target_var, nontarget_vars) =
-                        MIPVerify.get_vars_for_max_index(d[:Output], d[:TargetIndexes])
-                    maximum_nontarget_var = MIPVerify.maximum_ge(nontarget_vars)
-                    @objective(m, Max, maximum_target_var - maximum_nontarget_var)
-                else
-                    error("Unknown adversarial_example_objective $adversarial_example_objective")
-                end
-            end
+            # Set perturbation objective
+            # NOTE (vtjeng): It is important to set the objective immediately before we carry out
+            # the solve. Functions like `set_max_indexes` can modify the objective.
+            @objective(m, Min, MIPVerify.get_norm(norm_order, d[:Perturbation]))
+        elseif adversarial_example_objective == MIPVerify.worst
+            (maximum_target_var, nontarget_vars) =
+                MIPVerify.get_vars_for_max_index(d[:Output], d[:TargetIndexes])
+            maximum_nontarget_var = MIPVerify.maximum_ge(nontarget_vars)
+            @objective(m, Max, maximum_target_var - maximum_nontarget_var)
+        else
+            error("Unknown adversarial_example_objective $adversarial_example_objective")
+        end
 
-            d[:ModelBuildingTime] = model_building_time
+        model_building_end_timestamp = time()
 
-            MIPVerify.setsolver(m, main_solver)
+        d[:ModelBuildingStartTimestamp] = model_building_start_timestamp
+        d[:ModelBuildingEndTimestamp] = model_building_end_timestamp
 
-            solve_time = @elapsed begin
-                d[:SolveStatus] = solve(m)
-            end
+        MIPVerify.setsolver(m, main_solver)
 
-            d[:WallClockSolveTime] = solve_time
+        wall_clock_solve_start_timestamp = time()
+        d[:SolveStatus] = solve(m)
+        wall_clock_solve_end_timestamp = time()
 
-            d[:GurobiSolveTime] = try
-                MIPVerify.getsolvetime(m)
-            catch err
-                # CBC solver, used for testing, does not implement `getsolvetime`.
-                isa(err, MethodError) || rethrow(err)
-                solve_time
-            end
+        d[:WallClockStartTimestamp] = wall_clock_solve_start_timestamp
+        d[:WallClockEndTimestamp] = wall_clock_solve_end_timestamp
+
+        d[:GurobiSolveTime] = try
+            MIPVerify.getsolvetime(m)
+        catch err
+            # CBC solver, used for testing, does not implement `getsolvetime`.
+            isa(err, MethodError) || rethrow(err)
+            solve_time
         end
     end
 
-    d[:TotalTime] = total_time
+    find_adversarial_example_end_timestamp = time()
+
+    d[:FindAdversarialExampleStartTimestamp] = find_adversarial_example_start_timestamp
+    d[:FindAdversarialExampleEndTimestamp] = find_adversarial_example_end_timestamp
     return d
 end

@@ -373,7 +373,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
 
     def _run_mipverify(self, image, label, main_parameters, tightening_parameters, attempt, perturbation_size, log_dir):
-        start_time = time.clock()
+        run_mipverify_start_timestamp = time.time()
 
         assert not log_dir.exists()
         log_dir.mkdir(parents=True)
@@ -463,17 +463,20 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             'times' : {
                 'julia' : {
                     'gurobi_solve_time' : adversarial_result['GurobiSolveTime'],
-                    'wall_clock_solve_time' : adversarial_result['WallClockSolveTime'],
-                    'model_building_time' : adversarial_result['ModelBuildingTime'],
-                    'total_time' : adversarial_result['TotalTime']
-                },
-                'python' : {}
-            },
-            'gurobi_attributes' : {
-                'model' : {},
-                'quality' : {}
-            },
-            'logs' : {}
+                    'find_adversarial_example' : {
+                        'start_timestamp' : adversarial_result['FindAdversarialExampleStartTimestamp'],
+                        'end_timestamp' : adversarial_result['FindAdversarialExampleEndTimestamp']
+                    },
+                    'model_building' : {
+                        'start_timestamp' : adversarial_result['ModelBuildingStartTimestamp'],
+                        'end_timestamp' : adversarial_result['ModelBuildingEndTimestamp']
+                    },
+                    'wall_clock' : {
+                        'start_timestamp' : adversarial_result['WallClockStartTimestamp'],
+                        'end_timestamp' : adversarial_result['WallClockEndTimestamp']
+                    }
+                }
+            }
         }
 
         inner_model = JuMP.internalmodel(adversarial_result['Model']).inner
@@ -488,7 +491,12 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             else:
                 raise NotImplementedError
 
-        attribute_retrieval_start_time = time.clock()
+        attribute_retrieval_start_timestamp = time.time()
+
+        extra_info['gurobi_attributes'] = {
+                'model' : {},
+                'quality' : {}
+        }
 
         for name, attribute_type in GUROBI_MODEL_ATTRIBUTES:
             extra_info['gurobi_attributes']['model'][name] = get_gurobi_attribute(name, attribute_type)
@@ -496,16 +504,25 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         for name, attribute_type in GUROBI_QUALITY_ATTRIBUTES:
             extra_info['gurobi_attributes']['quality'][name] = get_gurobi_attribute(name, attribute_type)
 
+        extra_info['logs'] = {}
+
         with open(main_log_file, 'r') as main_f:
             extra_info['logs']['main'] = main_f.read()
         with open(tightening_log_file, 'r') as tightening_f:
             extra_info['logs']['tightening'] = tightening_f.read()
 
-        attribute_retrieval_time = time.clock() - attribute_retrieval_start_time
-        extra_info['times']['python']['attribute_retrieval_time'] = attribute_retrieval_time
+        run_mipverify_end_timestamp = attribute_retrieval_end_timestamp = time.time()
 
-        python_elapsed_time = time.clock() - start_time
-        extra_info['times']['python']['total_elapsed_time'] = python_elapsed_time
+        extra_info['times']['python'] = {
+            'attribute_retrieval' : {
+                'start_timestamp' : attribute_retrieval_start_timestamp,
+                'end_timestamp' : attribute_retrieval_end_timestamp
+            },
+            'run_mipverify' : {
+                'start_timestamp' : run_mipverify_start_timestamp,
+                'end_timestamp' : run_mipverify_end_timestamp
+            }
+        }
 
         return adversarial, lower, upper, extra_info
 
@@ -536,7 +553,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                 self.exploration_tightening_parameters,
                 attempt,
                 original_perturbation_size * correction_factor,
-                log_dir / 'exploration_run' / str(attempt))
+                log_dir / 'exploration_run' / f'attempt_{attempt}')
             
             exploration_extra_infos.append(extra_info)
 
@@ -565,7 +582,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             'main' : None
         }
 
-        start_time = time.clock()
+        start_time = time.time()
 
         assert image.device == label.device
 
@@ -608,7 +625,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                 # Convert to the stored device and dtype
                 adversarial = torch.from_numpy(adversarial).to(device=device, dtype=dtype)
 
-                elapsed_time = time.clock() - start_time
+                elapsed_time = time.time() - start_time
                 return adversarial, lower, upper, elapsed_time, extra_info
 
         adversarial = None
@@ -626,7 +643,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                 self.tightening_parameters,
                 attempt,
                 perturbation_size,
-                log_dir / 'main_run' / str(attempt))
+                log_dir / 'main_run' / f'attempt_{attempt}')
 
             extra_info['main'].append(main_extra_info)
 
@@ -656,7 +673,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         if adversarial is not None:
             adversarial = torch.from_numpy(adversarial).to(device=device, dtype=dtype)
 
-        elapsed_time = time.clock() - start_time
+        elapsed_time = time.time() - start_time
         return adversarial, lower, upper, elapsed_time, extra_info
 
 
@@ -670,6 +687,8 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
 
     def perturb_advanced(self, x, y=None, starting_points=None, log_dir=None):
+        attack_batch_start_timestamp = time.time()
+
         if log_dir is None:
             log_dir = Path(tempfile.mkdtemp())
         else:
@@ -693,6 +712,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         assert len(x) == len(starting_points)
 
         for index, (image, label, starting_point) in enumerate(zip(x, y, starting_points)):
+            attack_element_start_timestamp = time.time()
             adversarial, lower, upper, elapsed_time, extra_info = self._mip_attack(
                 image, label, log_dir / f'item_{index}', starting_point=starting_point)
 
@@ -716,10 +736,28 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                     starting_point_linf_distance = torch.max(torch.abs(image - starting_point)).cpu().numpy()
                     assert linf_distance <= starting_point_linf_distance + ATTACK_IMPROVEMENT_THRESHOLD
 
+            attack_element_end_timestamp = time.time()
+            extra_info['overall'] = {
+                'times' : {
+                    'attack_batch' : {
+                        'start_timestamp' : attack_batch_start_timestamp
+                    },
+                    'attack_element' : {
+                        'start_timestamp' : attack_element_start_timestamp,
+                        'end_timestamp' : attack_element_end_timestamp
+                    }
+                }
+            }
+
             adversarials.append(adversarial)
             lower_bounds.append(lower)
             upper_bounds.append(upper)
             elapsed_times.append(elapsed_time)
             extra_infos.append(extra_info)
+
+        attack_batch_end_timestamp = time.time()
+
+        for extra_info in extra_infos:
+            extra_info['overall']['times']['attack_batch']['end_timestamp'] = attack_batch_end_timestamp
 
         return adversarials, lower_bounds, upper_bounds, elapsed_times, extra_infos
