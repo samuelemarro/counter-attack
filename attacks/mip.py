@@ -478,7 +478,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         exploration_extra_infos = []
 
         for attempt, correction_factor in enumerate(self.correction_factor_schedule):
-            logger.debug('Exploration attempt %s (correction factor: %s).', attempt, correction_factor)
+            logger.info('Exploration attempt %s (correction factor: %s).', attempt, correction_factor)
             adversarial, lower, upper, extra_info = self._run_mipverify(
                 image,
                 label,
@@ -492,6 +492,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
             if upper is not None:
                 # Found an upper bound, which was our objective
+                logger.info('Exploration was successful (correction factor: %s).', correction_factor)
 
                 if self._mip_success(lower, upper):
                     # Found a successful result: return it
@@ -501,6 +502,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                     # return only the upper bound
                     return upper, exploration_extra_infos, None
 
+        logger.info('Exploration failed.')
         # Failed to find an upper bound: return None
         return None, exploration_extra_infos, None
 
@@ -565,7 +567,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         extra_info['main'] = []
 
         for attempt in range(self.main_attempts):
-            logger.debug('Main attempt %s.', attempt)
+            logger.info('Main attempt %s.', attempt)
 
             adversarial, lower, upper, main_extra_info = self._run_mipverify(
                 image,
