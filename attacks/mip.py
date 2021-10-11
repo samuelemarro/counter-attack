@@ -79,6 +79,45 @@ GUROBI_MODEL_ATTRIBUTES = [
     # ('KappaExact', 'double')
 ]
 
+GUROBI_QUALITY_ATTRIBUTES = [
+    ('BoundVio', 'double'),
+    # ('BoundSVio', 'double'),
+    ('BoundVioIndex', 'int'),
+    # ('BoundSVioIndex', 'int'),
+    ('BoundVioSum', 'double'),
+    # ('BoundSVioSum', 'double'),
+    ('ConstrVio', 'double'),
+    # ('ConstrSVio', 'double'),
+    ('ConstrVioIndex', 'int'),
+    # ('ConstrSVioIndex', 'int'),
+    ('ConstrVioSum', 'double'),
+    # ('ConstrSVioSum', 'double'),
+    # ('ConstrResidual', 'double'),
+    # ('ConstrSResidual', 'double'),
+    # ('ConstrResidualIndex', 'int'),
+    # ('ConstrSResidualIndex', 'int'),
+    # ('ConstrResidualSum', 'double'),
+    # ('ConstrSResidualSum', 'double'),
+    # ('DualVio', 'double'),
+    # ('DualSVio', 'double'),
+    # ('DualVioIndex', 'double'),
+    # ('DualSVioIndex', 'int'),
+    # ('DualVioSum', 'double'),
+    # ('DualSVioSum', 'double'),
+    # ('DualResidual', 'double'),
+    # ('DualSResidual', 'double'),
+    # ('DualResidualIndex', 'int'),
+    # ('DualSResidualIndex', 'int'),
+    # ('DualResidualSum', 'double'),
+    # ('DualSResidualSum', 'double'),
+    # ('ComplVio', 'double'),
+    # ('ComplVioIndex', 'int'),
+    # ('ComplVioSum', 'double'),
+    ('IntVio', 'double'),
+    ('IntVioIndex', 'int'),
+    ('IntVioSum', 'double')
+]
+
 def module_to_mip(module, flattened_input):
     from julia import MIPVerify
 
@@ -427,9 +466,13 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                     'wall_clock_solve_time' : adversarial_result['WallClockSolveTime'],
                     'model_building_time' : adversarial_result['ModelBuildingTime'],
                     'total_time' : adversarial_result['TotalTime']
-                }
+                },
+                'python' : {}
             },
-            'gurobi_attributes' : {},
+            'gurobi_attributes' : {
+                'model' : {},
+                'quality' : {}
+            },
             'logs' : {}
         }
 
@@ -445,17 +488,24 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             else:
                 raise NotImplementedError
 
-        extra_info['gurobi_attributes']['model'] = {}
+        attribute_retrieval_start_time = time.clock()
+
         for name, attribute_type in GUROBI_MODEL_ATTRIBUTES:
             extra_info['gurobi_attributes']['model'][name] = get_gurobi_attribute(name, attribute_type)
-        
+
+        for name, attribute_type in GUROBI_QUALITY_ATTRIBUTES:
+            extra_info['gurobi_attributes']['quality'][name] = get_gurobi_attribute(name, attribute_type)
+
         with open(main_log_file, 'r') as main_f:
             extra_info['logs']['main'] = main_f.read()
         with open(tightening_log_file, 'r') as tightening_f:
             extra_info['logs']['tightening'] = tightening_f.read()
 
+        attribute_retrieval_time = time.clock() - attribute_retrieval_start_time
+        extra_info['times']['python']['attribute_retrieval_time'] = attribute_retrieval_time
+
         python_elapsed_time = time.clock() - start_time
-        extra_info['times']['python_elapsed_time'] = python_elapsed_time
+        extra_info['times']['python']['total_elapsed_time'] = python_elapsed_time
 
         return adversarial, lower, upper, extra_info
 
