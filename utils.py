@@ -2,7 +2,7 @@ import gzip
 import itertools
 import json
 import logging
-import pathlib
+from pathlib import Path
 import pickle
 import random
 
@@ -18,7 +18,7 @@ def save_zip(obj, path, protocol=0):
     Saves a compressed object to disk.
     """
     # Create the folder, if necessary
-    pathlib.Path(path).parent.mkdir(parents=True, exist_ok=True)
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
 
     file = gzip.GzipFile(path, 'wb')
     pickled = pickle.dumps(obj, protocol)
