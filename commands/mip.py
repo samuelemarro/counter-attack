@@ -1,4 +1,5 @@
 import logging
+import time
 
 import click
 import numpy as np
@@ -56,6 +57,8 @@ logger = logging.getLogger(__name__)
 @click.option('--log-level', type=click.Choice(parsing.log_levels), default='info', show_default=True,
               help='The minimum logging level.')
 def mip(**kwargs):
+    command_start_timestamp = time.time()
+
     parsing.set_log_level(kwargs['log_level'])
 
     if kwargs['deterministic']:
@@ -107,7 +110,9 @@ def mip(**kwargs):
     attack_kwargs = attack_config.get_arguments(
         'mip', kwargs['domain'], metric, 'standard')
 
+    attack_creation_start_timestamp = time.time()
     attack = attacks.MIPAttack(model, p, False, seed=seed, **attack_kwargs)
+    attack_creation_end_timestamp = time.time()
 
     mip_dataset = tests.mip_test(
         model, attack, dataloader, p,
@@ -117,6 +122,17 @@ def mip(**kwargs):
         log_dir=kwargs['log_dir'])
 
     mip_dataset.print_stats()
+
+    command_end_timestamp = time.time()
+
+    mip_dataset.global_extra_info['times']['command'] = {
+        'start_timestamp' : command_start_timestamp,
+        'end_timestamp' : command_end_timestamp
+    }
+    mip_dataset.global_extra_info['times']['attack_creation'] = {
+        'start_timestamp' : attack_creation_start_timestamp,
+        'end_timestamp' : attack_creation_end_timestamp
+    }
 
     if kwargs['save_to'] is not None:
         utils.save_zip(mip_dataset, kwargs['save_to'])

@@ -1,5 +1,6 @@
 import logging
 from pathlib import Path
+import time
 
 import torch
 from tqdm import tqdm
@@ -98,6 +99,8 @@ def attack_test(model, attack, loader, p, misclassification_policy, device, atta
 
 
 def mip_test(model, attack, loader, p, misclassification_policy, device, attack_configuration, generation_kwargs, start, stop, pre_adversarial_dataset=None, log_dir=None):
+    test_start_timestamp = time.time()
+
     if attack.targeted:
         raise NotImplementedError('Targeted attack tests are not supported.')
 
@@ -205,7 +208,18 @@ def mip_test(model, attack, loader, p, misclassification_policy, device, attack_
     assert len(all_images) == len(all_upper_bounds)
     assert len(all_images) == len(all_elapsed_times)
 
-    return adversarial_dataset.MIPDataset(all_images, all_labels, all_true_labels, all_adversarials, all_lower_bounds, all_upper_bounds, all_elapsed_times, all_extra_infos, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs)
+    test_end_timestamp = time.time()
+
+    global_extra_info = {
+        'times' : {
+            'mip_test' : {
+                'start_timestamp' : test_start_timestamp,
+                'end_timestamp' : test_end_timestamp
+            }
+        }
+    }
+
+    return adversarial_dataset.MIPDataset(all_images, all_labels, all_true_labels, all_adversarials, all_lower_bounds, all_upper_bounds, all_elapsed_times, all_extra_infos, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs, global_extra_info)
 
 
 def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p, misclassification_policy, device, attack_configuration, start, stop, generation_kwargs):
