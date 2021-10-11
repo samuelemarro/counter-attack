@@ -12,7 +12,6 @@ MAX_DISTANCE = 100000.0
 SMALL_LOSS_COEFFICIENT = 0.0001
 
 def get_carlini_linf_attack(target_model, num_classes, cuda_optimized=True, **kwargs):
-    # return CarliniWagnerCUDALinfAttack(target_model, num_classes, **kwargs) # Temp
     if cuda_optimized:
         return CarliniWagnerCUDALinfAttack(target_model, num_classes, **kwargs)
     else:
@@ -89,7 +88,7 @@ class CarliniWagnerLinfAttack(attacks.Attack, attacks.LabelMixin):
                        min=0., max=1.) * 2 - 1
         return torch_arctanh(result * ONE_MINUS_EPS)
 
-    def _outputs_and_loss(self, x, modifiers, starting_atanh, y, const, taus, active_mask=None):
+    def _outputs_and_loss(self, x, modifiers, starting_atanh, y, const, taus, active_mask=None, filter_=None):
         # If you're comparing with Carlini's original implementation, x
         # is the name that has been given to tf.tanh(timg)/2, while
         # adversarials is the name that has been given to tf.tanh(modifier + simg)/2, aka newimg
@@ -98,7 +97,7 @@ class CarliniWagnerLinfAttack(attacks.Attack, attacks.LabelMixin):
 
         assert x.shape == adversarials.shape
 
-        outputs = self.predict(adversarials, active_mask=active_mask)
+        outputs = self.predict(adversarials, active_mask=active_mask, filter_=filter_)
         assert outputs.shape == (adversarials.shape[0], self.num_classes)
 
         y_onehot = to_one_hot(y, self.num_classes).float()
@@ -414,14 +413,17 @@ class CarliniWagnerCUDALinfAttack(CarliniWagnerLinfAttack):
             # not saved until the next iteration
             for k in range(self.max_iterations + 1):
                 # Note: unlike the CPU version, the CUDA version updates and calls the model
-                # on all samples, including inactive ones
+                # on all samples, including inactive ones. However, the filter_ parameter is designed
+                # to force best_sample to only update active samples. This is counter-productive, but
+                # it's necessary in order to have consistent CPU and CUDA implementations
                 outputs, losses = self._outputs_and_loss(
                     x,
                     modifiers,
                     starting_atanh,
                     y,
                     const,
-                    taus)
+                    taus,
+                    filter_=active)
 
                 adversarials = tanh_rescale(
                     starting_atanh + modifiers,

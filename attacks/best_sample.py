@@ -33,7 +33,7 @@ class BestSampleWrapper(nn.Module):
         self.training = model.training
         self.tracker = None
 
-    def forward(self, x, active_mask=None):
+    def forward(self, x, active_mask=None, filter_=None):
         if self.tracker is None:
             raise RuntimeError('No best sample tracker set.')
 
@@ -72,6 +72,10 @@ class BestSampleWrapper(nn.Module):
             # Replace only if successful and with a better distance
             replace = successful & (better_distance | (
                 ~relevant_found_adversarial))
+
+            # filter_ restricts updates to only some samples
+            if filter_ is not None:
+                replace &= filter_
 
             new_found_adversarial = relevant_found_adversarial | replace
 
