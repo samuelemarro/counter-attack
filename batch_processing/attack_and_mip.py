@@ -1,5 +1,6 @@
 import click
 import os
+from pathlib import Path
 import sys
 sys.path.append('.')
 import utils
@@ -65,6 +66,15 @@ def main(domain, architecture, test_name, start, stop):
         mip_command += f'--deterministic --seed {seed} '
 
         mip_command += f'--log-dir logs/{domain}/{architecture}/{test_name} '
+
+        memory_log_file = Path(f'memory_logs/{test_name}/{domain}-{architecture}/{start}-{stop}.dat')
+
+        if memory_log_file.exists():
+            raise RuntimeError('memory_log_file already exists.')
+
+        memory_log_file.parent.mkdir(parents=True, exist_ok=True)
+
+        mip_command = f'mprof run --multiprocess --python --output {memory_log_file} ' + mip_command
 
         print(f'MIP | Running command\n{mip_command}')
         os.system(mip_command)

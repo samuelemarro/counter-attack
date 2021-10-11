@@ -8,3 +8,5 @@ settings.json
 tmp
 *.pth
 *.check
+logs/**
+memory_logs/**

@@ -8,3 +8,4 @@ foolbox>=3.2.1
 advertorch>=0.2.3
 torchvision>=0.8.2
 numpy>=1.19.2
+memory-profiler>=0.58.0
