@@ -400,7 +400,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         if 'Seed' in parameters:
             parameters['Seed'] = parameters['Seed'] + attempt
 
-        return Gurobi.GurobiSolver(OutputFlag=1, InfUnbdInfo=1, LogFile=str(log_file), **parameters)
+        return Gurobi.GurobiSolver(OutputFlag=1, InfUnbdInfo=1, DisplayInterval=1, LogFile=str(log_file), **parameters)
 
     def _check_model(self, image, threshold=OUTPUT_SIMILARITY_THRESHOLD):
         model_device = next(self.predict.parameters()).device
