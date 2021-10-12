@@ -3,6 +3,7 @@ using JuMP
 using ConditionalJuMP
 import MathProgBase
 using Memento
+import Gurobi
 
 function find_adversarial_example(
     nn::NeuralNet,
@@ -106,4 +107,9 @@ function find_adversarial_example(
     d[:FindAdversarialExampleStartTimestamp] = find_adversarial_example_start_timestamp
     d[:FindAdversarialExampleEndTimestamp] = find_adversarial_example_end_timestamp
     return d
+end
+
+function get_intattrarray_workaround(model::Gurobi.Model, name::String, start::Integer, len::Integer)
+    @assert isascii(name)
+    Gurobi.get_intattrarray!(Array{Cint}(undef, len), model, name, start)
 end

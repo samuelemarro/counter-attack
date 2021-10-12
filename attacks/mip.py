@@ -118,6 +118,36 @@ GUROBI_QUALITY_ATTRIBUTES = [
     ('IntVioSum', 'double')
 ]
 
+GUROBI_VARIABLE_ATTRIBUTES = [
+    ('LB', 'double'),
+    ('UB', 'double'),
+    ('Obj', 'double'),
+    ('VType', 'char'),
+    ('VarName', 'string'),
+    # ('VTag', 'string'),
+    ('X', 'double'),
+    # ('Xn', 'double'),
+    # ('RC', 'double'),
+    # ('BarX', 'double'),
+    ('Start', 'double'),
+    ('VarHintVal', 'double'),
+    # ('VarHintPri', 'int'),
+    ('BranchPriority', 'int'),
+    # ('Partition', 'int'),
+    # ('VBasis', 'int'),
+    # ('PStart', 'double'),
+    # ('IISLB', 'int'),
+    # ('IISUB', 'int'),
+    ('PWLObjCvx', 'int'),
+    # ('SAObjLow', 'double'),
+    # ('SAObjUp', 'double'),
+    # ('SALBLow', 'double'),
+    # ('SALBUp', 'double'),
+    # ('SAUBLow', 'double'),
+    # ('SAUBUp', 'double'),
+    # ('UnbdRay', 'double') # TODO: Requires InfUnbdInfo = 1
+]
+
 def module_to_mip(module, flattened_input):
     from julia import MIPVerify
 
@@ -491,11 +521,28 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             else:
                 raise NotImplementedError
 
+        def get_gurobi_array_attribute(name, attribute_type, length):
+            start = 1 # 1-indexed
+            if attribute_type == 'int':
+                # The default implementation doesn't work, so we use
+                # a workaround
+                return Main.get_intattrarray_workaround(inner_model, name, start, length)
+            elif attribute_type == 'double':
+                return Gurobi.get_dblattrarray(inner_model, name, start, length)
+            elif attribute_type == 'char':
+                characters = Gurobi.get_charattrarray(inner_model, name, start, length)
+                return [Main.string(c) for c in characters]
+            elif attribute_type == 'string':
+                return Gurobi.get_strattrarray(inner_model, name, start, length)
+            else:
+                raise NotImplementedError
+
         attribute_retrieval_start_timestamp = time.time()
 
         extra_info['gurobi_attributes'] = {
                 'model' : {},
-                'quality' : {}
+                'quality' : {},
+                'variable' : {}
         }
 
         for name, attribute_type in GUROBI_MODEL_ATTRIBUTES:
@@ -509,6 +556,13 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                 extra_info['gurobi_attributes']['quality'][name] = get_gurobi_attribute(name, attribute_type)
             except RuntimeError:
                 extra_info['gurobi_attributes']['quality'][name] = None
+
+        var_count = extra_info['gurobi_attributes']['model']['NumVars']
+        for name, attribute_type in GUROBI_VARIABLE_ATTRIBUTES:
+            try:
+                extra_info['gurobi_attributes']['variable'][name] = get_gurobi_array_attribute(name, attribute_type, var_count)
+            except RuntimeError:
+                extra_info['gurobi_attributes']['variable'][name] = None
 
         extra_info['logs'] = {}
 
