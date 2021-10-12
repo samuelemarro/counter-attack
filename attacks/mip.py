@@ -40,7 +40,7 @@ GUROBI_MODEL_ATTRIBUTES = [
     ('ModelName', 'string'),
     ('ModelSense', 'int'),
     ('ObjCon', 'double'),
-    # ('Fingerprint', 'int'),
+    ('Fingerprint', 'int'),
     ('ObjVal', 'double'),
     ('ObjBound', 'double'),
     ('ObjBoundC', 'double'),
@@ -57,7 +57,7 @@ GUROBI_MODEL_ATTRIBUTES = [
     ('IsQP', 'int'),
     ('IsQCP', 'int'),
     ('IsMultiObj', 'int'),
-    # ('IISMinimal', 'int'),
+    ('IISMinimal', 'int'),
     ('MaxCoeff', 'double'),
     ('MinCoeff', 'double'),
     ('MaxBound', 'double'),
@@ -74,45 +74,45 @@ GUROBI_MODEL_ATTRIBUTES = [
     ('MinQCRHS', 'double'),
     ('MaxQObjCoeff', 'double'),
     ('MinQObjCoeff', 'double'),
-    # ('FarkasProof', 'double')
-    # ('Kappa', 'double'),
-    # ('KappaExact', 'double')
+    ('FarkasProof', 'double'),
+    ('Kappa', 'double'),
+    ('KappaExact', 'double')
 ]
 
 GUROBI_QUALITY_ATTRIBUTES = [
     ('BoundVio', 'double'),
-    # ('BoundSVio', 'double'),
+    ('BoundSVio', 'double'),
     ('BoundVioIndex', 'int'),
-    # ('BoundSVioIndex', 'int'),
+    ('BoundSVioIndex', 'int'),
     ('BoundVioSum', 'double'),
-    # ('BoundSVioSum', 'double'),
+    ('BoundSVioSum', 'double'),
     ('ConstrVio', 'double'),
-    # ('ConstrSVio', 'double'),
+    ('ConstrSVio', 'double'),
     ('ConstrVioIndex', 'int'),
-    # ('ConstrSVioIndex', 'int'),
+    ('ConstrSVioIndex', 'int'),
     ('ConstrVioSum', 'double'),
-    # ('ConstrSVioSum', 'double'),
-    # ('ConstrResidual', 'double'),
-    # ('ConstrSResidual', 'double'),
-    # ('ConstrResidualIndex', 'int'),
-    # ('ConstrSResidualIndex', 'int'),
-    # ('ConstrResidualSum', 'double'),
-    # ('ConstrSResidualSum', 'double'),
-    # ('DualVio', 'double'),
-    # ('DualSVio', 'double'),
-    # ('DualVioIndex', 'double'),
-    # ('DualSVioIndex', 'int'),
-    # ('DualVioSum', 'double'),
-    # ('DualSVioSum', 'double'),
-    # ('DualResidual', 'double'),
-    # ('DualSResidual', 'double'),
-    # ('DualResidualIndex', 'int'),
-    # ('DualSResidualIndex', 'int'),
-    # ('DualResidualSum', 'double'),
-    # ('DualSResidualSum', 'double'),
-    # ('ComplVio', 'double'),
-    # ('ComplVioIndex', 'int'),
-    # ('ComplVioSum', 'double'),
+    ('ConstrSVioSum', 'double'),
+    ('ConstrResidual', 'double'),
+    ('ConstrSResidual', 'double'),
+    ('ConstrResidualIndex', 'int'),
+    ('ConstrSResidualIndex', 'int'),
+    ('ConstrResidualSum', 'double'),
+    ('ConstrSResidualSum', 'double'),
+    ('DualVio', 'double'),
+    ('DualSVio', 'double'),
+    ('DualVioIndex', 'double'),
+    ('DualSVioIndex', 'int'),
+    ('DualVioSum', 'double'),
+    ('DualSVioSum', 'double'),
+    ('DualResidual', 'double'),
+    ('DualSResidual', 'double'),
+    ('DualResidualIndex', 'int'),
+    ('DualSResidualIndex', 'int'),
+    ('DualResidualSum', 'double'),
+    ('DualSResidualSum', 'double'),
+    ('ComplVio', 'double'),
+    ('ComplVioIndex', 'int'),
+    ('ComplVioSum', 'double'),
     ('IntVio', 'double'),
     ('IntVioIndex', 'int'),
     ('IntVioSum', 'double')
@@ -124,28 +124,44 @@ GUROBI_VARIABLE_ATTRIBUTES = [
     ('Obj', 'double'),
     ('VType', 'char'),
     ('VarName', 'string'),
-    # ('VTag', 'string'),
+    ('VTag', 'string'),
     ('X', 'double'),
-    # ('Xn', 'double'),
-    # ('RC', 'double'),
-    # ('BarX', 'double'),
+    ('Xn', 'double'),
+    ('RC', 'double'),
+    ('BarX', 'double'),
     ('Start', 'double'),
     ('VarHintVal', 'double'),
-    # ('VarHintPri', 'int'),
+    ('VarHintPri', 'int'),
     ('BranchPriority', 'int'),
-    # ('Partition', 'int'),
-    # ('VBasis', 'int'),
-    # ('PStart', 'double'),
-    # ('IISLB', 'int'),
-    # ('IISUB', 'int'),
+    ('Partition', 'int'),
+    ('VBasis', 'int'),
+    ('PStart', 'double'),
+    ('IISLB', 'int'),
+    ('IISUB', 'int'),
     ('PWLObjCvx', 'int'),
-    # ('SAObjLow', 'double'),
-    # ('SAObjUp', 'double'),
-    # ('SALBLow', 'double'),
-    # ('SALBUp', 'double'),
-    # ('SAUBLow', 'double'),
-    # ('SAUBUp', 'double'),
-    # ('UnbdRay', 'double') # TODO: Requires InfUnbdInfo = 1
+    ('SAObjLow', 'double'),
+    ('SAObjUp', 'double'),
+    ('SALBLow', 'double'),
+    ('SALBUp', 'double'),
+    ('SAUBLow', 'double'),
+    ('SAUBUp', 'double'),
+    ('UnbdRay', 'double')
+]
+
+GUROBI_CONSTRAINT_ATTRIBUTES = [
+    ('Sense', 'char'),
+    ('RHS', 'double'),
+    ('ConstrName', 'string'),
+    ('CTag', 'string'),
+    ('Pi', 'double'),
+    ('Slack', 'double'),
+    ('CBasis', 'int'),
+    ('DStart', 'double'),
+    ('Lazy', 'int'),
+    ('IISConstr', 'int'),
+    ('SARHSLow', 'double'),
+    ('SARHSUp', 'double'),
+    ('FarkasDual', 'double')
 ]
 
 def module_to_mip(module, flattened_input):
@@ -384,7 +400,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         if 'Seed' in parameters:
             parameters['Seed'] = parameters['Seed'] + attempt
 
-        return Gurobi.GurobiSolver(OutputFlag=1, LogFile=str(log_file), **parameters)
+        return Gurobi.GurobiSolver(OutputFlag=1, InfUnbdInfo=1, LogFile=str(log_file), **parameters)
 
     def _check_model(self, image, threshold=OUTPUT_SIMILARITY_THRESHOLD):
         model_device = next(self.predict.parameters()).device
@@ -542,27 +558,39 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         extra_info['gurobi_attributes'] = {
                 'model' : {},
                 'quality' : {},
-                'variable' : {}
+                'variable' : {},
+                'constraint' : {}
         }
 
         for name, attribute_type in GUROBI_MODEL_ATTRIBUTES:
             try:
                 extra_info['gurobi_attributes']['model'][name] = get_gurobi_attribute(name, attribute_type)
-            except RuntimeError:
+            except RuntimeError as e:
+                logger.info('Skipped attribute %s, reason: %s', name, e)
                 extra_info['gurobi_attributes']['model'][name] = None
 
         for name, attribute_type in GUROBI_QUALITY_ATTRIBUTES:
             try:
                 extra_info['gurobi_attributes']['quality'][name] = get_gurobi_attribute(name, attribute_type)
-            except RuntimeError:
+            except RuntimeError as e:
+                logger.info('Skipped attribute %s, reason: %s', name, e)
                 extra_info['gurobi_attributes']['quality'][name] = None
 
         var_count = extra_info['gurobi_attributes']['model']['NumVars']
         for name, attribute_type in GUROBI_VARIABLE_ATTRIBUTES:
             try:
                 extra_info['gurobi_attributes']['variable'][name] = get_gurobi_array_attribute(name, attribute_type, var_count)
-            except RuntimeError:
+            except (RuntimeError, ValueError) as e:
+                logger.info('Skipped attribute %s, reason: %s', name, e)
                 extra_info['gurobi_attributes']['variable'][name] = None
+        
+        constraint_count = extra_info['gurobi_attributes']['model']['NumConstrs']
+        for name, attribute_type in GUROBI_CONSTRAINT_ATTRIBUTES:
+            try:
+                extra_info['gurobi_attributes']['constraint'][name] = get_gurobi_array_attribute(name, attribute_type, constraint_count)
+            except (RuntimeError, ValueError) as e:
+                logger.info('Skipped attribute %s, reason: %s', name, e)
+                extra_info['gurobi_attributes']['constraint'][name] = None
 
         extra_info['logs'] = {}
 
