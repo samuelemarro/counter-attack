@@ -430,9 +430,15 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         tightening_log_file = str(log_dir / 'tightening.log')
         tightening_solver = self._get_solver(tightening_parameters, attempt, tightening_log_file)
 
+        julia_import_start_timestamp = time.time()
+
         from julia import MIPVerify
         from julia import JuMP
         from julia import Gurobi
+        from julia import Main
+        Main.include('mip_interface.jl')
+
+        julia_import_end_timestamp = time.time()
 
         assert perturbation_size is None or perturbation_size > 0
 
@@ -454,9 +460,6 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
 
         # MIP expects a batch dimension
         mip_image = np.expand_dims(mip_image, 0)
-
-        from julia import Main
-        Main.include('mip_interface.jl')
 
         adversarial_result = Main.find_adversarial_example(
             self.mip_model, mip_image, target_label, main_solver,
@@ -609,6 +612,10 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
             'run_mipverify' : {
                 'start_timestamp' : run_mipverify_start_timestamp,
                 'end_timestamp' : run_mipverify_end_timestamp
+            },
+            'julia_import' : {
+                'start_timestamp' : julia_import_start_timestamp,
+                'end_timestamp' : julia_import_end_timestamp
             }
         }
 
