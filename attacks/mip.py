@@ -499,10 +499,16 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         }
 
         for name, attribute_type in GUROBI_MODEL_ATTRIBUTES:
-            extra_info['gurobi_attributes']['model'][name] = get_gurobi_attribute(name, attribute_type)
+            try:
+                extra_info['gurobi_attributes']['model'][name] = get_gurobi_attribute(name, attribute_type)
+            except RuntimeError:
+                extra_info['gurobi_attributes']['model'][name] = None
 
         for name, attribute_type in GUROBI_QUALITY_ATTRIBUTES:
-            extra_info['gurobi_attributes']['quality'][name] = get_gurobi_attribute(name, attribute_type)
+            try:
+                extra_info['gurobi_attributes']['quality'][name] = get_gurobi_attribute(name, attribute_type)
+            except RuntimeError:
+                extra_info['gurobi_attributes']['quality'][name] = None
 
         extra_info['logs'] = {}
 
