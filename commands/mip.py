@@ -77,13 +77,20 @@ def mip(**kwargs):
     if seed is not None:
         utils.set_seed(kwargs['seed'])
 
+    torch_model_retrieval_start_timestamp = time.time()
+
     model = parsing.parse_model(kwargs['domain'], kwargs['architecture'],
                                 kwargs['state_dict_path'], False, kwargs['masked_relu'],
                                 False, load_weights=True)
     model.eval()
 
+    dataset_retrieval_start_timestamp = torch_model_retrieval_end_timestamp = time.time()
+
     dataset = parsing.parse_dataset(kwargs['domain'], kwargs['dataset'],
                                     dataset_edges=(kwargs['start'], kwargs['stop']))
+
+    dataset_retrieval_end_timestamp = time.time()
+
     dataloader = torch.utils.data.DataLoader(
         dataset, kwargs['batch_size'], shuffle=False)
 
@@ -128,6 +135,14 @@ def mip(**kwargs):
     mip_dataset.global_extra_info['times']['command'] = {
         'start_timestamp' : command_start_timestamp,
         'end_timestamp' : command_end_timestamp
+    }
+    mip_dataset.global_extra_info['times']['torch_model_retrieval'] = {
+        'start_timestamp' : torch_model_retrieval_start_timestamp,
+        'end_timestamp' : torch_model_retrieval_end_timestamp
+    }
+    mip_dataset.global_extra_info['times']['dataset_retrieval'] = {
+        'start_timestamp' : dataset_retrieval_start_timestamp,
+        'end_timestamp' : dataset_retrieval_end_timestamp
     }
     mip_dataset.global_extra_info['times']['attack_creation'] = {
         'start_timestamp' : attack_creation_start_timestamp,

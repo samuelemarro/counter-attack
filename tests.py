@@ -118,6 +118,8 @@ def mip_test(model, attack, loader, p, misclassification_policy, device, attack_
     all_elapsed_times = []
     all_extra_infos = []
 
+    test_loop_start_timestamp = time.time()
+
     for index, (images, true_labels) in tqdm(enumerate(loader), desc='MIP Test'):
         images = images.to(device)
         true_labels = true_labels.to(device)
@@ -201,6 +203,8 @@ def mip_test(model, attack, loader, p, misclassification_policy, device, attack_
         all_elapsed_times += list(elapsed_times)
         all_extra_infos += list(extra_infos)
 
+    test_loop_end_timestamp = time.time()
+
     assert len(all_images) == len(all_labels)
     assert len(all_images) == len(all_true_labels)
     assert len(all_images) == len(all_adversarials)
@@ -215,6 +219,10 @@ def mip_test(model, attack, loader, p, misclassification_policy, device, attack_
             'mip_test' : {
                 'start_timestamp' : test_start_timestamp,
                 'end_timestamp' : test_end_timestamp
+            },
+            'mip_test_loop' : {
+                'start_timestamp' : test_loop_start_timestamp,
+                'end_timestamp' : test_loop_end_timestamp
             }
         }
     }
