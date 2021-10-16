@@ -583,7 +583,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         for name, attribute_type in GUROBI_VARIABLE_ATTRIBUTES:
             try:
                 extra_info['gurobi_attributes']['variable'][name] = get_gurobi_array_attribute(name, attribute_type, var_count)
-            except (RuntimeError, ValueError) as e:
+            except Exception as e:
                 logger.info('Skipped attribute %s, reason: %s', name, e)
                 extra_info['gurobi_attributes']['variable'][name] = None
         
@@ -591,7 +591,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         for name, attribute_type in GUROBI_CONSTRAINT_ATTRIBUTES:
             try:
                 extra_info['gurobi_attributes']['constraint'][name] = get_gurobi_array_attribute(name, attribute_type, constraint_count)
-            except (RuntimeError, ValueError) as e:
+            except Exception as e:
                 logger.info('Skipped attribute %s, reason: %s', name, e)
                 extra_info['gurobi_attributes']['constraint'][name] = None
 
