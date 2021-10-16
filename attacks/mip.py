@@ -418,7 +418,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         return np.max(np.abs(torch_output - mip_output)) <= threshold
 
 
-    def _run_mipverify(self, image, label, main_parameters, tightening_parameters, attempt, perturbation_size, log_dir, starting_point=None):
+    def _run_mipverify(self, image, label, main_parameters, tightening_parameters, attempt, perturbation_size, log_dir):
         run_mipverify_start_timestamp = time.time()
 
         assert not log_dir.exists()
@@ -461,16 +461,12 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         # MIP expects a batch dimension
         mip_image = np.expand_dims(mip_image, 0)
 
-        if starting_point is not None:
-            starting_point = starting_point.transpose([1, 2, 0])
-            starting_point = np.expand_dims(starting_point, 0)
-
         adversarial_result = Main.find_adversarial_example(
             self.mip_model, mip_image, target_label, main_solver,
             norm_order=self.p, tolerance=self.tolerance,
             invert_target_selection=not self.targeted,
             tightening_solver=tightening_solver, pp=perturbation,
-            rebuild=True, cache_model=False, starting_point=starting_point)
+            rebuild=True, cache_model=False)
 
         adversarial = np.array(JuMP.getvalue(
             adversarial_result['PerturbedInput']))
@@ -587,17 +583,16 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         for name, attribute_type in GUROBI_VARIABLE_ATTRIBUTES:
             try:
                 extra_info['gurobi_attributes']['variable'][name] = get_gurobi_array_attribute(name, attribute_type, var_count)
-            except Exception as e:
+            except (RuntimeError, ValueError) as e:
                 logger.info('Skipped attribute %s, reason: %s', name, e)
                 extra_info['gurobi_attributes']['variable'][name] = None
-
+        
         constraint_count = extra_info['gurobi_attributes']['model']['NumConstrs']
         for name, attribute_type in GUROBI_CONSTRAINT_ATTRIBUTES:
             try:
                 extra_info['gurobi_attributes']['constraint'][name] = get_gurobi_array_attribute(name, attribute_type, constraint_count)
-            except Exception as e:
+            except (RuntimeError, ValueError) as e:
                 logger.info('Skipped attribute %s, reason: %s', name, e)
-
                 extra_info['gurobi_attributes']['constraint'][name] = None
 
         extra_info['logs'] = {}
@@ -639,7 +634,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
         return absolute_gap < self.retry_absolute_gap or gap < self.retry_gap
 
 
-    def _find_perturbation_size(self, image, label, original_perturbation_size, log_dir, starting_point=None):
+    def _find_perturbation_size(self, image, label, original_perturbation_size, log_dir):
         from julia import JuMP
 
         exploration_extra_infos = []
@@ -653,8 +648,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                 self.exploration_tightening_parameters,
                 attempt,
                 original_perturbation_size * correction_factor,
-                log_dir / 'exploration_run' / f'attempt_{attempt}',
-                starting_point=starting_point)
+                log_dir / 'exploration_run' / f'attempt_{attempt}')
             
             exploration_extra_infos.append(extra_info)
 
@@ -711,7 +705,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                     (image - starting_point).flatten(), ord=np.inf).item()
 
             # Find a perturbation size
-            perturbation_size, exploration_extra_infos, successful_result = self._find_perturbation_size(image, label, original_perturbation_size, log_dir, starting_point=starting_point)
+            perturbation_size, exploration_extra_infos, successful_result = self._find_perturbation_size(image, label, original_perturbation_size, log_dir)
 
             extra_info['exploration'] = exploration_extra_infos
 
@@ -744,8 +738,7 @@ class MIPAttack(advertorch.attacks.Attack, advertorch.attacks.LabelMixin):
                 self.tightening_parameters,
                 attempt,
                 perturbation_size,
-                log_dir / 'main_run' / f'attempt_{attempt}',
-                starting_point=starting_point)
+                log_dir / 'main_run' / f'attempt_{attempt}')
 
             extra_info['main'].append(main_extra_info)
 

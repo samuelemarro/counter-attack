@@ -21,8 +21,7 @@ function find_adversarial_example(
     ),
     rebuild::Bool = false,
     cache_model::Bool = true,
-    solve_if_predicted_in_targeted = true,
-    starting_point::Union{Array{<:Real}, Nothing} = nothing
+    solve_if_predicted_in_targeted = true
 )::Dict
 
     find_adversarial_example_start_timestamp = time()
@@ -93,16 +92,6 @@ function find_adversarial_example(
 
         d[:WallClockStartTimestamp] = wall_clock_solve_start_timestamp
         d[:WallClockEndTimestamp] = wall_clock_solve_end_timestamp
-
-        hint_indices = Vector()
-        hint_values = Vector()
-        if ~isnothing(starting_point)
-            for i in CartesianIndices(size(input))
-                push!(hint_indices, JuMP.linearindex(d[:PerturbedInput][i]))
-                push!(hint_values, starting_point[i])
-            end
-        end
-        Gurobi.set_dblattrlist!(JuMP.internalmodel(m).inner, "VarHintVal", hint_indices, hint_values)
 
         d[:GurobiSolveTime] = try
             MIPVerify.getsolvetime(m)
