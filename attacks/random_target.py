@@ -2,10 +2,7 @@ import torch
 
 import utils
 
-# TODO: Controllare
-
 # Importante: undefended_model è il modello non difeso
-
 
 class RandomTargetEvasionAttack:
     """Chooses a random label that is not the
