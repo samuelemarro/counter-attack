@@ -49,8 +49,8 @@ logger = logging.getLogger(__name__)
               help='The seed for random generation. If unspecified, the current time is used as seed.')
 @click.option('--deterministic', is_flag=True,
               help='If passed, all computations except random number generation are deterministic (but slower).')
-@click.option('--log-dir', type=click.Path(exists=False, file_okay=False, dir_okay=True), default=None,
-              help='Directory that will be used to store log files. Must NOT exist. If unspecified, defaults to a '
+@click.option('--gurobi-log-dir', type=click.Path(exists=False, file_okay=False, dir_okay=True), default=None,
+              help='Directory that will be used to store Gurobi log files. Must NOT exist. If unspecified, defaults to a '
               'custom-made subfolder of the default temp folder.')
 @click.option('--show', type=click.IntRange(1, None), default=None,
               help='The number of adversarials to be shown. If unspecified, no adversarials are shown.')
@@ -126,7 +126,7 @@ def mip(**kwargs):
         kwargs['misclassification_policy'], kwargs['device'], attack_config,
         kwargs, start=dataset.start, stop=dataset.stop,
         pre_adversarial_dataset=pre_adversarial_dataset,
-        log_dir=kwargs['log_dir'])
+        gurobi_log_dir=kwargs['gurobi_log_dir'])
 
     mip_dataset.print_stats()
 

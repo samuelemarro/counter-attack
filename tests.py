@@ -98,7 +98,7 @@ def attack_test(model, attack, loader, p, misclassification_policy, device, atta
     return adversarial_dataset.AdversarialDataset(all_images, all_labels, all_true_labels, all_adversarials, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs)
 
 
-def mip_test(model, attack, loader, p, misclassification_policy, device, attack_configuration, generation_kwargs, start, stop, pre_adversarial_dataset=None, log_dir=None):
+def mip_test(model, attack, loader, p, misclassification_policy, device, attack_configuration, generation_kwargs, start, stop, pre_adversarial_dataset=None, gurobi_log_dir=None):
     test_start_timestamp = time.time()
 
     if attack.targeted:
@@ -180,7 +180,7 @@ def mip_test(model, attack, loader, p, misclassification_policy, device, attack_
                                    'Check that the correct pre-adversarial dataset is being used.')
 
         adversarials, lower_bounds, upper_bounds, elapsed_times, extra_infos = attack.perturb_advanced(
-            images, y=labels, starting_points=pre_adversarials, log_dir=None if log_dir is None else Path(log_dir) / f'batch_{index}')
+            images, y=labels, starting_points=pre_adversarials, gurobi_log_dir=None if gurobi_log_dir is None else Path(gurobi_log_dir) / f'batch_{index}')
 
         assert len(adversarials) == len(images)
         assert len(adversarials) == len(lower_bounds)
