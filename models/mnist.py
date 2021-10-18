@@ -62,6 +62,14 @@ def mnist_b5(masked_relu, num_classes):
         nn.Linear(64, num_classes)
     )
 
+def mnist_b6(masked_relu, num_classes):
+    return nn.Sequential(
+        nn.Conv2d(1, 4, 5, stride=3, padding=0),
+        torch_utils.MaskedReLU([4, 8, 8]) if masked_relu else nn.ReLU(),
+        nn.Flatten(),
+        nn.Linear(256, num_classes)
+    )
+
 def mnist_c(masked_relu, num_classes):
     return nn.Sequential(
         nn.Conv2d(1, 8, 5, stride=4, padding=0),
@@ -87,6 +95,8 @@ def mnist(architecture, masked_relu, num_classes=10, pretrained=None):
         model = mnist_b4(masked_relu, num_classes)
     elif architecture == 'b5':
         model = mnist_b5(masked_relu, num_classes)
+    elif architecture == 'b6':
+        model = mnist_b6(masked_relu, num_classes)
     elif architecture == 'c':
         model = mnist_c(masked_relu, num_classes)
     else:

@@ -25,7 +25,7 @@ def run_and_log(command, log_file):
 
 @click.command()
 @click.argument('domain', type=click.Choice(['cifar10', 'mnist']))
-@click.argument('architecture', type=click.Choice(['a', 'b', 'c', 'b2', 'b3', 'b4']))
+@click.argument('architecture', type=click.Choice(['a', 'b', 'c', 'b2', 'b3', 'b4', 'b6']))
 @click.argument('test_name', type=click.Choice(['standard', 'adversarial', 'relu']))
 @click.argument('start', type=click.IntRange(0, None))
 @click.argument('stop', type=click.IntRange(1, None))
@@ -38,7 +38,7 @@ def main(domain, architecture, test_name, start, stop, log_dir):
     print(f'Attacking {domain} {architecture} ({test_name}, {start}-{stop})')
 
     dataset = 'std:test'
-    # TODO: Anche deepfool?
+
     attacks = '"[bim, brendel, carlini, deepfool, fast_gradient, pgd, uniform]"'
     p = 'linf'
     seed = 0
