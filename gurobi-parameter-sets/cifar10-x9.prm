@@ -1,8 +1,0 @@
-TimeLimit  7200
-MIPGap  1e-10
-MIPGapAbs  1e-05
-Heuristics  0
-MIPFocus  2
-InfUnbdInfo  1
-Presolve  2
-Threads  1

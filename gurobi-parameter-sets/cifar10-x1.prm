@@ -1,6 +1,0 @@
-TimeLimit  7200
-MIPGap  1e-10
-MIPGapAbs  1e-05
-AggFill  10
-InfUnbdInfo  1
-Threads  1
