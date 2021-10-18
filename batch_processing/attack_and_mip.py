@@ -93,7 +93,7 @@ def main(domain, architecture, test_name, start, stop, log_dir):
         for path in [gurobi_log_dir, mip_log_file, memory_log_file]:
             prepare_path(path)
 
-        mip_command = f'python cli.py mip {domain} {architecture} {dataset} {p} '
+        mip_command = f'python-jl cli.py mip {domain} {architecture} {dataset} {p} '
         mip_command += f'--state-dict-path {state_dict_path} {masked_relu_argument} '
         mip_command += f'--batch-size {batch_size} --device {device} --cpu-threads {cpu_threads} '
         mip_command += f'--pre-adversarial-dataset {compare_results_path} '
