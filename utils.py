@@ -9,6 +9,7 @@ import random
 import matplotlib.pyplot as plt
 import numpy as np
 import torch
+import torch.cuda
 
 logger = logging.getLogger(__name__)
 
@@ -395,3 +396,13 @@ def enable_determinism():
     logger.info('Enabling determinism.')
     torch.backends.cudnn.benchmark = False
     torch.set_deterministic(True)
+
+def torch_load(path, **kwargs):
+    if torch.cuda.is_available():
+        # No preference on location
+        map_location = None
+    else:
+        # Force CPU
+        map_location = torch.device('cpu')
+
+    torch.load(path, map_location=map_location, **kwargs)

@@ -140,7 +140,7 @@ def parse_model(domain, architecture, state_dict_path, apply_normalisation, mask
     # Nota: Questo fa sì che i modelli vengano salvati come modello con normalisation
     if load_weights and state_dict_path is not None:
         logger.info('Loading weights from %s.', state_dict_path)
-        model.load_state_dict(torch.load(state_dict_path))
+        model.load_state_dict(utils.torch_load(state_dict_path))
 
     if not use_grad:
         logger.debug('Permanently disabling gradients for model.')

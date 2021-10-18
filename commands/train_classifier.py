@@ -230,7 +230,7 @@ def train_classifier(**kwargs):
     if kwargs['load_checkpoint'] is None:
         loaded_checkpoint = None
     else:
-        loaded_checkpoint = torch.load(kwargs['load_checkpoint'])
+        loaded_checkpoint = utils.torch_load(kwargs['load_checkpoint'])
 
     training.train(model, train_dataloader, optimiser, loss, kwargs['epochs'], kwargs['device'],
                       val_loader=val_dataloader, l1_regularization=kwargs['l1_regularization'],
