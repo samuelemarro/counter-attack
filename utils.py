@@ -405,4 +405,4 @@ def torch_load(path, **kwargs):
         # Force CPU
         map_location = torch.device('cpu')
 
-    torch.load(path, map_location=map_location, **kwargs)
+    return torch.load(path, map_location=map_location, **kwargs)
