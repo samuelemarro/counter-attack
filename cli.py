@@ -9,9 +9,6 @@ except:
     # needs Julia it will re-raise an error
     pass
 
-import sys
-sys.path.append('.')
-
 import logging
 
 import click

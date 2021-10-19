@@ -17,9 +17,9 @@ def run_and_log(command, log_file):
     if os.name == 'nt': # Windows
         # Replace double quotes with single quotes
         escaped_command = command.replace('"', "'")
-        os.system(f'powershell "{escaped_command} | Tee-Object -Filepath \'{log_file}\'"')
+        os.system(f'powershell "{escaped_command} 2>&1 | Tee-Object -Filepath \'{log_file}\'"')
     elif os.name == 'posix': # Unix
-        os.system(f'{command} | tee "{log_file}"')
+        os.system(f'{command} 2>&1 | tee "{log_file}"')
     else:
         raise NotImplementedError
 
@@ -64,7 +64,7 @@ def main(domain, architecture, test_name, start, stop, log_dir):
         compare_log_file = log_dir / 'compare.log'
         prepare_path(compare_log_file)
 
-        compare_command = f'python-jl cli.py compare {domain} {architecture} {dataset} {attacks} {p} '
+        compare_command = f'python cli.py compare {domain} {architecture} {dataset} {attacks} {p} '
         compare_command += f'--state-dict-path {state_dict_path} {masked_relu_argument} '
         compare_command += f'--batch-size {batch_size} --device {device} --cpu-threads {cpu_threads} '
         compare_command += f'--misclassification-policy {misclassification_policy} {no_stats_argument} '
@@ -73,11 +73,7 @@ def main(domain, architecture, test_name, start, stop, log_dir):
 
         print(f'Compare | Running command\n{compare_command}')
 
-        if os.name == 'nt':
-            print('Compare logging is not supported for Windows, using non-logging version')
-            os.system(compare_command)
-        else:
-            run_and_log(compare_command, compare_log_file)
+        run_and_log(compare_command, compare_log_file)
 
     mip_results_path = f'mip_results/{test_name}/{domain}-{architecture}/{start}-{stop}.zip'
 
@@ -93,7 +89,7 @@ def main(domain, architecture, test_name, start, stop, log_dir):
         for path in [gurobi_log_dir, mip_log_file, memory_log_file]:
             prepare_path(path)
 
-        mip_command = f'python-jl cli.py mip {domain} {architecture} {dataset} {p} '
+        mip_command = f'python cli.py mip {domain} {architecture} {dataset} {p} '
         mip_command += f'--state-dict-path {state_dict_path} {masked_relu_argument} '
         mip_command += f'--batch-size {batch_size} --device {device} --cpu-threads {cpu_threads} '
         mip_command += f'--pre-adversarial-dataset {compare_results_path} '
