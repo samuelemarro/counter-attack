@@ -59,10 +59,10 @@ def read_jobs(tracker_path):
             # Format: STARTED, cifar10, c, relu, 0
             job_id = get_job_id(split_line[1], split_line[2], split_line[3], int(split_line[4]))
             jobs[job_id].status = 'RUNNING'
-        elif split_line[0] == 'COMPLETED':
-            # Format: COMPLETED, cifar10, c, relu, 0
+        elif split_line[0] == 'FINISHED':
+            # Format: FINISHED, cifar10, c, relu, 0
             job_id = get_job_id(split_line[1], split_line[2], split_line[3], int(split_line[4]))
-            jobs[job_id].status = 'COMPLETED'
+            jobs[job_id].status = 'FINISHED'
         else:
             raise NotImplementedError(f'Unsupported descriptor "{split_line[0]}".')
 

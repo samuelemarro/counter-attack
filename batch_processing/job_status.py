@@ -25,8 +25,8 @@ def main(tracker_path):
             counts['queued'] += 1
         elif job.status == 'RUNNING':
             counts['running'] += 1
-        elif job.status == 'COMPLETED':
-            # A completed job might have actually failed
+        elif job.status == 'FINISHED':
+            # A finished job might have actually failed
             results_path = Path('mip_results') / job.test_name / (job.domain + '-' + job.architecture) / f'{job.index}-{job.index + 1}.zip'
             if results_path.exists():
                 # Success
