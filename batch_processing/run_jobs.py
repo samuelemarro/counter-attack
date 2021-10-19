@@ -15,7 +15,7 @@ def run_and_output(command):
     return result.stdout.decode('utf-8')
 
 def start_job(job):
-    output = run_and_output(f'./run_job.sh {job.domain} {job.architecture} {job.index} {job.test_name}')
+    output = run_and_output(f'bash ./run_job.sh {job.domain} {job.architecture} {job.index} {job.test_name}')
     prefix = 'Submitted batch job '
     assert output.startswith(prefix)
     job_number = output[len(prefix):]
