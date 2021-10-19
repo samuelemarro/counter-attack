@@ -33,6 +33,8 @@ def run_and_log(command, log_file):
 def main(domain, architecture, test_name, start, stop, log_dir):
     assert stop > start
 
+    python_exe = 'python-jl' if os.name == 'posix' else 'python'
+
     log_dir = Path(log_dir) / f'{test_name}/{domain}-{architecture}/{start}-{stop}'
 
     print(f'Attacking {domain} {architecture} ({test_name}, {start}-{stop})')
@@ -64,7 +66,7 @@ def main(domain, architecture, test_name, start, stop, log_dir):
         compare_log_file = log_dir / 'compare.log'
         prepare_path(compare_log_file)
 
-        compare_command = f'python cli.py compare {domain} {architecture} {dataset} {attacks} {p} '
+        compare_command = f'{python_exe} cli.py compare {domain} {architecture} {dataset} {attacks} {p} '
         compare_command += f'--state-dict-path {state_dict_path} {masked_relu_argument} '
         compare_command += f'--batch-size {batch_size} --device {device} --cpu-threads {cpu_threads} '
         compare_command += f'--misclassification-policy {misclassification_policy} {no_stats_argument} '
@@ -89,7 +91,7 @@ def main(domain, architecture, test_name, start, stop, log_dir):
         for path in [gurobi_log_dir, mip_log_file, memory_log_file]:
             prepare_path(path)
 
-        mip_command = f'python cli.py mip {domain} {architecture} {dataset} {p} '
+        mip_command = f'{python_exe} cli.py mip {domain} {architecture} {dataset} {p} '
         mip_command += f'--state-dict-path {state_dict_path} {masked_relu_argument} '
         mip_command += f'--batch-size {batch_size} --device {device} --cpu-threads {cpu_threads} '
         mip_command += f'--pre-adversarial-dataset {compare_results_path} '
