@@ -1,7 +1,22 @@
+from pathlib import Path
+import os
+
 # PyTorch has some serious bugs concerning dll loading:
 # If PyTorch is loaded before Julia, Julia's import fails.
 # We therefore import Julia before anything else
 try:
+    from julia.api import JuliaInfo
+    info = JuliaInfo.load()
+    if 'JULIA_SYS_IMAGE' in os.environ or not info.is_compatible_python():
+        # Sometimes the Python build is not compatible with Julia:
+        # in that case, we check if there's a custom Julia system image
+        julia_sys_image = os.environ.get('JULIA_SYS_IMAGE', 'sys.so')
+        
+        if Path(julia_sys_image).exists():
+            print('Julia: loading custom system image.')
+            from julia import Julia
+            Julia(sysimage=julia_sys_image)
+
     import julia
     from julia import Base
 except:
