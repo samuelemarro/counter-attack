@@ -18,6 +18,7 @@ def main(tracker_path):
         'failed' : 0
     }
 
+    running = []
     failures = []
 
     for job in current_jobs:
@@ -25,6 +26,7 @@ def main(tracker_path):
             counts['queued'] += 1
         elif job.status == 'RUNNING':
             counts['running'] += 1
+            running.append(job)
         elif job.status == 'FINISHED':
             # A finished job might have actually failed
             results_path = Path('mip_results') / job.test_name / (job.domain + '-' + job.architecture) / f'{job.index}-{job.index + 1}.zip'
@@ -43,11 +45,17 @@ def main(tracker_path):
     print('Running:', counts['running'])
     print('Completed:', counts['completed'])
     print('Failed:', counts['failed'])
-    print('=========')
+
+    if len(running) > 0:
+        print('=========')
+        print('Running:')
+        for job in running:
+            print(job)
     
     if len(failures) > 0:
-        print('Failures:')
-        for job in current_jobs:
+        print('=========')
+        print('Failed:')
+        for job in failures:
             print(job)
 
 if __name__ == '__main__':
