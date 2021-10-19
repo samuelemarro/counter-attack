@@ -64,7 +64,7 @@ def main(domain, architecture, test_name, start, stop, log_dir):
         compare_log_file = log_dir / 'compare.log'
         prepare_path(compare_log_file)
 
-        compare_command = f'python cli.py compare {domain} {architecture} {dataset} {attacks} {p} '
+        compare_command = f'python-jl cli.py compare {domain} {architecture} {dataset} {attacks} {p} '
         compare_command += f'--state-dict-path {state_dict_path} {masked_relu_argument} '
         compare_command += f'--batch-size {batch_size} --device {device} --cpu-threads {cpu_threads} '
         compare_command += f'--misclassification-policy {misclassification_policy} {no_stats_argument} '
