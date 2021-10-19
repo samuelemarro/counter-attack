@@ -10,12 +10,14 @@ try:
     if 'JULIA_SYS_IMAGE' in os.environ or not info.is_compatible_python():
         # Sometimes the Python build is not compatible with Julia:
         # in that case, we check if there's a custom Julia system image
-        julia_sys_image = os.environ.get('JULIA_SYS_IMAGE', 'sys.so')
+        julia_sys_image = os.environ.get('JULIA_SYS_IMAGE', './sys.so')
         
         if Path(julia_sys_image).exists():
             print('Julia: loading custom system image.')
-            from julia import Julia
-            Julia(sysimage=julia_sys_image)
+            from julia.api import LibJulia, JuliaInfo
+            api = LibJulia.load()  
+            api.sysimage = julia_sys_image
+            api.init_julia()
 
     import julia
     from julia import Base
