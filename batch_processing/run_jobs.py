@@ -11,7 +11,7 @@ import batch_processing.batch_utils as batch_utils
 TEST_NAMES = ['standard', 'adversarial', 'relu']
 
 def run_and_output(command):
-    result = subprocess.run(command, stdout=subprocess.PIPE)
+    result = subprocess.run(command, stdout=subprocess.PIPE, shell=True)
     return result.stdout.decode('utf-8')
 
 def start_job(job):
