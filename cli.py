@@ -4,10 +4,13 @@
 try:
     import julia
     from julia import Base
-except ImportError:
+except:
     # Silent failure, if the program actually
     # needs Julia it will re-raise an error
     pass
+
+import sys
+sys.path.append('.')
 
 import logging
 
@@ -20,40 +23,23 @@ import commands
 def main():
     pass
 
-# TODO: Eseguire gli addestramenti adversarial e RS
+# TODO: Molte parti del codice possono fallire se ricevono 0 sample. Per Galileo
+# non è un problema perché uso use_predicted, ma non si sa mai
 
 # Nota: Se negli evasion l'originale viene rifiutato ma l'adversarial no, l'adversarial conta
 # come successo anche se ha mantenuto la stessa label di partenza
-# TODO: Testare!
 
-# TODO: Tanto logging
-
-# TODO: Formalizzare full_stack.py
 
 # TODO: accuracy.py che fa l'override di dataset per --from-adversarial-dataset non è bellissimo
 # TODO: Droppare completamente il supporto per L2?
-# TODO: Parametri dei vari attacchi
-# TODO: Scegliere una misclassification_policy
 
 
-# TODO: Cercare i valori corretti di l1 & co. tramite line search?
 # TODO: topk e random_target hanno delle sincronizzazioni
 # TODO: Carlini Linf usa parametri molto più tranquilli nell'implementazione originale
 # TODO: np.seed è deprecato
-# TODO: La misclassification policy "remove" deve restituirli come None?
 # TODO [p]: Debuggare il comportamento targeted
 # Appunto: PGD è abbastanza decente con i parametri da training
 
-# TODO: ADVERSARIAL TRAINING NON USA IL DATA AUGMENTATION. Ma nel paper originale di Madry sì
-
-# TODO: Il preprocessor si basa sulla media di tutti i sample del training set, nonostante parte di essi vengano usati poi
-# per il validation set. Questo non è particolarmente grave, ma è qualcosa su cui riflettere
-
-# TODO: Valori corretti delle data augmentations
-# TODO: Rifare tutti gli addestramenti
-
-# TODO: Nell'originale di Xiao e Madry non usano manco la normalisation
-# TODO: Nell'originale hanno un ReLU al fondo (devo anche aggiungerlo io a Wong?) | NON È VERO!
 
 # Appunto: conv_to_matrix preserva il grafo dei gradienti e fare la l1 sul linear è equivalente a fare una l1 sulla conv e
 # moltiplicare per la dimensione (senza channel) dell'output. Nota però che linearized_model non è
@@ -66,16 +52,11 @@ def main():
 # La versione matriciale semplicemente esplicita questa ripetizione, ottenendo una matrice che associa tutto l'input a tutto l'output, ma dove
 # ogni pixel di output è influenzato esclusivamente dalla regione che avrebbe considerato la convoluzione.
 
-# TODO: GLI ADDESTRAMENTI VANNO FATTI CON CHOOSE-BEST E DETERMINISTIC
-# TODO: TUTTO VA FATTO CON DETERMINISTIC E SEED
-# TODO: I risultati dell'attacco vanno salvati!
 
 # TODO: Se uso MaskedReLU in un modello obiettivo di attacco non-MIP, devo debuggare questo caso
 
 # Appunto: Se uso un dataloader multi-worker con delle data augmentations, c'è un bug molto comune
 # https://www.reddit.com/r/MachineLearning/comments/mocpgj/p_using_pytorch_numpy_a_bug_that_plagues/
-
-# TODO: confrontare tempi carlini mio vs tranquillo [ENTRO GIOVEDI]
 
 """
 Lista dei moduli ancora da controllare
@@ -178,10 +159,7 @@ Da implementare:
 
 """
 
-# Cosa guardare nei test generali?
-# - Pooling nell'AdversarialDataset
-# - Funzionamento attacchi e attack_test
-
+# Nota: Ricorda che nelle analisi degli AttackComparisonDataset si usa una threshold per la similarità tra distanze
 
 main.add_command(commands.accuracy)
 main.add_command(commands.attack)
