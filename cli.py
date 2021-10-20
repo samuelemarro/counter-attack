@@ -1,6 +1,3 @@
-from pathlib import Path
-import os
-
 # PyTorch has some serious bugs concerning dll loading:
 # If PyTorch is loaded before Julia, Julia's import fails.
 # We therefore import Julia before anything else
