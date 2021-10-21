@@ -41,7 +41,10 @@ def main(domain, architecture, test_name, start, stop, log_dir):
 
     attacks = '"[bim, brendel, carlini, deepfool, fast_gradient, pgd, uniform]"'
     p = 'linf'
-    seed = 0
+
+    # 0 was used during development, using 1 for actual tests
+    seed = 1
+
     # Attacks are run on CPU, so there's no point in using higher batch sizes
     batch_size = 1
     device = 'cpu'
