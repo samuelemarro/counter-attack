@@ -45,6 +45,8 @@ def read_jobs(tracker_path):
         if len(split_line) <= 1:
             continue
 
+        print('Reading', '.'.join(split_line))
+
         if split_line[0] == 'QUEUED':
             # Format: QUEUED, cifar10, c, relu, 0
             job = Job(split_line[1], split_line[2], split_line[3], int(split_line[4]))
