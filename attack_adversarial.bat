@@ -1,0 +1,6 @@
+start cmd.exe cmd /k "python batch_processing/attack_and_mip.py mnist a adversarial 0 10"
+start cmd.exe cmd /k "python batch_processing/attack_and_mip.py mnist b3 adversarial 0 10"
+start cmd.exe cmd /k "python batch_processing/attack_and_mip.py mnist c adversarial 0 10"
+start cmd.exe cmd /k "python batch_processing/attack_and_mip.py cifar10 a adversarial 0 10"
+start cmd.exe cmd /k "python batch_processing/attack_and_mip.py cifar10 b adversarial 0 10"
+start cmd.exe cmd /k "python batch_processing/attack_and_mip.py cifar10 c adversarial 0 10"

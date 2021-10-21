@@ -1,0 +1,8 @@
+start cmd.exe cmd /k "python batch_processing/train_and_prune.py mnist a standard"
+start cmd.exe cmd /k "python batch_processing/train_and_prune.py mnist b standard"
+start cmd.exe cmd /k "python batch_processing/train_and_prune.py mnist b2 standard"
+start cmd.exe cmd /k "python batch_processing/train_and_prune.py mnist b3 standard"
+start cmd.exe cmd /k "python batch_processing/train_and_prune.py mnist c standard"
+start cmd.exe cmd /k "python batch_processing/train_and_prune.py cifar10 a standard"
+start cmd.exe cmd /k "python batch_processing/train_and_prune.py cifar10 b standard"
+start cmd.exe cmd /k "python batch_processing/train_and_prune.py cifar10 c standard"
