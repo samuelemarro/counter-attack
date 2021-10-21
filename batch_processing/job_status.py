@@ -11,40 +11,33 @@ import batch_processing.batch_utils as batch_utils
 def main(tracker_path):
     current_jobs = batch_utils.read_jobs(tracker_path).values()
 
-    counts = {
-        'queued' : 0,
-        'running' : 0,
-        'completed' : 0,
-        'failed' : 0
-    }
-
+    queued = []
     running = []
-    failures = []
+    completed = []
+    failed = []
 
     for job in current_jobs:
         if job.status == 'QUEUED':
-            counts['queued'] += 1
+            queued.append(job)
         elif job.status == 'RUNNING':
-            counts['running'] += 1
             running.append(job)
         elif job.status == 'FINISHED':
             # A finished job might have actually failed
             results_path = Path('mip_results') / job.test_name / (job.domain + '-' + job.architecture) / f'{job.index}-{job.index + 1}.zip'
             if results_path.exists():
                 # Success
-                counts['completed'] += 1
+                completed.append(job)
             else:
                 # Failure
-                counts['failed'] += 1
-                failures.append(job)
+                failed.append(job)
         else:
             raise NotImplementedError(f'Unsupported status "{job.status}"')
     
     print('=========')
-    print('Queued:', counts['queued'])
-    print('Running:', counts['running'])
-    print('Completed:', counts['completed'])
-    print('Failed:', counts['failed'])
+    print('Queued:', len(queued))
+    print('Running:', len(running))
+    print('Completed:', len(completed))
+    print('Failed:', len(failed))
 
     if len(running) > 0:
         print('=========')
@@ -52,10 +45,10 @@ def main(tracker_path):
         for job in running:
             print(job)
     
-    if len(failures) > 0:
+    if len(failed) > 0:
         print('=========')
         print('Failed:')
-        for job in failures:
+        for job in failed:
             print(job)
 
 if __name__ == '__main__':
