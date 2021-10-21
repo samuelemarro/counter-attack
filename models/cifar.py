@@ -16,7 +16,7 @@ def cifar10_a(masked_relu, num_classes):
         nn.Linear(1800, num_classes)
     )
 
-def cifar10_b2(masked_relu, num_classes):
+def cifar10_b(masked_relu, num_classes):
     return torch.nn.Sequential(
         nn.Conv2d(3, 20, 5, stride=4, padding=0),
         MaskedReLU([20, 7, 7]) if masked_relu else nn.ReLU(),
@@ -41,8 +41,8 @@ def cifar10(architecture, masked_relu, num_classes=10, pretrained=None):
 
     if architecture == 'a':
         model = cifar10_a(masked_relu, num_classes)
-    elif architecture == 'b2':
-        model = cifar10_b2(masked_relu, num_classes)
+    elif architecture == 'b':
+        model = cifar10_b(masked_relu, num_classes)
     elif architecture == 'c':
         model = cifar10_c(masked_relu, num_classes)
     else:
