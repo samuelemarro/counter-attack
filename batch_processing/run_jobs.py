@@ -1,4 +1,5 @@
 from pathlib import Path
+import random
 import subprocess
 import sys
 sys.path.append('.')
@@ -14,8 +15,8 @@ def run_and_output(command):
     result = subprocess.run(command, stdout=subprocess.PIPE, shell=True)
     return result.stdout.decode('utf-8')
 
-def start_job(job):
-    output = run_and_output(f'./run_job.sh {job.domain} {job.architecture} {job.test_name} {job.index}')
+def start_job(job, node):
+    output = run_and_output(f'./run_job.sh {job.domain} {job.architecture} {job.test_name} {job.index} {node}')
     prefix = 'Submitted batch job '
     assert output.startswith(prefix)
     job_number = output[len(prefix):]
@@ -66,7 +67,8 @@ def register_job(job, tracker_path):
 @click.argument('job_count', type=int)
 @click.option('--new', is_flag=True)
 @click.option('--update', is_flag=True)
-def main(tracker_path, config_file, job_count, new, update):
+@click.option('--node-list', type=click.Path(exists=True, file_okay=True, dir_okay=False), default='node_list.txt')
+def main(tracker_path, config_file, job_count, new, update, node_list):
     if new and update:
         raise click.UsageError('--new and --update are mutually exclusive')
 
@@ -75,6 +77,9 @@ def main(tracker_path, config_file, job_count, new, update):
             config_dict = jsonpickle.decode(f.read())
     else:
         raise click.UsageError('Choose one between --new and --update')
+
+    with open(node_list, 'r') as f:
+        nodes = [l.strip() for l in f.readlines()]
 
     if new:
         if Path(tracker_path).exists():
@@ -99,9 +104,12 @@ def main(tracker_path, config_file, job_count, new, update):
     jobs_to_start = jobs_by_priority[:actual_job_count]
 
     for job in jobs_to_start:
-        print('Starting job', job)
+        node = random.choice(nodes)
+        print('Starting job', job, 'on node', node)
+
         write_queue_job(job, tracker_path)
-        job_number = start_job(job)
+
+        job_number = start_job(job, node)
         job.job_number = job_number
         register_job(job, tracker_path)
 
