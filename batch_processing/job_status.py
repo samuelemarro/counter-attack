@@ -32,24 +32,32 @@ def main(tracker_path):
                 failed.append(job)
         else:
             raise NotImplementedError(f'Unsupported status "{job.status}"')
-    
+
+    print('=========')
+    print('Queued:')
+    for job in queued:
+        print(job)
+
+    print('=========')
+    print('Completed:')
+    for job in completed:
+        print(job)
+
+    print('=========')
+    print('Running:')
+    for job in running:
+        print(job)
+
+    print('=========')
+    print('Failed:')
+    for job in failed:
+        print(job)
+
     print('=========')
     print('Queued:', len(queued))
     print('Running:', len(running))
     print('Completed:', len(completed))
     print('Failed:', len(failed))
-
-    if len(running) > 0:
-        print('=========')
-        print('Running:')
-        for job in running:
-            print(job)
-    
-    if len(failed) > 0:
-        print('=========')
-        print('Failed:')
-        for job in failed:
-            print(job)
 
 if __name__ == '__main__':
     main()
