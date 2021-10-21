@@ -5,7 +5,7 @@ try:
     from julia.api import JuliaInfo
     info = JuliaInfo.load()
     if not info.is_compatible_python():
-        print('Julia: loading custom system image.')
+        print('Julia: using non-compiled modules.')
         from julia.api import Julia
         jl = Julia(compiled_modules=False)
 
