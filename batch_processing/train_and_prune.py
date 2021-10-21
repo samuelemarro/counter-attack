@@ -29,7 +29,7 @@ def get_latest_checkpoint(path):
 
 @click.command()
 @click.argument('domain', type=click.Choice(['cifar10', 'mnist']))
-@click.argument('architecture', type=click.Choice(['a', 'b', 'c', 'b2', 'b3', 'b4', 'b5', 'b6']))
+@click.argument('architecture', type=click.Choice(['a', 'b', 'c']))
 @click.argument('test_name', type=click.Choice(['standard', 'adversarial', 'relu']))
 @click.option('--load-checkpoint', is_flag=True)
 def main(domain, architecture, test_name, load_checkpoint):

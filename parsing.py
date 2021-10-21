@@ -17,7 +17,7 @@ import utils
 logger = logging.getLogger(__name__)
 
 domains = ['cifar10', 'mnist']
-architectures = ['a', 'b', 'c', 'wong_small', 'wong_large', 'b2', 'b3', 'b4', 'b5', 'b6']
+architectures = ['a', 'b', 'c']
 attack_types = ['defense', 'evasion', 'standard', 'training']
 supported_attacks = ['bim', 'brendel', 'carlini',
                      'deepfool', 'fast_gradient', 'mip', 'pgd', 'uniform']
