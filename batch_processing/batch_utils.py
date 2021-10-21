@@ -47,6 +47,8 @@ def read_jobs(tracker_path):
 
         print('Reading', '.'.join(split_line))
         print('First line is started:', split_line[0] == 'STARTED')
+        print('First length:', len(split_line[0]))
+        print('Char codes:', [int(c) for c in split_line[0]])
 
         if split_line[0] == 'QUEUED':
             # Format: QUEUED, cifar10, c, relu, 0
