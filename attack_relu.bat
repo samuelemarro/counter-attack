@@ -1,6 +1,0 @@
-start cmd.exe cmd /k "python batch_processing/attack_and_mip.py mnist a relu 0 10"
-start cmd.exe cmd /k "python batch_processing/attack_and_mip.py mnist b3 relu 0 10"
-start cmd.exe cmd /k "python batch_processing/attack_and_mip.py mnist c relu 0 10"
-start cmd.exe cmd /k "python batch_processing/attack_and_mip.py cifar10 a relu 0 10"
-start cmd.exe cmd /k "python batch_processing/attack_and_mip.py cifar10 b relu 0 10"
-start cmd.exe cmd /k "python batch_processing/attack_and_mip.py cifar10 c relu 0 10"
