@@ -21,8 +21,12 @@ def get_license_string():
 
     return licenses[0]
 
+base_folder = Path('licenses')
+base_folder.mkdir(exist_ok=True)
+
 hostname =  socket.gethostname()
-license_path = Path('licenses') / hostname / 'gurobi.lic'
+
+license_path = base_folder / hostname / 'gurobi.lic'
 if not license_path.exists():
     license_string = get_license_string()
 
