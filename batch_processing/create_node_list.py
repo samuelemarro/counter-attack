@@ -8,9 +8,9 @@ import click
 @click.argument('excluded_nodes_path', type=click.Path(dir_okay=False, file_okay=True))
 def main(all_nodes_path, chosen_nodes_path, excluded_nodes_path):
     with open(all_nodes_path) as f:
-        all_nodes = [l.strip() for l in f.readlines()]
+        all_nodes = [l.strip() for l in f.readlines() if len(l.strip()) > 0]
     with open(chosen_nodes_path) as f:
-        chosen_nodes = [l.strip() for l in f.readlines()]
+        chosen_nodes = [l.strip() for l in f.readlines() if len(l.strip()) > 0]
 
     assert all(node in all_nodes for node in chosen_nodes)
     
