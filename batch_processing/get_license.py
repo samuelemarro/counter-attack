@@ -37,8 +37,11 @@ def main(server):
         if license_string is None:
             exit(1)
 
-        command = f'grbgetkey {license_string} --path licenses/{hostname} '
+        command = f'grbgetkey {license_string} --verbose --path licenses/{hostname} '
         if server is not None:
             command += f'--server {server}'
 
         os.system(command)
+
+if __name__ == '__main__':
+    main()
