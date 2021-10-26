@@ -23,7 +23,7 @@ def get_license_string():
     return licenses[0]
 
 @click.command()
-@click.argument('--server', type=str, default=None)
+@click.option('--server', type=str, default=None)
 def main(server):
     base_folder = Path('licenses')
     base_folder.mkdir(exist_ok=True)
