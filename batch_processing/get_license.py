@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 import socket
 
+import click
 import portalocker
 
 def get_license_string():
@@ -21,16 +22,23 @@ def get_license_string():
 
     return licenses[0]
 
-base_folder = Path('licenses')
-base_folder.mkdir(exist_ok=True)
+@click.command()
+@click.argument('--server', type=str, default=None)
+def main(server):
+    base_folder = Path('licenses')
+    base_folder.mkdir(exist_ok=True)
 
-hostname =  socket.gethostname()
+    hostname =  socket.gethostname()
 
-license_path = base_folder / hostname / 'gurobi.lic'
-if not license_path.exists():
-    license_string = get_license_string()
+    license_path = base_folder / hostname / 'gurobi.lic'
+    if not license_path.exists():
+        license_string = get_license_string()
 
-    if license_string is None:
-        exit(1)
+        if license_string is None:
+            exit(1)
 
-    os.system(f'grbgetkey {license_string} --path licenses/{hostname}')
+        command = f'grbgetkey {license_string} --path licenses/{hostname} '
+        if server is not None:
+            command += f'--server {server}'
+
+        os.system(command)
