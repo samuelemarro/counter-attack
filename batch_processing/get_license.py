@@ -1,6 +1,9 @@
 import os
 from pathlib import Path
 import socket
+import time
+
+RETRY_LIMIT = 20
 
 import click
 import portalocker
@@ -57,7 +60,23 @@ def main(server):
     license_path = base_folder / hostname / 'gurobi.lic'
 
     if not license_path.exists():
-        retrieve_license(hostname, server, license_path)
+        print('No license found, registering...')
+
+        success = False
+
+        # Retrieving the license sometimes fails, so we retry a few times
+        for _ in range(RETRY_LIMIT):
+            try:
+                retrieve_license(hostname, server, license_path)
+                success = True
+                break
+            except portalocker.LockException:
+                print('Retrieval failed with exception, retrying...')
+                time.sleep(5)
+
+        if not success:
+            print('Max attempts reached, aborting.')
+            exit(1)
 
 if __name__ == '__main__':
     main()
