@@ -92,6 +92,11 @@ def main(tracker_path, config_file, job_count, new, update):
                 new_jobs.append(job)
 
         actual_job_count = job_count - len(current_job_ids)
+
+    if actual_job_count <= 0:
+        print('Job count requirement already satisfied, quitting')
+        exit(0)
+
     print(len(new_jobs),'new jobs')
     print(f'Starting {actual_job_count} jobs.')
     jobs_by_priority = sorted(new_jobs, key=lambda x: x.priority)
