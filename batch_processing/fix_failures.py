@@ -10,13 +10,10 @@ import batch_processing.batch_utils as batch_utils
 @click.command()
 @click.argument('tracker_path', type=click.Path(dir_okay=False, file_okay=True, exists=True))
 @click.argument('action', type=click.Choice(['backup', 'delete_logs', 'clean_tracker']))
-@click.option('--backup-dir', type=click.Path(dir_okay=True, file_okay=False, exists=False), default=None)
+@click.argument('backup_dir', type=click.Path(dir_okay=True, file_okay=False, exists=False), default=None)
 @click.option('--new-tracker-path', type=click.Path(dir_okay=False, file_okay=True, exists=False), default=None)
 @click.option('--dry-run', is_flag=True)
 def main(tracker_path, action, backup_dir, new_tracker_path, dry_run):
-    if action in ['backup', 'delete_logs'] and backup_dir is None:
-        raise click.UsageError('You must specify a backup directory with --backup-dir.')
-
     if action == 'clean_tracker':
         if new_tracker_path is None:
             raise click.UsageError('--new-tracker-path is required when using "clean_tracker".')
