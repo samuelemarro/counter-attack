@@ -36,18 +36,28 @@ def main(tracker_path, action, backup_dir, new_tracker_path, dry_run):
             if not results_path.exists():
                 # Failure
 
-                global_logs_path = Path('global_logs') / subpath.with_suffix('.log')
-                backup_logs_global_path = Path(backup_dir) / 'global_logs' / subpath.with_suffix('.log')
+                global_logs_path = Path('global_logs') / subpath.with_suffix('.out')
+                backup_global_logs_path = Path(backup_dir) / 'global_logs' / subpath.with_suffix('.out')
+
+                global_err_path = Path('global_logs') / subpath.with_suffix('.out')
+                backup_global_err_path = Path(backup_dir) / 'global_logs' / subpath.with_suffix('.out')
 
                 logs_dir_path = Path('logs') / subpath
                 backup_logs_dir_path = Path(backup_dir) / 'logs' / subpath
 
                 if action == 'backup':
                     if global_logs_path.exists():
-                        if backup_logs_global_path.exists():
-                            raise click.BadOptionUsage('--backup-dir', f'{backup_logs_global_path} already exists.')
+                        if backup_global_logs_path.exists():
+                            raise click.BadOptionUsage('--backup-dir', f'{backup_global_logs_path} already exists.')
 
-                        copy_orders.append((global_logs_path, backup_logs_global_path))
+                        copy_orders.append((global_logs_path, backup_global_logs_path))
+
+                    if global_err_path.exists():
+                        if backup_global_err_path.exists():
+                            raise click.BadOptionUsage('--backup-dir', f'{backup_global_err_path} already exists.')
+
+                        copy_orders.append((global_err_path, backup_global_err_path))
+
                     if logs_dir_path.exists():
                         if backup_logs_dir_path.exists():
                             raise click.BadOptionUsage('--backup-dir', f'{backup_logs_dir_path} already exists.')
@@ -55,9 +65,14 @@ def main(tracker_path, action, backup_dir, new_tracker_path, dry_run):
                         copy_orders.append((logs_dir_path, backup_logs_dir_path))
                 elif action == 'delete_logs':
                     if global_logs_path.exists():
-                        if not backup_logs_global_path.exists():
+                        if not backup_global_logs_path.exists():
                             raise RuntimeError(f'Attempting to delete file {global_logs_path} which has not been backed up.')
                         delete_orders.append(global_logs_path)
+
+                    if global_err_path.exists():
+                        if not backup_global_err_path.exists():
+                            raise RuntimeError(f'Attempting to delete file {global_err_path} which has not been backed up.')
+                        delete_orders.append(global_err_path)
 
                     if logs_dir_path.exists():
                         if not backup_logs_dir_path.exists():
@@ -65,7 +80,9 @@ def main(tracker_path, action, backup_dir, new_tracker_path, dry_run):
                         delete_orders.append(logs_dir_path)
 
                 elif action == 'clean_tracker':
-                    if (global_logs_path.exists() and not backup_logs_global_path.exists()) or (logs_dir_path.exists() and not backup_logs_dir_path.exists()):
+                    if (global_logs_path.exists() and not backup_global_logs_path.exists()) or \
+                       (global_err_path.exists() and not backup_global_err_path.exists()) or \
+                       (logs_dir_path.exists() and not backup_logs_dir_path.exists()):
                         raise RuntimeError(f'Attempting to clean tracker history of job {job} which has not been fully backed up.')
                     tracker_delete_orders.append(job)
     
