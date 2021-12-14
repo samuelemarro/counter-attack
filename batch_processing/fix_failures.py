@@ -107,7 +107,10 @@ def main(tracker_path, action, backup_dir, new_tracker_path, dry_run):
         print('Deleting logs...')
         for path in delete_orders:
             if not dry_run:
-                path.unlink()
+                if path.is_dir():
+                    shutil.rmtree(path)
+                else:
+                    path.unlink()
     elif action == 'clean_tracker':
         print('Creating a tracker without the following jobs:')
         for job in tracker_delete_orders:
