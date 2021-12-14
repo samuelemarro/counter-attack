@@ -74,7 +74,10 @@ def main(tracker_path, action, backup_dir, new_tracker_path, dry_run):
         for src, dst in copy_orders:
             print(src)
             if not dry_run:
-                shutil.copy2(src, dst)
+                if src.is_dir():
+                    shutil.copytree(src, dst)
+                else:
+                    shutil.copy(src, dst)
     elif action == 'delete_logs':
         print('The following logs will be deleted:')
         for path in delete_orders:
