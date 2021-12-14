@@ -39,13 +39,14 @@ def main(tracker_path, action, backup_dir, new_tracker_path, dry_run):
                 global_logs_path = Path('global_logs') / subpath.with_suffix('.out')
                 backup_global_logs_path = Path(backup_dir) / 'global_logs' / subpath.with_suffix('.out')
 
-                global_err_path = Path('global_logs') / subpath.with_suffix('.out')
-                backup_global_err_path = Path(backup_dir) / 'global_logs' / subpath.with_suffix('.out')
+                global_err_path = Path('global_logs') / subpath.with_suffix('.err')
+                backup_global_err_path = Path(backup_dir) / 'global_logs' / subpath.with_suffix('.err')
 
                 logs_dir_path = Path('logs') / subpath
                 backup_logs_dir_path = Path(backup_dir) / 'logs' / subpath
 
                 if action == 'backup':
+                    print('Checking', global_logs_path)
                     if global_logs_path.exists():
                         if backup_global_logs_path.exists():
                             raise click.BadOptionUsage('--backup-dir', f'{backup_global_logs_path} already exists.')
