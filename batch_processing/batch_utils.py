@@ -67,3 +67,28 @@ def read_jobs(tracker_path):
             raise NotImplementedError(f'Unsupported descriptor "{split_line[0]}".')
 
     return jobs
+
+
+def remove_jobs(tracker_path, jobs_to_remove, destination_path):
+    with open(tracker_path, 'r') as f:
+        lines = [line.strip() for line in f.readlines()]
+
+    cleaned_lines = []
+    
+    for line in lines:
+        split_line = [subelement.strip() for subelement in line.split(',')]
+        if len(split_line) <= 1:
+            continue
+
+        remove = False
+
+        for job in jobs_to_remove:
+            if split_line[1] == job.domain and split_line[2] == job.architecture and split_line[3] == job.test_name and int(split_line[4]) == job.index:
+                remove = True
+                break
+
+        if not remove:
+            cleaned_lines.append(line)
+    
+    with open(destination_path, 'w') as f:
+        f.write('\n'.join(cleaned_lines) + '\n')
