@@ -37,10 +37,10 @@ def main(tracker_path, action, backup_dir, new_tracker_path, dry_run):
                 # Failure
 
                 global_logs_path = Path('global_logs') / subpath.with_suffix('.log')
-                backup_logs_global_path = Path('backup') / 'global_logs' / subpath.with_suffix('.log')
+                backup_logs_global_path = Path(backup_dir) / 'global_logs' / subpath.with_suffix('.log')
 
                 logs_dir_path = Path('logs') / subpath
-                backup_logs_dir_path = Path('backup') / 'logs' / subpath
+                backup_logs_dir_path = Path(backup_dir) / 'logs' / subpath
 
                 if action == 'backup':
                     if global_logs_path.exists():
@@ -66,7 +66,7 @@ def main(tracker_path, action, backup_dir, new_tracker_path, dry_run):
 
                 elif action == 'clean_tracker':
                     if (global_logs_path.exists() and not backup_logs_global_path.exists()) or (logs_dir_path.exists() and not backup_logs_dir_path.exists()):
-                        raise RuntimeError(f'Attempting to clean tracker history of file {job} which has not been fully backed up.')
+                        raise RuntimeError(f'Attempting to clean tracker history of job {job} which has not been fully backed up.')
                     tracker_delete_orders.append(job)
     
     if action == 'backup':
