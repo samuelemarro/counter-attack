@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import random
 import socket
 import time
 
@@ -22,10 +23,7 @@ def retrieve_license(hostname, server, license_path):
         print('Lock acquired.')
 
         # Check that the license hasn't already been registered during waiting
-        if license_path.exists():
-            # If the license has already been registered, return
-            return
-        else:
+        if not license_path.exists():
             # If the license has not been registered, register it
             licenses = [l.strip() for l in fh.readlines()]
 
@@ -47,8 +45,6 @@ def retrieve_license(hostname, server, license_path):
 
         print('Released lock')
 
-        return licenses[0]
-
 @click.command()
 @click.option('--server', type=str, default=None)
 def main(server):
@@ -65,14 +61,14 @@ def main(server):
         success = False
 
         # Retrieving the license sometimes fails, so we retry a few times
-        for _ in range(RETRY_LIMIT):
+        for i in range(RETRY_LIMIT):
             try:
                 retrieve_license(hostname, server, license_path)
                 success = True
                 break
             except portalocker.LockException:
                 print('Retrieval failed with exception, retrying...')
-                time.sleep(5)
+                time.sleep(random.randint(2 ** i, 2 ** (i + 1)))
 
         if not success:
             print('Max attempts reached, aborting.')
