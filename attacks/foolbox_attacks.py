@@ -165,9 +165,9 @@ class BrendelBethgeAttack(FoolboxAttackWrapper):
         adversarials[~successful_starting] = x[~successful_starting]
 
         # For successful starting points, run the attack and store the results
-        # TODO: Don't run if torch.count_nonzero(successful_starting) is 0
-        computed_adversarials = super().perturb(x[successful_starting], y=y[successful_starting], starting_points=starting_points[successful_starting])
-        adversarials[successful_starting] = computed_adversarials
+        if torch.count_nonzero(successful_starting) > 0:
+            computed_adversarials = super().perturb(x[successful_starting], y=y[successful_starting], starting_points=starting_points[successful_starting])
+            adversarials[successful_starting] = computed_adversarials
 
         return adversarials
 
