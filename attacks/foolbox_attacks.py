@@ -65,9 +65,11 @@ class BrendelBethgeAttack(FoolboxAttackWrapper):
             lr_num_decay: int = 20,
             momentum: float = 0.8,
             tensorboard: Union[Literal[False], None, str] = False,
-            binary_search_steps: int = 10):
+            binary_search_steps: int = 10,
+            initialization_attempts = 10):
     
         self.init_attack = init_attack
+        self.initialization_attempts = initialization_attempts
 
         if p == 2:
             foolbox_attack = fb.attacks.L2BrendelBethgeAttack(
@@ -131,22 +133,28 @@ class BrendelBethgeAttack(FoolboxAttackWrapper):
     def perturb(self, x, y=None, starting_points=None):
         x, y = self._verify_and_process_inputs(x, y)
 
-        if starting_points is None:
-            starting_points = self.run_init_attack(x, y)
-        else:
-            assert starting_points.shape == x.shape
+        for attempt in range(self.initialization_attempts):
+            logger.debug(f'Initialization attempt {attempt + 1}.')
 
-            # Foolbox's implementation of Brendel&Bethge requires all starting points to be successful
-            # adversarials. Since that is not always the case, we use Brendel&Bethge's init_attack
-            # to initialize the unsuccessful starting_points
-            fallback = ~self.successful(starting_points, y)
+            if starting_points is None:
+                starting_points = self.run_init_attack(x, y)
+            else:
+                assert starting_points.shape == x.shape
 
-            fallback_adversarials = self.run_init_attack(x[fallback], y[fallback])
-            starting_points[fallback] = fallback_adversarials
+                # Foolbox's implementation of Brendel&Bethge requires all starting points to be successful
+                # adversarials. Since that is not always the case, we use Brendel&Bethge's init_attack
+                # to initialize the unsuccessful starting_points
+                fallback = ~self.successful(starting_points, y)
 
-        successful_starting = self.successful(starting_points, y)
+                fallback_adversarials = self.run_init_attack(x[fallback], y[fallback])
+                starting_points[fallback] = fallback_adversarials
 
-        num_failures = torch.count_nonzero(~successful_starting)
+            successful_starting = self.successful(starting_points, y)
+
+            num_failures = torch.count_nonzero(~successful_starting)
+
+            if num_failures == 0:
+                break
 
         if num_failures > 0:
             logger.warning(f'Failed to initialize {num_failures} starting points.')
@@ -157,6 +165,7 @@ class BrendelBethgeAttack(FoolboxAttackWrapper):
         adversarials[~successful_starting] = x[~successful_starting]
 
         # For successful starting points, run the attack and store the results
+        # TODO: Don't run if torch.count_nonzero(successful_starting) is 0
         computed_adversarials = super().perturb(x[successful_starting], y=y[successful_starting], starting_points=starting_points[successful_starting])
         adversarials[successful_starting] = computed_adversarials
 
