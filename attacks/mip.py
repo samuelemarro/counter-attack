@@ -149,10 +149,10 @@ GUROBI_VARIABLE_ATTRIBUTES = [
 ]
 
 GUROBI_CONSTRAINT_ATTRIBUTES = [
-    ('Sense', 'char'),
-    ('RHS', 'double'),
-    ('ConstrName', 'string'),
-    ('CTag', 'string'),
+    # ('Sense', 'char'),
+    # ('RHS', 'double'),
+    # ('ConstrName', 'string'),
+    # ('CTag', 'string'),
     ('Pi', 'double'),
     ('Slack', 'double'),
     ('CBasis', 'int'),
@@ -161,7 +161,7 @@ GUROBI_CONSTRAINT_ATTRIBUTES = [
     ('IISConstr', 'int'),
     ('SARHSLow', 'double'),
     ('SARHSUp', 'double'),
-    # ('FarkasDual', 'double') # Dropped due to sometimes causing segfaults
+    #('FarkasDual', 'double') # Dropped due to sometimes causing segfaults
 ]
 
 def module_to_mip(module, flattened_input):
