@@ -29,21 +29,22 @@ def main(tracker_path, action, backup_dir, new_tracker_path, dry_run):
     for job in current_jobs:
         if job.status == 'FINISHED':
             # A finished job might have actually failed
-            subpath = Path(job.test_name) / (job.domain + '-' + job.architecture) / f'{job.index}-{job.index + 1}'
+            logs_subpath = Path(job.test_name) / (job.domain + '-' + job.architecture) / f'{job.index}-{job.index + 1}'
+            global_logs_subpath = Path(job.test_name) / (job.domain + '-' + job.architecture) / f'{job.index}'
 
-            results_path = Path('mip_results') / subpath.with_suffix('.zip')
+            results_path = Path('mip_results') / logs_subpath.with_suffix('.zip')
 
             if not results_path.exists():
                 # Failure
 
-                global_logs_path = Path('global_logs') / subpath.with_suffix('.out')
-                backup_global_logs_path = Path(backup_dir) / 'global_logs' / subpath.with_suffix('.out')
+                global_logs_path = Path('global_logs') / global_logs_subpath.with_suffix('.out')
+                backup_global_logs_path = Path(backup_dir) / 'global_logs' / global_logs_subpath.with_suffix('.out')
 
-                global_err_path = Path('global_logs') / subpath.with_suffix('.err')
-                backup_global_err_path = Path(backup_dir) / 'global_logs' / subpath.with_suffix('.err')
+                global_err_path = Path('global_logs') / global_logs_subpath.with_suffix('.err')
+                backup_global_err_path = Path(backup_dir) / 'global_logs' / global_logs_subpath.with_suffix('.err')
 
-                logs_dir_path = Path('logs') / subpath
-                backup_logs_dir_path = Path(backup_dir) / 'logs' / subpath
+                logs_dir_path = Path('logs') / logs_subpath
+                backup_logs_dir_path = Path(backup_dir) / 'logs' / logs_subpath
 
                 if action == 'backup':
                     print('Checking', global_logs_path)
