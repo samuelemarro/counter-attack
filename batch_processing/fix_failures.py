@@ -13,7 +13,8 @@ import batch_processing.batch_utils as batch_utils
 @click.argument('backup_dir', type=click.Path(dir_okay=True, file_okay=False, exists=False), default=None)
 @click.option('--new-tracker-path', type=click.Path(dir_okay=False, file_okay=True, exists=False), default=None)
 @click.option('--dry-run', is_flag=True)
-def main(tracker_path, action, backup_dir, new_tracker_path, dry_run):
+@click.option('--include-running', is_flag=True)
+def main(tracker_path, action, backup_dir, new_tracker_path, dry_run, include_running):
     if action == 'clean_tracker':
         if new_tracker_path is None:
             raise click.UsageError('--new-tracker-path is required when using "clean_tracker".')
@@ -27,7 +28,7 @@ def main(tracker_path, action, backup_dir, new_tracker_path, dry_run):
     current_jobs = batch_utils.read_jobs(tracker_path).values()
 
     for job in current_jobs:
-        if job.status == 'FINISHED':
+        if job.status == 'FINISHED' or (job.status == 'RUNNING' and include_running):
             # A finished job might have actually failed
             logs_subpath = Path(job.test_name) / (job.domain + '-' + job.architecture) / f'{job.index}-{job.index + 1}'
             global_logs_subpath = Path(job.test_name) / (job.domain + '-' + job.architecture) / f'{job.index}'
