@@ -100,7 +100,7 @@ def main(tracker_path, action, backup_dir, new_tracker_path, dry_run, include_ru
                 else:
                     shutil.copy(src, dst)
     elif action == 'delete_logs':
-        print('The following logs will be deleted:')
+        print(f'The following logs ({len(delete_orders)} files) will be deleted:')
         for path in delete_orders:
             print(path)
         print('Type "delete_logs" to continue.')
