@@ -200,6 +200,24 @@ class MIPDataset(data.Dataset):
     def convergence_stats(self):
         return list(zip(self.elapsed_times, self.absolute_differences))
 
+class MergedDataset:
+    def __init__(self):
+        self.genuines = {}
+        self.labels = {}
+        self.true_labels = {}
+        self.adversarials = {}
+        self.lower_bounds = {}
+        self.upper_bounds = {}
+        self.elapsed_times = {}
+        self.extra_infos = {}
+        self.global_extra_infos = {}
+        self.generation_kwargs = {}
+        self.memory_logs = {}
+
+        self.attack_configuration = None
+        self.misclassification_policy = None
+        self.p = None
+
 
 class AdversarialDistanceDataset(data.Dataset):
     def __init__(self, images, distances):
