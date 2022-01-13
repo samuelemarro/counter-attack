@@ -67,31 +67,33 @@ def read_datasets():
     for domain in ['mnist', 'cifar10']:
         for architecture in ['a', 'b', 'c']:
             for test_type in ['standard', 'adversarial', 'relu']:
-                results_dir = Path('mip_results') / test_type / f'{domain}-{architecture}'
-                print('Checking', results_dir)
-
-                final_dataset = MergedDataset()
-
-                for dataset_path in results_dir.iterdir():
-                    dataset_path = dataset_path.with_suffix('.zip')
-                    dataset = utils.load_zip(dataset_path)
-
-                    stem = dataset_path.stem
-
-                    memory_log_path = Path('logs') / test_type / f'{domain}-{architecture}' / stem / 'mip_memory.dat'
-                    if memory_log_path.exists():
-                        with open(memory_log_path, 'r') as f:
-                            memory_log = f.readlines()
-                        memory_log = parse_memory_log(memory_log)
-                    else:
-                        memory_log = None
-
-                    add_dataset(final_dataset, dataset, memory_log)
-                
                 final_dataset_path = Path('final') / f'{domain}-{architecture}-{test_type}.zip'
-                final_dataset_path.parent.mkdir(parents=True, exist_ok=True)
 
-                utils.save_zip(final_dataset, final_dataset_path)
+                if not final_dataset_path.exists():
+                    results_dir = Path('mip_results') / test_type / f'{domain}-{architecture}'
+                    print('Checking', results_dir)
+
+                    final_dataset = MergedDataset()
+
+                    for dataset_path in results_dir.iterdir():
+                        dataset_path = dataset_path.with_suffix('.zip')
+                        dataset = utils.load_zip(dataset_path)
+
+                        stem = dataset_path.stem
+
+                        memory_log_path = Path('logs') / test_type / f'{domain}-{architecture}' / stem / 'mip_memory.dat'
+                        if memory_log_path.exists():
+                            with open(memory_log_path, 'r') as f:
+                                memory_log = f.readlines()
+                            memory_log = parse_memory_log(memory_log)
+                        else:
+                            memory_log = None
+
+                        add_dataset(final_dataset, dataset, memory_log)
+                    
+                    final_dataset_path.parent.mkdir(parents=True, exist_ok=True)
+
+                    utils.save_zip(final_dataset, final_dataset_path)
 
 @click.command()
 def main():
