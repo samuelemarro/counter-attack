@@ -218,6 +218,20 @@ class MergedDataset:
         self.misclassification_policy = None
         self.p = None
 
+class MergedComparisonDataset:
+    def __init__(self):
+        self.genuines = {}
+        self.labels = {}
+        self.true_labels = {}
+        self.attack_results = {}
+        self.generation_kwargs = {}
+        self.logs = {}
+
+        self.attack_configuration = None
+        self.attack_names = None
+        self.misclassification_policy = None
+        self.p = None
+
 
 class AdversarialDistanceDataset(data.Dataset):
     def __init__(self, images, distances):
