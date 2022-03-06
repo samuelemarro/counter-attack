@@ -34,6 +34,7 @@ def main(domain, architecture, test_name, attacks, start, attack_config_file, lo
     stop = start + 1
 
     log_dir = Path(log_dir) / f'{test_name}/{domain}-{architecture}/{start}-{stop}'
+    log_dir.mkdir(parents=True, exist_ok=True)
 
     print(f'Attacking {domain} {architecture} ({test_name}, {start}-{stop})')
 
@@ -41,8 +42,8 @@ def main(domain, architecture, test_name, attacks, start, attack_config_file, lo
 
     p = 'linf'
 
-    # 0 was used during development, using 1 for actual tests
-    seed = 1
+    # 0 was used during development, 1 for tests, using 2 for retries
+    seed = 2
 
     # Attacks are run on CPU, so there's no point in using higher batch sizes
     batch_size = 1
