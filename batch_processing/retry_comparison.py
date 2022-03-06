@@ -35,6 +35,7 @@ def main(domain, architecture, test_name, attacks, start, attack_config_file, lo
 
     log_dir = Path(log_dir) / f'{test_name}/{domain}-{architecture}/{start}-{stop}'
     log_dir.mkdir(parents=True, exist_ok=True)
+    Path('comparison_retries').mkdir(parents=True, exist_ok=True)
 
     print(f'Attacking {domain} {architecture} ({test_name}, {start}-{stop})')
 
@@ -59,7 +60,7 @@ def main(domain, architecture, test_name, attacks, start, attack_config_file, lo
         state_dict_path = f'trained-models/classifiers/{test_name}/{domain}-{architecture}.pth'
         masked_relu_argument = ''
 
-    compare_results_path = f'comparison_results/{test_name}/{domain}-{architecture}/{start}-{stop}.zip'
+    compare_results_path = f'comparison_retries/{test_name}/{domain}-{architecture}/{start}-{stop}.zip'
 
     if os.path.exists(compare_results_path):
         print('Skipping Compare')
