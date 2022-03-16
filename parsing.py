@@ -149,7 +149,7 @@ def parse_model(domain, architecture, state_dict_path, apply_normalisation, mask
     return model
 
 
-def parse_dataset(domain, dataset, allow_standard=True, dataset_edges=None, extra_transforms=None):
+def parse_dataset(domain, dataset, allow_standard=True, dataset_edges=None, indices_override=None, extra_transforms=None):
     if extra_transforms is None:
         extra_transforms = []
 
@@ -185,7 +185,11 @@ def parse_dataset(domain, dataset, allow_standard=True, dataset_edges=None, extr
             raise RuntimeError(
                 f'Could not find a standard dataset or a dataset file "{dataset}".')
 
-    if dataset_edges is not None:
+    if indices_override is not None:
+        matched_dataset = training.IndexedDataset(
+            matched_dataset, indices_override
+        )
+    elif dataset_edges is not None:
         start, stop = dataset_edges
         matched_dataset = training.StartStopDataset(
             matched_dataset, start=start, stop=stop)

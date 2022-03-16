@@ -247,7 +247,7 @@ class AdversarialDistanceDataset(data.Dataset):
         return len(self.images)
 
 class AttackComparisonDataset(data.Dataset):
-    def __init__(self, genuines, labels, true_labels, attack_names, attack_results, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs):
+    def __init__(self, genuines, labels, true_labels, attack_names, attack_results, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs, indices_override=None):
         assert len(genuines) == len(labels)
         assert len(genuines) == len(true_labels)
         assert len(genuines) == len(attack_results)
@@ -271,6 +271,7 @@ class AttackComparisonDataset(data.Dataset):
         self.start = start
         self.stop = stop
         self.generation_kwargs = generation_kwargs
+        self.indices_override = indices_override
 
     def __getitem__(self, idx):
         return (self.genuines[idx], self.labels[idx], self.true_labels[idx], self.attack_results[idx])

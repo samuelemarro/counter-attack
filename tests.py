@@ -290,7 +290,7 @@ def multiple_evasion_test(model, test_names, attacks, defended_models, loader, p
     return adversarial_dataset.AttackComparisonDataset(all_images, all_true_labels, test_names, all_attack_results, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs)
 
 
-def multiple_attack_test(model, attack_names, attacks, loader, p, misclassification_policy, device, attack_configuration, start, stop, generation_kwargs):
+def multiple_attack_test(model, attack_names, attacks, loader, p, misclassification_policy, device, attack_configuration, start, stop, generation_kwargs, indices_override=None):
     assert all(not attack.targeted for attack in attacks)
     assert len(attack_names) == len(attacks)
 
@@ -353,4 +353,4 @@ def multiple_attack_test(model, attack_names, attacks, loader, p, misclassificat
 
     logger.debug('Collected %s results.', len(all_attack_results))
 
-    return adversarial_dataset.AttackComparisonDataset(all_images, all_labels, all_true_labels, attack_names, all_attack_results, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs)
+    return adversarial_dataset.AttackComparisonDataset(all_images, all_labels, all_true_labels, attack_names, all_attack_results, p, misclassification_policy, attack_configuration, start, stop, generation_kwargs, indices_override=indices_override)

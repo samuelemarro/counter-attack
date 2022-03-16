@@ -1,7 +1,7 @@
+import json
 import logging
 
 import click
-import numpy as np
 import torch
 
 import parsing
@@ -33,10 +33,13 @@ logger = logging.getLogger(__name__)
               default='remove', show_default=True, help='The policy that will be applied to deal with '
               'misclassified images.')
 @click.option('--start', type=click.IntRange(0, None), default=0,
-              help='The first index (inclusive) of the dataset that will be used.')
+              help='The first index (inclusive) of the dataset that will be used. Overridden by --indices-path.')
 @click.option('--stop', type=click.IntRange(0, None), default=None,
               help='The last index (exclusive) of the dataset that will be used. If unspecified, defaults to '
-              'the dataset size.')
+              'the dataset size. Overridden by --indices-path.')
+@click.option('--indices-path', type=click.Path(exists=True, file_okay=True, dir_okay=False), default=None,
+              help='The path to the file containing the indices of the dataset that will be used. Overrides --start and '
+              '--stop.')
 @click.option('--no-stats', is_flag=True, help='If passed, no stats are printed.')
 @click.option('--save-to', type=click.Path(exists=False, file_okay=True, dir_okay=False),
               help='The path to the file where the test results will be saved (as a dataset). If unspecified, '
@@ -68,8 +71,14 @@ def compare(**kwargs):
                               kwargs['state_dict_path'], False, kwargs['masked_relu'], False, load_weights=True)
     model.eval()
 
+    if kwargs['indices_path'] is None:
+        indices_override = None
+    else:
+        with open(kwargs['indices_path']) as f:
+            indices_override = json.load(f)
+
     dataset = parsing.parse_dataset(kwargs['domain'], kwargs['dataset'], dataset_edges=(
-        kwargs['start'], kwargs['stop']))
+        kwargs['start'], kwargs['stop']), indices_override=indices_override)
     dataloader = torch.utils.data.DataLoader(
         dataset, kwargs['batch_size'], shuffle=False)
 
@@ -89,7 +98,7 @@ def compare(**kwargs):
     result_dataset = tests.multiple_attack_test(model, attack_names, attacks, dataloader, p,
                                                 kwargs['misclassification_policy'], device,
                                                 attack_config, dataset.start, dataset.stop,
-                                                kwargs)
+                                                kwargs, indices_override=indices_override)
 
     if not kwargs['no_stats']:
         result_dataset.print_stats()
