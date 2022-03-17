@@ -62,7 +62,7 @@ def read_datasets(dataset_dir, output_dir, log_dir):
 @click.argument('dataset_dir', type=click.Path(exists=True, file_okay=False, dir_okay=True))
 @click.argument('output_dir', type=click.Path(file_okay=False, dir_okay=True))
 @click.argument('log_dir', type=click.Path(exists=True, file_okay=False, dir_okay=True))
-def main(dataset_dir, output_dir):
+def main(dataset_dir, output_dir, log_dir):
     read_datasets(dataset_dir, output_dir)
 
 if __name__ == '__main__':
