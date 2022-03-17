@@ -30,8 +30,11 @@ def run_and_log(command, log_file):
 @click.argument('start', type=click.IntRange(0, None))
 @click.argument('stop', type=click.IntRange(1, None))
 @click.option('--log-dir', type=click.Path(file_okay=False, dir_okay=True), default='logs')
-def main(domain, architecture, test_name, start, stop, log_dir):
+@click.option('--no-log', is_flag=True)
+def main(domain, architecture, test_name, start, stop, log_dir, no_log):
     assert stop > start
+
+    create_logs = not no_log
 
     log_dir = Path(log_dir) / f'{test_name}/{domain}-{architecture}/{start}-{stop}'
 
@@ -65,7 +68,8 @@ def main(domain, architecture, test_name, start, stop, log_dir):
         print('Skipping Compare')
     else:
         compare_log_file = log_dir / 'compare.log'
-        prepare_path(compare_log_file)
+        if create_logs:
+            prepare_path(compare_log_file)
 
         compare_command = f'python cli.py compare {domain} {architecture} {dataset} {attacks} {p} '
         compare_command += f'--state-dict-path {state_dict_path} {masked_relu_argument} '
@@ -76,7 +80,10 @@ def main(domain, architecture, test_name, start, stop, log_dir):
 
         print(f'Compare | Running command\n{compare_command}')
 
-        run_and_log(compare_command, compare_log_file)
+        if create_logs:
+            run_and_log(compare_command, compare_log_file)
+        else:
+            os.system(compare_command)
 
     mip_results_path = f'mip_results/{test_name}/{domain}-{architecture}/{start}-{stop}.zip'
 
@@ -89,8 +96,11 @@ def main(domain, architecture, test_name, start, stop, log_dir):
         mip_log_file = log_dir / 'mip.log'
         memory_log_file = log_dir / 'mip_memory.dat'
 
-        for path in [gurobi_log_dir, mip_log_file, memory_log_file]:
-            prepare_path(path)
+        if create_logs:
+            for path in [gurobi_log_dir, mip_log_file]:
+                prepare_path(path)
+        # The memory log file is generated in all cases
+        prepare_path(memory_log_file)
 
         mip_command = f'python cli.py mip {domain} {architecture} {dataset} {p} '
         mip_command += f'--state-dict-path {state_dict_path} {masked_relu_argument} '
@@ -100,11 +110,16 @@ def main(domain, architecture, test_name, start, stop, log_dir):
         mip_command += f'--start {start} --stop {stop} --save-to {mip_results_path} '
         mip_command += f'--deterministic --seed {seed} '
 
-        mip_command += f'--gurobi-log-dir {gurobi_log_dir} '
+        if create_logs:
+            mip_command += f'--gurobi-log-dir {gurobi_log_dir} '
         mip_command = f'mprof run --multiprocess --python --output {memory_log_file} ' + mip_command
 
         print(f'MIP | Running command\n{mip_command}')
-        run_and_log(mip_command, mip_log_file)
+
+        if create_logs:
+            run_and_log(mip_command, mip_log_file)
+        else:
+            os.system(mip_command)
 
 if __name__ == '__main__':
     main()
