@@ -27,14 +27,14 @@ def add_dataset(final_dataset : MergedComparisonDataset, dataset: AttackComparis
     final_dataset.generation_kwargs[index] = dataset.generation_kwargs
     final_dataset.logs[index] = log
 
-def read_datasets():
+def read_datasets(dataset_dir, output_dir, log_dir):
     for domain in ['mnist', 'cifar10']:
         for architecture in ['a', 'b', 'c']:
             for test_type in ['standard', 'adversarial', 'relu']:
-                final_dataset_path = Path('final-comparison') / f'{domain}-{architecture}-{test_type}.zip'
+                final_dataset_path = Path(output_dir) / f'{domain}-{architecture}-{test_type}.zip'
 
                 if not final_dataset_path.exists():
-                    results_dir = Path('comparison_results') / test_type / f'{domain}-{architecture}'
+                    results_dir = Path(dataset_dir) / test_type / f'{domain}-{architecture}'
                     print('Checking', results_dir)
 
                     final_dataset = MergedComparisonDataset()
@@ -45,7 +45,7 @@ def read_datasets():
 
                         stem = dataset_path.stem
 
-                        log_path = Path('logs') / test_type / f'{domain}-{architecture}' / stem / 'compare.log'
+                        log_path = Path(log_dir) / test_type / f'{domain}-{architecture}' / stem / 'compare.log'
                         if log_path.exists():
                             with open(log_path, 'r') as f:
                                 log = f.readlines()
@@ -59,8 +59,11 @@ def read_datasets():
                     utils.save_zip(final_dataset, final_dataset_path)
 
 @click.command()
-def main():
-    read_datasets()
+@click.argument('dataset_dir', type=click.Path(exists=True, file_okay=False, dir_okay=True))
+@click.argument('output_dir', type=click.Path(file_okay=False, dir_okay=True))
+@click.argument('log_dir', type=click.Path(exists=True, file_okay=False, dir_okay=True))
+def main(dataset_dir, output_dir):
+    read_datasets(dataset_dir, output_dir)
 
 if __name__ == '__main__':
     main()
