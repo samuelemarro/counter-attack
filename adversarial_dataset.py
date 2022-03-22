@@ -232,6 +232,24 @@ class MergedComparisonDataset:
         self.misclassification_policy = None
         self.p = None
 
+    def print_stats(self):
+        keys = list(self.genuines.keys())
+        comparison_dataset = AttackComparisonDataset(
+            [self.genuines[key] for key in keys],
+            [self.labels[key] for key in keys],
+            [self.true_labels[key] for key in keys],
+            self.attack_names,
+            [self.attack_results[key] for key in keys],
+            self.p,
+            self.misclassification_policy,
+            self.attack_configuration,
+            None,
+            None,
+            self.generation_kwargs
+        )
+
+        comparison_dataset.print_stats()
+
 
 class AdversarialDistanceDataset(data.Dataset):
     def __init__(self, images, distances):
