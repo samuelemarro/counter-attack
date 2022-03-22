@@ -494,7 +494,23 @@ class AttackComparisonDataset(data.Dataset):
     def print_stats(self,
                     median_average_atol=MEDIAN_AVERAGE_ATOL,
                     attack_ranking_atol=DISTANCE_ATOL,
-                    pairwise_comparison_atol=DISTANCE_ATOL):
+                    pairwise_comparison_atol=DISTANCE_ATOL,
+                    win_rate_atol=DISTANCE_ATOL):
+        def print_win_rate_stats(attack_names):
+            if len(attack_names) == len(self.attack_names):
+                # No opponents, skip
+                return
+            player_wins, opponent_wins, ex_aequo = self.win_rate(attack_names, atol=win_rate_atol)
+            print(f'Win {player_wins * 100:.2f}%, lose {opponent_wins * 100:.2f}% ({ex_aequo * 100:.2f}% ex aequo)')
+
+        # Loose win rate := rate of times when the player is at least as good as the opponent
+        def loose_win_rate(attack_names):
+            if len(attack_names) == len(self.attack_names):
+                # No opponents, skip
+                return 1.0
+            player_wins, _, ex_aequo = self.win_rate(attack_names, atol=win_rate_atol)
+            return player_wins + ex_aequo
+
         print('===Standard Result===')
         complete_pool = self.simulate_pooling(self.attack_names)
         complete_pool.print_stats()
@@ -511,6 +527,7 @@ class AttackComparisonDataset(data.Dataset):
             print(f'Without {attack_name}:')
 
             other_adversarial_dataset.print_stats()
+            print_win_rate_stats(other_attack_names)
             print()
 
         attack_powerset = utils.powerset(self.attack_names, False)
@@ -521,6 +538,7 @@ class AttackComparisonDataset(data.Dataset):
 
             pool_adversarial_dataset = self.simulate_pooling(attack_set)
             pool_adversarial_dataset.print_stats()
+            print_win_rate_stats(attack_set)
             print()
 
         print()
@@ -542,6 +560,8 @@ class AttackComparisonDataset(data.Dataset):
                 [np.median(x.successful_distances) for x in n_size_pools])
             average_distances = np.array(
                 [np.average(x.successful_distances) for x in n_size_pools])
+            loose_win_rates = np.array(
+                [loose_win_rate(attack_set) for attack_set in n_size_sets])
 
             best_success_rate = np.max(attack_success_rates)
             best_indices_by_success_rate = [i for i in range(len(n_size_pools)) if attack_success_rates[i] == best_success_rate]
@@ -550,6 +570,7 @@ class AttackComparisonDataset(data.Dataset):
             for index in best_indices_by_success_rate:
                 print(f'{n_size_sets[index]}:')
                 n_size_pools[index].print_stats()
+                print_win_rate_stats(n_size_sets[index])
                 print('===')
             print()
 
@@ -561,6 +582,7 @@ class AttackComparisonDataset(data.Dataset):
             for index in best_indices_by_median_distance:
                 print(f'{n_size_sets[index]}:')
                 n_size_pools[index].print_stats()
+                print_win_rate_stats(n_size_sets[index])
                 print('===')
             print()
 
@@ -572,8 +594,19 @@ class AttackComparisonDataset(data.Dataset):
             for index in best_indices_by_average_distance:
                 print(f'{n_size_sets[index]}:')
                 n_size_pools[index].print_stats()
+                print_win_rate_stats(n_size_sets[index])
                 print('===')
             print()
+
+            best_loose_win_rate = np.max(loose_win_rates)
+            best_indices_by_loose_win_rate = [i for i in range(len(n_size_pools)) if loose_win_rates[i] == best_loose_win_rate]
+
+            print(f'Best pools of size {n} by loose win rate:')
+            for index in best_indices_by_loose_win_rate:
+                print(f'{n_size_sets[index]}:')
+                n_size_pools[index].print_stats()
+                print_win_rate_stats(n_size_sets[index])
+                print('===')
 
         print('===Attack Ranking Stats===')
 
