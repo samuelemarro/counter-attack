@@ -448,6 +448,49 @@ class AttackComparisonDataset(data.Dataset):
 
         return victory_matrix
 
+    # Also known as "musketeer test" or "Scott Pilgrim test"
+    def win_rate(self, attack_names, atol=DISTANCE_ATOL):
+        assert np.isposinf(self.p)
+
+        other_attacks = [x for x in self.attack_names if x not in attack_names]
+
+        player_pool = self.simulate_pooling(attack_names)
+        opponent_pool = self.simulate_pooling(other_attacks)
+
+        player_wins = 0
+        opponent_wins = 0
+        ex_aequo = 0
+        total = 0
+
+        for genuine, player_adversarial, opponent_adversarial in zip(player_pool.genuines, player_pool.adversarials, opponent_pool.adversarials):
+            if player_adversarial is None and opponent_adversarial is None:
+                # Both failed, ex aequo
+                ex_aequo += 1
+            elif player_adversarial is None:
+                # Player failed, opponent won
+                opponent_wins += 1
+            elif opponent_adversarial is None:
+                # Player won, opponent failed
+                player_wins += 1
+            else:
+                # Both succeeded
+                player_distance = torch.max(torch.abs(genuine - player_adversarial))
+                opponent_distance = torch.max(torch.abs(genuine - opponent_adversarial))
+
+                if torch.abs(player_distance - opponent_distance) < atol:
+                    # Too similar, ex aequo
+                    ex_aequo += 1
+                elif player_distance < opponent_distance:
+                    # Player won
+                    player_wins += 1
+                else:
+                    # Opponent won
+                    opponent_wins += 1
+
+            total += 1
+        
+        return (player_wins / total, opponent_wins / total, ex_aequo / total)
+
     def print_stats(self,
                     median_average_atol=MEDIAN_AVERAGE_ATOL,
                     attack_ranking_atol=DISTANCE_ATOL,
