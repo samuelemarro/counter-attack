@@ -231,7 +231,7 @@ class MergedComparisonDataset:
         self.attack_names = None
         self.misclassification_policy = None
         self.p = None
-
+    
     def print_stats(self):
         keys = list(self.genuines.keys())
         comparison_dataset = AttackComparisonDataset(
@@ -367,14 +367,14 @@ class AttackComparisonDataset(data.Dataset):
 
                 assert len(attack_result) == len(distances)
 
-                attack_distance = distances[self.attack_names.index(attack_name)]
+                attack_distance = distances[list(attack_result.keys()).index(attack_name)]
 
                 better_distance_count = np.count_nonzero([distance < attack_distance - atol for distance in distances])
                 same_distance_count = np.count_nonzero([np.abs(distance - attack_distance) <= atol for distance in distances])
                 worse_distance_count = np.count_nonzero([distance > attack_distance + atol for distance in distances])
 
                 assert same_distance_count >= 1
-                assert better_distance_count + same_distance_count + worse_distance_count == len(self.attack_names)
+                assert better_distance_count + same_distance_count + worse_distance_count == len(attack_result)
 
                 ex_aequo = same_distance_count > 1
 
