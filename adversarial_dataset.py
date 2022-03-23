@@ -232,7 +232,12 @@ class MergedComparisonDataset:
         self.misclassification_policy = None
         self.p = None
     
-    def print_stats(self):
+    def print_stats(self,
+        median_average_atol=MEDIAN_AVERAGE_ATOL,
+        attack_ranking_atol=DISTANCE_ATOL,
+        pairwise_comparison_atol=DISTANCE_ATOL,
+        win_rate_atol=DISTANCE_ATOL
+    ):
         keys = list(self.genuines.keys())
         comparison_dataset = AttackComparisonDataset(
             [self.genuines[key] for key in keys],
@@ -248,7 +253,12 @@ class MergedComparisonDataset:
             self.generation_kwargs
         )
 
-        comparison_dataset.print_stats()
+        comparison_dataset.print_stats(
+            median_average_atol=median_average_atol,
+            attack_ranking_atol=attack_ranking_atol,
+            pairwise_comparison_atol=pairwise_comparison_atol,
+            win_rate_atol=win_rate_atol
+        )
 
 
 class AdversarialDistanceDataset(data.Dataset):
