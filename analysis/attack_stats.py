@@ -4,6 +4,7 @@ sys.path.append('.')
 
 import click
 
+import adversarial_dataset
 import utils
 
 
@@ -11,7 +12,11 @@ import utils
 @click.argument('domain')
 @click.argument('architecture')
 @click.argument('test')
-def main(domain, architecture, test):
+@click.option('--median-average-atol', type=float, default=adversarial_dataset.MEDIAN_AVERAGE_ATOL)
+@click.option('--attack-ranking-atol', type=float, default=adversarial_dataset.DISTANCE_ATOL)
+@click.option('--pairwise-comparison-atol', type=float, default=adversarial_dataset.DISTANCE_ATOL)
+@click.option('--win-rate-atol', type=float, default=adversarial_dataset.DISTANCE_ATOL)
+def main(domain, architecture, test, median_average_atol, attack_ranking_atol, pairwise_comparison_atol, win_rate_atol):
     print('=' * 80)
     print(domain, architecture, test)
     print('=' * 80)
@@ -21,7 +26,12 @@ def main(domain, architecture, test):
     comparison_dataset = utils.load_zip(comparison_path)
     print('Done.')
 
-    comparison_dataset.print_stats()
+    comparison_dataset.print_stats(
+        median_average_atol=median_average_atol,
+        attack_ranking_atol=attack_ranking_atol,
+        pairwise_comparison_atol=pairwise_comparison_atol,
+        win_rate_atol=win_rate_atol
+    )
 
     print('\n' * 3)
 
