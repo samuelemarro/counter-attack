@@ -1,0 +1,2006 @@
+================================================================================
+cifar10 a standard
+================================================================================
+Loading comparison dataset...
+Done.
+===Standard Result===
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238499656319618
+
+===Attack Dropping Effects===
+Without bim:
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238862406462431
+Win 95.74%, lose 2.55% (1.71% ex aequo)
+
+Without brendel:
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.006249429192394018
+Win 65.10%, lose 34.46% (0.44% ex aequo)
+
+Without carlini:
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.006314740050584078
+Win 50.83%, lose 48.81% (0.35% ex aequo)
+
+Without deepfool:
+Success Rate: 100.00%
+Median Successful Distance: 0.0047576590441167355
+Average Successful Distance: 0.006277177948504686
+Win 91.18%, lose 8.82% (0.00% ex aequo)
+
+Without fast_gradient:
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238499656319618
+Win 99.08%, lose 0.04% (0.88% ex aequo)
+
+Without pgd:
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006243268493562937
+Win 94.91%, lose 3.42% (1.67% ex aequo)
+
+Without uniform:
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238499656319618
+Win 100.00%, lose 0.00% (0.00% ex aequo)
+
+===Pool Stats===
+Pool ('bim',):
+Success Rate: 100.00%
+Median Successful Distance: 0.005224579479545355
+Average Successful Distance: 0.006806970573961735
+Win 2.55%, lose 95.74% (1.71% ex aequo)
+
+Pool ('brendel',):
+Success Rate: 100.00%
+Median Successful Distance: 0.012003453448414803
+Average Successful Distance: 0.05875239148736
+Win 34.46%, lose 65.10% (0.44% ex aequo)
+
+Pool ('carlini',):
+Success Rate: 100.00%
+Median Successful Distance: 0.00485213240608573
+Average Successful Distance: 0.006463360507041216
+Win 48.81%, lose 50.83% (0.35% ex aequo)
+
+Pool ('deepfool',):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006419495213776827
+Win 8.82%, lose 91.18% (0.00% ex aequo)
+
+Pool ('fast_gradient',):
+Success Rate: 100.00%
+Median Successful Distance: 0.005383761133998632
+Average Successful Distance: 0.007255312986671925
+Win 0.04%, lose 99.08% (0.88% ex aequo)
+
+Pool ('pgd',):
+Success Rate: 100.00%
+Median Successful Distance: 0.005228714551776648
+Average Successful Distance: 0.006779936142265797
+Win 3.42%, lose 94.91% (1.67% ex aequo)
+
+Pool ('uniform',):
+Success Rate: 100.00%
+Median Successful Distance: 0.08192557096481323
+Average Successful Distance: 0.10508579015731812
+Win 0.00%, lose 100.00% (0.00% ex aequo)
+
+Pool ('bim', 'brendel'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0050393505953252316
+Average Successful Distance: 0.006634432356804609
+Win 37.01%, lose 61.06% (1.93% ex aequo)
+
+Pool ('bim', 'carlini'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481689115986228
+Average Successful Distance: 0.006314986851066351
+Win 51.36%, lose 46.71% (1.93% ex aequo)
+
+Pool ('bim', 'deepfool'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006369966082274914
+Win 11.37%, lose 86.92% (1.71% ex aequo)
+
+Pool ('bim', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005216354038566351
+Average Successful Distance: 0.006799132563173771
+Win 2.59%, lose 95.74% (1.67% ex aequo)
+
+Pool ('bim', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005224579479545355
+Average Successful Distance: 0.006754792295396328
+Win 6.67%, lose 92.32% (1.01% ex aequo)
+
+Pool ('bim', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005224579479545355
+Average Successful Distance: 0.006806970573961735
+Win 2.55%, lose 95.74% (1.71% ex aequo)
+
+Pool ('brendel', 'carlini'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004797013010829687
+Average Successful Distance: 0.006425516679883003
+Win 83.49%, lose 16.15% (0.35% ex aequo)
+
+Pool ('brendel', 'deepfool'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00478203734382987
+Average Successful Distance: 0.006362317129969597
+Win 43.28%, lose 56.28% (0.44% ex aequo)
+
+Pool ('brendel', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005125658120959997
+Average Successful Distance: 0.0070030963979661465
+Win 34.50%, lose 64.40% (1.10% ex aequo)
+
+Pool ('brendel', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005038933362811804
+Average Successful Distance: 0.006601696368306875
+Win 37.88%, lose 60.23% (1.89% ex aequo)
+
+Pool ('brendel', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.010694073513150215
+Average Successful Distance: 0.03836767002940178
+Win 34.46%, lose 65.10% (0.44% ex aequo)
+
+Pool ('carlini', 'deepfool'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.006259400863200426
+Win 57.64%, lose 42.01% (0.35% ex aequo)
+
+Pool ('carlini', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004828551318496466
+Average Successful Distance: 0.006398579105734825
+Win 48.81%, lose 49.96% (1.23% ex aequo)
+
+Pool ('carlini', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004814804997295141
+Average Successful Distance: 0.0062990146689116955
+Win 52.24%, lose 45.87% (1.89% ex aequo)
+
+Pool ('carlini', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00485213240608573
+Average Successful Distance: 0.006463360507041216
+Win 48.81%, lose 50.83% (0.35% ex aequo)
+
+Pool ('deepfool', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006408485118299723
+Win 8.87%, lose 90.25% (0.88% ex aequo)
+
+Pool ('deepfool', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006362773012369871
+Win 12.25%, lose 86.08% (1.67% ex aequo)
+
+Pool ('deepfool', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006419457960873842
+Win 8.82%, lose 91.18% (0.00% ex aequo)
+
+Pool ('fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005220071878284216
+Average Successful Distance: 0.00675658555701375
+Win 3.42%, lose 94.86% (1.71% ex aequo)
+
+Pool ('fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005383761133998632
+Average Successful Distance: 0.007255312986671925
+Win 0.04%, lose 99.08% (0.88% ex aequo)
+
+Pool ('pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005228714551776648
+Average Successful Distance: 0.006779936142265797
+Win 3.42%, lose 94.91% (1.67% ex aequo)
+
+Pool ('bim', 'brendel', 'carlini'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047576590441167355
+Average Successful Distance: 0.006293377839028835
+Win 86.04%, lose 12.25% (1.71% ex aequo)
+
+Pool ('bim', 'brendel', 'deepfool'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.006323373876512051
+Win 45.83%, lose 52.24% (1.93% ex aequo)
+
+Pool ('bim', 'brendel', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005038024391978979
+Average Successful Distance: 0.006629858631640673
+Win 37.05%, lose 61.06% (1.89% ex aequo)
+
+Pool ('bim', 'brendel', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005038493778556585
+Average Successful Distance: 0.006585783325135708
+Win 41.13%, lose 57.64% (1.23% ex aequo)
+
+Pool ('bim', 'brendel', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0050393505953252316
+Average Successful Distance: 0.006634432356804609
+Win 37.01%, lose 61.06% (1.93% ex aequo)
+
+Pool ('bim', 'carlini', 'deepfool'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.00625420268625021
+Win 60.18%, lose 37.88% (1.93% ex aequo)
+
+Pool ('bim', 'carlini', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481689115986228
+Average Successful Distance: 0.00631497660651803
+Win 51.40%, lose 46.71% (1.89% ex aequo)
+
+Pool ('bim', 'carlini', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004814804997295141
+Average Successful Distance: 0.006298080086708069
+Win 55.58%, lose 43.33% (1.10% ex aequo)
+
+Pool ('bim', 'carlini', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481689115986228
+Average Successful Distance: 0.006314986851066351
+Win 51.36%, lose 46.71% (1.93% ex aequo)
+
+Pool ('bim', 'deepfool', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006369959097355604
+Win 11.41%, lose 86.92% (1.67% ex aequo)
+
+Pool ('bim', 'deepfool', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006360845174640417
+Win 15.50%, lose 83.49% (1.01% ex aequo)
+
+Pool ('bim', 'deepfool', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006369966082274914
+Win 11.37%, lose 86.92% (1.71% ex aequo)
+
+Pool ('bim', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005216354038566351
+Average Successful Distance: 0.006747058127075434
+Win 7.33%, lose 92.32% (0.35% ex aequo)
+
+Pool ('bim', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005216354038566351
+Average Successful Distance: 0.006799132563173771
+Win 2.59%, lose 95.74% (1.67% ex aequo)
+
+Pool ('bim', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005224579479545355
+Average Successful Distance: 0.006754792295396328
+Win 6.67%, lose 92.32% (1.01% ex aequo)
+
+Pool ('brendel', 'carlini', 'deepfool'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004724630620330572
+Average Successful Distance: 0.0062482161447405815
+Win 92.32%, lose 7.33% (0.35% ex aequo)
+
+Pool ('brendel', 'carlini', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004760132636874914
+Average Successful Distance: 0.006369900424033403
+Win 83.49%, lose 15.50% (1.01% ex aequo)
+
+Pool ('brendel', 'carlini', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047576590441167355
+Average Successful Distance: 0.006277881097048521
+Win 86.92%, lose 11.41% (1.67% ex aequo)
+
+Pool ('brendel', 'carlini', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004797013010829687
+Average Successful Distance: 0.006425516679883003
+Win 83.49%, lose 16.15% (0.35% ex aequo)
+
+Pool ('brendel', 'deepfool', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.0063576544634997845
+Win 43.33%, lose 55.58% (1.10% ex aequo)
+
+Pool ('brendel', 'deepfool', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.006316444370895624
+Win 46.71%, lose 51.40% (1.89% ex aequo)
+
+Pool ('brendel', 'deepfool', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00478203734382987
+Average Successful Distance: 0.0063623059540987015
+Win 43.28%, lose 56.28% (0.44% ex aequo)
+
+Pool ('brendel', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005037629511207342
+Average Successful Distance: 0.0065878210589289665
+Win 37.88%, lose 60.18% (1.93% ex aequo)
+
+Pool ('brendel', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005125658120959997
+Average Successful Distance: 0.0070030963979661465
+Win 34.50%, lose 64.40% (1.10% ex aequo)
+
+Pool ('brendel', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005038933362811804
+Average Successful Distance: 0.006601696368306875
+Win 37.88%, lose 60.23% (1.89% ex aequo)
+
+Pool ('carlini', 'deepfool', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.006259080953896046
+Win 57.64%, lose 41.13% (1.23% ex aequo)
+
+Pool ('carlini', 'deepfool', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.0062498291954398155
+Win 61.06%, lose 37.05% (1.89% ex aequo)
+
+Pool ('carlini', 'deepfool', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.006259400863200426
+Win 57.64%, lose 42.01% (0.35% ex aequo)
+
+Pool ('carlini', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004814804997295141
+Average Successful Distance: 0.0062989904545247555
+Win 52.24%, lose 45.83% (1.93% ex aequo)
+
+Pool ('carlini', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004828551318496466
+Average Successful Distance: 0.006398579105734825
+Win 48.81%, lose 49.96% (1.23% ex aequo)
+
+Pool ('carlini', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004814804997295141
+Average Successful Distance: 0.0062990146689116955
+Win 52.24%, lose 45.87% (1.89% ex aequo)
+
+Pool ('deepfool', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.0063627539202570915
+Win 12.25%, lose 86.04% (1.71% ex aequo)
+
+Pool ('deepfool', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006408485118299723
+Win 8.87%, lose 90.25% (0.88% ex aequo)
+
+Pool ('deepfool', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006362773012369871
+Win 12.25%, lose 86.08% (1.67% ex aequo)
+
+Pool ('fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005220071878284216
+Average Successful Distance: 0.00675658555701375
+Win 3.42%, lose 94.86% (1.71% ex aequo)
+
+Pool ('bim', 'brendel', 'carlini', 'deepfool'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006243268493562937
+Win 94.86%, lose 3.42% (1.71% ex aequo)
+
+Pool ('bim', 'brendel', 'carlini', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047576590441167355
+Average Successful Distance: 0.006293377839028835
+Win 86.08%, lose 12.25% (1.67% ex aequo)
+
+Pool ('bim', 'brendel', 'carlini', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047576590441167355
+Average Successful Distance: 0.006277177948504686
+Win 90.25%, lose 8.87% (0.88% ex aequo)
+
+Pool ('bim', 'brendel', 'carlini', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047576590441167355
+Average Successful Distance: 0.006293377839028835
+Win 86.04%, lose 12.25% (1.71% ex aequo)
+
+Pool ('bim', 'brendel', 'deepfool', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.006323372945189476
+Win 45.87%, lose 52.24% (1.89% ex aequo)
+
+Pool ('bim', 'brendel', 'deepfool', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.006314740516245365
+Win 49.96%, lose 48.81% (1.23% ex aequo)
+
+Pool ('bim', 'brendel', 'deepfool', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.006323373876512051
+Win 45.83%, lose 52.24% (1.93% ex aequo)
+
+Pool ('bim', 'brendel', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005037584807723761
+Average Successful Distance: 0.006581279449164867
+Win 42.01%, lose 57.64% (0.35% ex aequo)
+
+Pool ('bim', 'brendel', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005038024391978979
+Average Successful Distance: 0.006629858631640673
+Win 37.05%, lose 61.06% (1.89% ex aequo)
+
+Pool ('bim', 'brendel', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005038493778556585
+Average Successful Distance: 0.006585783325135708
+Win 41.13%, lose 57.64% (1.23% ex aequo)
+
+Pool ('bim', 'carlini', 'deepfool', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.0062542022205889225
+Win 60.23%, lose 37.88% (1.89% ex aequo)
+
+Pool ('bim', 'carlini', 'deepfool', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.0062494296580553055
+Win 64.40%, lose 34.50% (1.10% ex aequo)
+
+Pool ('bim', 'carlini', 'deepfool', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.00625420268625021
+Win 60.18%, lose 37.88% (1.93% ex aequo)
+
+Pool ('bim', 'carlini', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004814804997295141
+Average Successful Distance: 0.006298070307821035
+Win 56.28%, lose 43.28% (0.44% ex aequo)
+
+Pool ('bim', 'carlini', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481689115986228
+Average Successful Distance: 0.00631497660651803
+Win 51.40%, lose 46.71% (1.89% ex aequo)
+
+Pool ('bim', 'carlini', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004814804997295141
+Average Successful Distance: 0.006298080086708069
+Win 55.58%, lose 43.33% (1.10% ex aequo)
+
+Pool ('bim', 'deepfool', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006360839586704969
+Win 16.15%, lose 83.49% (0.35% ex aequo)
+
+Pool ('bim', 'deepfool', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006369959097355604
+Win 11.41%, lose 86.92% (1.67% ex aequo)
+
+Pool ('bim', 'deepfool', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006360845174640417
+Win 15.50%, lose 83.49% (1.01% ex aequo)
+
+Pool ('bim', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005216354038566351
+Average Successful Distance: 0.006747058127075434
+Win 7.33%, lose 92.32% (0.35% ex aequo)
+
+Pool ('brendel', 'carlini', 'deepfool', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004724630620330572
+Average Successful Distance: 0.00624800194054842
+Win 92.32%, lose 6.67% (1.01% ex aequo)
+
+Pool ('brendel', 'carlini', 'deepfool', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238862872123718
+Win 95.74%, lose 2.59% (1.67% ex aequo)
+
+Pool ('brendel', 'carlini', 'deepfool', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004724630620330572
+Average Successful Distance: 0.0062482161447405815
+Win 92.32%, lose 7.33% (0.35% ex aequo)
+
+Pool ('brendel', 'carlini', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047576590441167355
+Average Successful Distance: 0.006277880631387234
+Win 86.92%, lose 11.37% (1.71% ex aequo)
+
+Pool ('brendel', 'carlini', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004760132636874914
+Average Successful Distance: 0.006369900424033403
+Win 83.49%, lose 15.50% (1.01% ex aequo)
+
+Pool ('brendel', 'carlini', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047576590441167355
+Average Successful Distance: 0.006277881097048521
+Win 86.92%, lose 11.41% (1.67% ex aequo)
+
+Pool ('brendel', 'deepfool', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.0063164434395730495
+Win 46.71%, lose 51.36% (1.93% ex aequo)
+
+Pool ('brendel', 'deepfool', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.0063576544634997845
+Win 43.33%, lose 55.58% (1.10% ex aequo)
+
+Pool ('brendel', 'deepfool', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.006316444370895624
+Win 46.71%, lose 51.40% (1.89% ex aequo)
+
+Pool ('brendel', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005037629511207342
+Average Successful Distance: 0.0065878210589289665
+Win 37.88%, lose 60.18% (1.93% ex aequo)
+
+Pool ('carlini', 'deepfool', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.006249828729778528
+Win 61.06%, lose 37.01% (1.93% ex aequo)
+
+Pool ('carlini', 'deepfool', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.006259080953896046
+Win 57.64%, lose 41.13% (1.23% ex aequo)
+
+Pool ('carlini', 'deepfool', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.0062498291954398155
+Win 61.06%, lose 37.05% (1.89% ex aequo)
+
+Pool ('carlini', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004814804997295141
+Average Successful Distance: 0.0062989904545247555
+Win 52.24%, lose 45.83% (1.93% ex aequo)
+
+Pool ('deepfool', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.0063627539202570915
+Win 12.25%, lose 86.04% (1.71% ex aequo)
+
+Pool ('bim', 'brendel', 'carlini', 'deepfool', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006243268493562937
+Win 94.91%, lose 3.42% (1.67% ex aequo)
+
+Pool ('bim', 'brendel', 'carlini', 'deepfool', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238499656319618
+Win 99.08%, lose 0.04% (0.88% ex aequo)
+
+Pool ('bim', 'brendel', 'carlini', 'deepfool', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006243268493562937
+Win 94.86%, lose 3.42% (1.71% ex aequo)
+
+Pool ('bim', 'brendel', 'carlini', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047576590441167355
+Average Successful Distance: 0.006277177948504686
+Win 91.18%, lose 8.82% (0.00% ex aequo)
+
+Pool ('bim', 'brendel', 'carlini', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047576590441167355
+Average Successful Distance: 0.006293377839028835
+Win 86.08%, lose 12.25% (1.67% ex aequo)
+
+Pool ('bim', 'brendel', 'carlini', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047576590441167355
+Average Successful Distance: 0.006277177948504686
+Win 90.25%, lose 8.87% (0.88% ex aequo)
+
+Pool ('bim', 'brendel', 'deepfool', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.006314740050584078
+Win 50.83%, lose 48.81% (0.35% ex aequo)
+
+Pool ('bim', 'brendel', 'deepfool', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.006323372945189476
+Win 45.87%, lose 52.24% (1.89% ex aequo)
+
+Pool ('bim', 'brendel', 'deepfool', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.006314740516245365
+Win 49.96%, lose 48.81% (1.23% ex aequo)
+
+Pool ('bim', 'brendel', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005037584807723761
+Average Successful Distance: 0.006581279449164867
+Win 42.01%, lose 57.64% (0.35% ex aequo)
+
+Pool ('bim', 'carlini', 'deepfool', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.006249429192394018
+Win 65.10%, lose 34.46% (0.44% ex aequo)
+
+Pool ('bim', 'carlini', 'deepfool', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.0062542022205889225
+Win 60.23%, lose 37.88% (1.89% ex aequo)
+
+Pool ('bim', 'carlini', 'deepfool', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.0062494296580553055
+Win 64.40%, lose 34.50% (1.10% ex aequo)
+
+Pool ('bim', 'carlini', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004814804997295141
+Average Successful Distance: 0.006298070307821035
+Win 56.28%, lose 43.28% (0.44% ex aequo)
+
+Pool ('bim', 'deepfool', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006360839586704969
+Win 16.15%, lose 83.49% (0.35% ex aequo)
+
+Pool ('brendel', 'carlini', 'deepfool', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238862406462431
+Win 95.74%, lose 2.55% (1.71% ex aequo)
+
+Pool ('brendel', 'carlini', 'deepfool', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004724630620330572
+Average Successful Distance: 0.00624800194054842
+Win 92.32%, lose 6.67% (1.01% ex aequo)
+
+Pool ('brendel', 'carlini', 'deepfool', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238862872123718
+Win 95.74%, lose 2.59% (1.67% ex aequo)
+
+Pool ('brendel', 'carlini', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047576590441167355
+Average Successful Distance: 0.006277880631387234
+Win 86.92%, lose 11.37% (1.71% ex aequo)
+
+Pool ('brendel', 'deepfool', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.0063164434395730495
+Win 46.71%, lose 51.36% (1.93% ex aequo)
+
+Pool ('carlini', 'deepfool', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.006249828729778528
+Win 61.06%, lose 37.01% (1.93% ex aequo)
+
+Pool ('bim', 'brendel', 'carlini', 'deepfool', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238499656319618
+Win 100.00%, lose 0.00% (0.00% ex aequo)
+
+Pool ('bim', 'brendel', 'carlini', 'deepfool', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006243268493562937
+Win 94.91%, lose 3.42% (1.67% ex aequo)
+
+Pool ('bim', 'brendel', 'carlini', 'deepfool', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238499656319618
+Win 99.08%, lose 0.04% (0.88% ex aequo)
+
+Pool ('bim', 'brendel', 'carlini', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047576590441167355
+Average Successful Distance: 0.006277177948504686
+Win 91.18%, lose 8.82% (0.00% ex aequo)
+
+Pool ('bim', 'brendel', 'deepfool', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.006314740050584078
+Win 50.83%, lose 48.81% (0.35% ex aequo)
+
+Pool ('bim', 'carlini', 'deepfool', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.006249429192394018
+Win 65.10%, lose 34.46% (0.44% ex aequo)
+
+Pool ('brendel', 'carlini', 'deepfool', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238862406462431
+Win 95.74%, lose 2.55% (1.71% ex aequo)
+
+Pool ('bim', 'brendel', 'carlini', 'deepfool', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238499656319618
+
+
+===Best Pools===
+
+==Pool of size 1==
+
+Best pools of size 1 by success rate:
+('bim',):
+Success Rate: 100.00%
+Median Successful Distance: 0.005224579479545355
+Average Successful Distance: 0.006806970573961735
+Win 2.55%, lose 95.74% (1.71% ex aequo)
+===
+('brendel',):
+Success Rate: 100.00%
+Median Successful Distance: 0.012003453448414803
+Average Successful Distance: 0.05875239148736
+Win 34.46%, lose 65.10% (0.44% ex aequo)
+===
+('carlini',):
+Success Rate: 100.00%
+Median Successful Distance: 0.00485213240608573
+Average Successful Distance: 0.006463360507041216
+Win 48.81%, lose 50.83% (0.35% ex aequo)
+===
+('deepfool',):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006419495213776827
+Win 8.82%, lose 91.18% (0.00% ex aequo)
+===
+('fast_gradient',):
+Success Rate: 100.00%
+Median Successful Distance: 0.005383761133998632
+Average Successful Distance: 0.007255312986671925
+Win 0.04%, lose 99.08% (0.88% ex aequo)
+===
+('pgd',):
+Success Rate: 100.00%
+Median Successful Distance: 0.005228714551776648
+Average Successful Distance: 0.006779936142265797
+Win 3.42%, lose 94.91% (1.67% ex aequo)
+===
+('uniform',):
+Success Rate: 100.00%
+Median Successful Distance: 0.08192557096481323
+Average Successful Distance: 0.10508579015731812
+Win 0.00%, lose 100.00% (0.00% ex aequo)
+===
+
+Best pools of size 1 by successful median distance (atol=5e-07):
+('deepfool',):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006419495213776827
+Win 8.82%, lose 91.18% (0.00% ex aequo)
+===
+
+Best pools of size 1 by successful average distance (atol=5e-07):
+('deepfool',):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006419495213776827
+Win 8.82%, lose 91.18% (0.00% ex aequo)
+===
+
+Best pools of size 1 by loose win rate:
+('carlini',):
+Success Rate: 100.00%
+Median Successful Distance: 0.00485213240608573
+Average Successful Distance: 0.006463360507041216
+Win 48.81%, lose 50.83% (0.35% ex aequo)
+===
+==Pool of size 2==
+
+Best pools of size 2 by success rate:
+('bim', 'brendel'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0050393505953252316
+Average Successful Distance: 0.006634432356804609
+Win 37.01%, lose 61.06% (1.93% ex aequo)
+===
+('bim', 'carlini'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481689115986228
+Average Successful Distance: 0.006314986851066351
+Win 51.36%, lose 46.71% (1.93% ex aequo)
+===
+('bim', 'deepfool'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006369966082274914
+Win 11.37%, lose 86.92% (1.71% ex aequo)
+===
+('bim', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005216354038566351
+Average Successful Distance: 0.006799132563173771
+Win 2.59%, lose 95.74% (1.67% ex aequo)
+===
+('bim', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005224579479545355
+Average Successful Distance: 0.006754792295396328
+Win 6.67%, lose 92.32% (1.01% ex aequo)
+===
+('bim', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005224579479545355
+Average Successful Distance: 0.006806970573961735
+Win 2.55%, lose 95.74% (1.71% ex aequo)
+===
+('brendel', 'carlini'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004797013010829687
+Average Successful Distance: 0.006425516679883003
+Win 83.49%, lose 16.15% (0.35% ex aequo)
+===
+('brendel', 'deepfool'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00478203734382987
+Average Successful Distance: 0.006362317129969597
+Win 43.28%, lose 56.28% (0.44% ex aequo)
+===
+('brendel', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005125658120959997
+Average Successful Distance: 0.0070030963979661465
+Win 34.50%, lose 64.40% (1.10% ex aequo)
+===
+('brendel', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005038933362811804
+Average Successful Distance: 0.006601696368306875
+Win 37.88%, lose 60.23% (1.89% ex aequo)
+===
+('brendel', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.010694073513150215
+Average Successful Distance: 0.03836767002940178
+Win 34.46%, lose 65.10% (0.44% ex aequo)
+===
+('carlini', 'deepfool'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.006259400863200426
+Win 57.64%, lose 42.01% (0.35% ex aequo)
+===
+('carlini', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004828551318496466
+Average Successful Distance: 0.006398579105734825
+Win 48.81%, lose 49.96% (1.23% ex aequo)
+===
+('carlini', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004814804997295141
+Average Successful Distance: 0.0062990146689116955
+Win 52.24%, lose 45.87% (1.89% ex aequo)
+===
+('carlini', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00485213240608573
+Average Successful Distance: 0.006463360507041216
+Win 48.81%, lose 50.83% (0.35% ex aequo)
+===
+('deepfool', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006408485118299723
+Win 8.87%, lose 90.25% (0.88% ex aequo)
+===
+('deepfool', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006362773012369871
+Win 12.25%, lose 86.08% (1.67% ex aequo)
+===
+('deepfool', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006419457960873842
+Win 8.82%, lose 91.18% (0.00% ex aequo)
+===
+('fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005220071878284216
+Average Successful Distance: 0.00675658555701375
+Win 3.42%, lose 94.86% (1.71% ex aequo)
+===
+('fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005383761133998632
+Average Successful Distance: 0.007255312986671925
+Win 0.04%, lose 99.08% (0.88% ex aequo)
+===
+('pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005228714551776648
+Average Successful Distance: 0.006779936142265797
+Win 3.42%, lose 94.91% (1.67% ex aequo)
+===
+
+Best pools of size 2 by successful median distance (atol=5e-07):
+('carlini', 'deepfool'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.006259400863200426
+Win 57.64%, lose 42.01% (0.35% ex aequo)
+===
+
+Best pools of size 2 by successful average distance (atol=5e-07):
+('carlini', 'deepfool'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.006259400863200426
+Win 57.64%, lose 42.01% (0.35% ex aequo)
+===
+
+Best pools of size 2 by loose win rate:
+('brendel', 'carlini'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004797013010829687
+Average Successful Distance: 0.006425516679883003
+Win 83.49%, lose 16.15% (0.35% ex aequo)
+===
+==Pool of size 3==
+
+Best pools of size 3 by success rate:
+('bim', 'brendel', 'carlini'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047576590441167355
+Average Successful Distance: 0.006293377839028835
+Win 86.04%, lose 12.25% (1.71% ex aequo)
+===
+('bim', 'brendel', 'deepfool'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.006323373876512051
+Win 45.83%, lose 52.24% (1.93% ex aequo)
+===
+('bim', 'brendel', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005038024391978979
+Average Successful Distance: 0.006629858631640673
+Win 37.05%, lose 61.06% (1.89% ex aequo)
+===
+('bim', 'brendel', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005038493778556585
+Average Successful Distance: 0.006585783325135708
+Win 41.13%, lose 57.64% (1.23% ex aequo)
+===
+('bim', 'brendel', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0050393505953252316
+Average Successful Distance: 0.006634432356804609
+Win 37.01%, lose 61.06% (1.93% ex aequo)
+===
+('bim', 'carlini', 'deepfool'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.00625420268625021
+Win 60.18%, lose 37.88% (1.93% ex aequo)
+===
+('bim', 'carlini', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481689115986228
+Average Successful Distance: 0.00631497660651803
+Win 51.40%, lose 46.71% (1.89% ex aequo)
+===
+('bim', 'carlini', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004814804997295141
+Average Successful Distance: 0.006298080086708069
+Win 55.58%, lose 43.33% (1.10% ex aequo)
+===
+('bim', 'carlini', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481689115986228
+Average Successful Distance: 0.006314986851066351
+Win 51.36%, lose 46.71% (1.93% ex aequo)
+===
+('bim', 'deepfool', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006369959097355604
+Win 11.41%, lose 86.92% (1.67% ex aequo)
+===
+('bim', 'deepfool', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006360845174640417
+Win 15.50%, lose 83.49% (1.01% ex aequo)
+===
+('bim', 'deepfool', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006369966082274914
+Win 11.37%, lose 86.92% (1.71% ex aequo)
+===
+('bim', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005216354038566351
+Average Successful Distance: 0.006747058127075434
+Win 7.33%, lose 92.32% (0.35% ex aequo)
+===
+('bim', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005216354038566351
+Average Successful Distance: 0.006799132563173771
+Win 2.59%, lose 95.74% (1.67% ex aequo)
+===
+('bim', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005224579479545355
+Average Successful Distance: 0.006754792295396328
+Win 6.67%, lose 92.32% (1.01% ex aequo)
+===
+('brendel', 'carlini', 'deepfool'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004724630620330572
+Average Successful Distance: 0.0062482161447405815
+Win 92.32%, lose 7.33% (0.35% ex aequo)
+===
+('brendel', 'carlini', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004760132636874914
+Average Successful Distance: 0.006369900424033403
+Win 83.49%, lose 15.50% (1.01% ex aequo)
+===
+('brendel', 'carlini', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047576590441167355
+Average Successful Distance: 0.006277881097048521
+Win 86.92%, lose 11.41% (1.67% ex aequo)
+===
+('brendel', 'carlini', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004797013010829687
+Average Successful Distance: 0.006425516679883003
+Win 83.49%, lose 16.15% (0.35% ex aequo)
+===
+('brendel', 'deepfool', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.0063576544634997845
+Win 43.33%, lose 55.58% (1.10% ex aequo)
+===
+('brendel', 'deepfool', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.006316444370895624
+Win 46.71%, lose 51.40% (1.89% ex aequo)
+===
+('brendel', 'deepfool', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00478203734382987
+Average Successful Distance: 0.0063623059540987015
+Win 43.28%, lose 56.28% (0.44% ex aequo)
+===
+('brendel', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005037629511207342
+Average Successful Distance: 0.0065878210589289665
+Win 37.88%, lose 60.18% (1.93% ex aequo)
+===
+('brendel', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005125658120959997
+Average Successful Distance: 0.0070030963979661465
+Win 34.50%, lose 64.40% (1.10% ex aequo)
+===
+('brendel', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005038933362811804
+Average Successful Distance: 0.006601696368306875
+Win 37.88%, lose 60.23% (1.89% ex aequo)
+===
+('carlini', 'deepfool', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.006259080953896046
+Win 57.64%, lose 41.13% (1.23% ex aequo)
+===
+('carlini', 'deepfool', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.0062498291954398155
+Win 61.06%, lose 37.05% (1.89% ex aequo)
+===
+('carlini', 'deepfool', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.006259400863200426
+Win 57.64%, lose 42.01% (0.35% ex aequo)
+===
+('carlini', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004814804997295141
+Average Successful Distance: 0.0062989904545247555
+Win 52.24%, lose 45.83% (1.93% ex aequo)
+===
+('carlini', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004828551318496466
+Average Successful Distance: 0.006398579105734825
+Win 48.81%, lose 49.96% (1.23% ex aequo)
+===
+('carlini', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004814804997295141
+Average Successful Distance: 0.0062990146689116955
+Win 52.24%, lose 45.87% (1.89% ex aequo)
+===
+('deepfool', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.0063627539202570915
+Win 12.25%, lose 86.04% (1.71% ex aequo)
+===
+('deepfool', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006408485118299723
+Win 8.87%, lose 90.25% (0.88% ex aequo)
+===
+('deepfool', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006362773012369871
+Win 12.25%, lose 86.08% (1.67% ex aequo)
+===
+('fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005220071878284216
+Average Successful Distance: 0.00675658555701375
+Win 3.42%, lose 94.86% (1.71% ex aequo)
+===
+
+Best pools of size 3 by successful median distance (atol=5e-07):
+('brendel', 'carlini', 'deepfool'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004724630620330572
+Average Successful Distance: 0.0062482161447405815
+Win 92.32%, lose 7.33% (0.35% ex aequo)
+===
+
+Best pools of size 3 by successful average distance (atol=5e-07):
+('brendel', 'carlini', 'deepfool'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004724630620330572
+Average Successful Distance: 0.0062482161447405815
+Win 92.32%, lose 7.33% (0.35% ex aequo)
+===
+
+Best pools of size 3 by loose win rate:
+('brendel', 'carlini', 'deepfool'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004724630620330572
+Average Successful Distance: 0.0062482161447405815
+Win 92.32%, lose 7.33% (0.35% ex aequo)
+===
+==Pool of size 4==
+
+Best pools of size 4 by success rate:
+('bim', 'brendel', 'carlini', 'deepfool'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006243268493562937
+Win 94.86%, lose 3.42% (1.71% ex aequo)
+===
+('bim', 'brendel', 'carlini', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047576590441167355
+Average Successful Distance: 0.006293377839028835
+Win 86.08%, lose 12.25% (1.67% ex aequo)
+===
+('bim', 'brendel', 'carlini', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047576590441167355
+Average Successful Distance: 0.006277177948504686
+Win 90.25%, lose 8.87% (0.88% ex aequo)
+===
+('bim', 'brendel', 'carlini', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047576590441167355
+Average Successful Distance: 0.006293377839028835
+Win 86.04%, lose 12.25% (1.71% ex aequo)
+===
+('bim', 'brendel', 'deepfool', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.006323372945189476
+Win 45.87%, lose 52.24% (1.89% ex aequo)
+===
+('bim', 'brendel', 'deepfool', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.006314740516245365
+Win 49.96%, lose 48.81% (1.23% ex aequo)
+===
+('bim', 'brendel', 'deepfool', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.006323373876512051
+Win 45.83%, lose 52.24% (1.93% ex aequo)
+===
+('bim', 'brendel', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005037584807723761
+Average Successful Distance: 0.006581279449164867
+Win 42.01%, lose 57.64% (0.35% ex aequo)
+===
+('bim', 'brendel', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005038024391978979
+Average Successful Distance: 0.006629858631640673
+Win 37.05%, lose 61.06% (1.89% ex aequo)
+===
+('bim', 'brendel', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005038493778556585
+Average Successful Distance: 0.006585783325135708
+Win 41.13%, lose 57.64% (1.23% ex aequo)
+===
+('bim', 'carlini', 'deepfool', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.0062542022205889225
+Win 60.23%, lose 37.88% (1.89% ex aequo)
+===
+('bim', 'carlini', 'deepfool', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.0062494296580553055
+Win 64.40%, lose 34.50% (1.10% ex aequo)
+===
+('bim', 'carlini', 'deepfool', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.00625420268625021
+Win 60.18%, lose 37.88% (1.93% ex aequo)
+===
+('bim', 'carlini', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004814804997295141
+Average Successful Distance: 0.006298070307821035
+Win 56.28%, lose 43.28% (0.44% ex aequo)
+===
+('bim', 'carlini', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481689115986228
+Average Successful Distance: 0.00631497660651803
+Win 51.40%, lose 46.71% (1.89% ex aequo)
+===
+('bim', 'carlini', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004814804997295141
+Average Successful Distance: 0.006298080086708069
+Win 55.58%, lose 43.33% (1.10% ex aequo)
+===
+('bim', 'deepfool', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006360839586704969
+Win 16.15%, lose 83.49% (0.35% ex aequo)
+===
+('bim', 'deepfool', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006369959097355604
+Win 11.41%, lose 86.92% (1.67% ex aequo)
+===
+('bim', 'deepfool', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006360845174640417
+Win 15.50%, lose 83.49% (1.01% ex aequo)
+===
+('bim', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005216354038566351
+Average Successful Distance: 0.006747058127075434
+Win 7.33%, lose 92.32% (0.35% ex aequo)
+===
+('brendel', 'carlini', 'deepfool', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004724630620330572
+Average Successful Distance: 0.00624800194054842
+Win 92.32%, lose 6.67% (1.01% ex aequo)
+===
+('brendel', 'carlini', 'deepfool', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238862872123718
+Win 95.74%, lose 2.59% (1.67% ex aequo)
+===
+('brendel', 'carlini', 'deepfool', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004724630620330572
+Average Successful Distance: 0.0062482161447405815
+Win 92.32%, lose 7.33% (0.35% ex aequo)
+===
+('brendel', 'carlini', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047576590441167355
+Average Successful Distance: 0.006277880631387234
+Win 86.92%, lose 11.37% (1.71% ex aequo)
+===
+('brendel', 'carlini', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004760132636874914
+Average Successful Distance: 0.006369900424033403
+Win 83.49%, lose 15.50% (1.01% ex aequo)
+===
+('brendel', 'carlini', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047576590441167355
+Average Successful Distance: 0.006277881097048521
+Win 86.92%, lose 11.41% (1.67% ex aequo)
+===
+('brendel', 'deepfool', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.0063164434395730495
+Win 46.71%, lose 51.36% (1.93% ex aequo)
+===
+('brendel', 'deepfool', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.0063576544634997845
+Win 43.33%, lose 55.58% (1.10% ex aequo)
+===
+('brendel', 'deepfool', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.006316444370895624
+Win 46.71%, lose 51.40% (1.89% ex aequo)
+===
+('brendel', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005037629511207342
+Average Successful Distance: 0.0065878210589289665
+Win 37.88%, lose 60.18% (1.93% ex aequo)
+===
+('carlini', 'deepfool', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.006249828729778528
+Win 61.06%, lose 37.01% (1.93% ex aequo)
+===
+('carlini', 'deepfool', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.006259080953896046
+Win 57.64%, lose 41.13% (1.23% ex aequo)
+===
+('carlini', 'deepfool', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.0062498291954398155
+Win 61.06%, lose 37.05% (1.89% ex aequo)
+===
+('carlini', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004814804997295141
+Average Successful Distance: 0.0062989904545247555
+Win 52.24%, lose 45.83% (1.93% ex aequo)
+===
+('deepfool', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.0063627539202570915
+Win 12.25%, lose 86.04% (1.71% ex aequo)
+===
+
+Best pools of size 4 by successful median distance (atol=5e-07):
+('bim', 'brendel', 'carlini', 'deepfool'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006243268493562937
+Win 94.86%, lose 3.42% (1.71% ex aequo)
+===
+('brendel', 'carlini', 'deepfool', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238862872123718
+Win 95.74%, lose 2.59% (1.67% ex aequo)
+===
+
+Best pools of size 4 by successful average distance (atol=5e-07):
+('brendel', 'carlini', 'deepfool', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238862872123718
+Win 95.74%, lose 2.59% (1.67% ex aequo)
+===
+
+Best pools of size 4 by loose win rate:
+('brendel', 'carlini', 'deepfool', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238862872123718
+Win 95.74%, lose 2.59% (1.67% ex aequo)
+===
+==Pool of size 5==
+
+Best pools of size 5 by success rate:
+('bim', 'brendel', 'carlini', 'deepfool', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006243268493562937
+Win 94.91%, lose 3.42% (1.67% ex aequo)
+===
+('bim', 'brendel', 'carlini', 'deepfool', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238499656319618
+Win 99.08%, lose 0.04% (0.88% ex aequo)
+===
+('bim', 'brendel', 'carlini', 'deepfool', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006243268493562937
+Win 94.86%, lose 3.42% (1.71% ex aequo)
+===
+('bim', 'brendel', 'carlini', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047576590441167355
+Average Successful Distance: 0.006277177948504686
+Win 91.18%, lose 8.82% (0.00% ex aequo)
+===
+('bim', 'brendel', 'carlini', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047576590441167355
+Average Successful Distance: 0.006293377839028835
+Win 86.08%, lose 12.25% (1.67% ex aequo)
+===
+('bim', 'brendel', 'carlini', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047576590441167355
+Average Successful Distance: 0.006277177948504686
+Win 90.25%, lose 8.87% (0.88% ex aequo)
+===
+('bim', 'brendel', 'deepfool', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.006314740050584078
+Win 50.83%, lose 48.81% (0.35% ex aequo)
+===
+('bim', 'brendel', 'deepfool', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.006323372945189476
+Win 45.87%, lose 52.24% (1.89% ex aequo)
+===
+('bim', 'brendel', 'deepfool', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.006314740516245365
+Win 49.96%, lose 48.81% (1.23% ex aequo)
+===
+('bim', 'brendel', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.005037584807723761
+Average Successful Distance: 0.006581279449164867
+Win 42.01%, lose 57.64% (0.35% ex aequo)
+===
+('bim', 'carlini', 'deepfool', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.006249429192394018
+Win 65.10%, lose 34.46% (0.44% ex aequo)
+===
+('bim', 'carlini', 'deepfool', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.0062542022205889225
+Win 60.23%, lose 37.88% (1.89% ex aequo)
+===
+('bim', 'carlini', 'deepfool', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.0062494296580553055
+Win 64.40%, lose 34.50% (1.10% ex aequo)
+===
+('bim', 'carlini', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004814804997295141
+Average Successful Distance: 0.006298070307821035
+Win 56.28%, lose 43.28% (0.44% ex aequo)
+===
+('bim', 'deepfool', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00481371721252799
+Average Successful Distance: 0.006360839586704969
+Win 16.15%, lose 83.49% (0.35% ex aequo)
+===
+('brendel', 'carlini', 'deepfool', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238862406462431
+Win 95.74%, lose 2.55% (1.71% ex aequo)
+===
+('brendel', 'carlini', 'deepfool', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004724630620330572
+Average Successful Distance: 0.00624800194054842
+Win 92.32%, lose 6.67% (1.01% ex aequo)
+===
+('brendel', 'carlini', 'deepfool', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238862872123718
+Win 95.74%, lose 2.59% (1.67% ex aequo)
+===
+('brendel', 'carlini', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047576590441167355
+Average Successful Distance: 0.006277880631387234
+Win 86.92%, lose 11.37% (1.71% ex aequo)
+===
+('brendel', 'deepfool', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.0063164434395730495
+Win 46.71%, lose 51.36% (1.93% ex aequo)
+===
+('carlini', 'deepfool', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.006249828729778528
+Win 61.06%, lose 37.01% (1.93% ex aequo)
+===
+
+Best pools of size 5 by successful median distance (atol=5e-07):
+('bim', 'brendel', 'carlini', 'deepfool', 'fast_gradient'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006243268493562937
+Win 94.91%, lose 3.42% (1.67% ex aequo)
+===
+('bim', 'brendel', 'carlini', 'deepfool', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238499656319618
+Win 99.08%, lose 0.04% (0.88% ex aequo)
+===
+('bim', 'brendel', 'carlini', 'deepfool', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006243268493562937
+Win 94.86%, lose 3.42% (1.71% ex aequo)
+===
+('brendel', 'carlini', 'deepfool', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238862406462431
+Win 95.74%, lose 2.55% (1.71% ex aequo)
+===
+('brendel', 'carlini', 'deepfool', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238862872123718
+Win 95.74%, lose 2.59% (1.67% ex aequo)
+===
+
+Best pools of size 5 by successful average distance (atol=5e-07):
+('bim', 'brendel', 'carlini', 'deepfool', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238499656319618
+Win 99.08%, lose 0.04% (0.88% ex aequo)
+===
+('brendel', 'carlini', 'deepfool', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238862406462431
+Win 95.74%, lose 2.55% (1.71% ex aequo)
+===
+('brendel', 'carlini', 'deepfool', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238862872123718
+Win 95.74%, lose 2.59% (1.67% ex aequo)
+===
+
+Best pools of size 5 by loose win rate:
+('bim', 'brendel', 'carlini', 'deepfool', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238499656319618
+Win 99.08%, lose 0.04% (0.88% ex aequo)
+===
+==Pool of size 6==
+
+Best pools of size 6 by success rate:
+('bim', 'brendel', 'carlini', 'deepfool', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238499656319618
+Win 100.00%, lose 0.00% (0.00% ex aequo)
+===
+('bim', 'brendel', 'carlini', 'deepfool', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006243268493562937
+Win 94.91%, lose 3.42% (1.67% ex aequo)
+===
+('bim', 'brendel', 'carlini', 'deepfool', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238499656319618
+Win 99.08%, lose 0.04% (0.88% ex aequo)
+===
+('bim', 'brendel', 'carlini', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047576590441167355
+Average Successful Distance: 0.006277177948504686
+Win 91.18%, lose 8.82% (0.00% ex aequo)
+===
+('bim', 'brendel', 'deepfool', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.00477859890088439
+Average Successful Distance: 0.006314740050584078
+Win 50.83%, lose 48.81% (0.35% ex aequo)
+===
+('bim', 'carlini', 'deepfool', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.004739874508231878
+Average Successful Distance: 0.006249429192394018
+Win 65.10%, lose 34.46% (0.44% ex aequo)
+===
+('brendel', 'carlini', 'deepfool', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238862406462431
+Win 95.74%, lose 2.55% (1.71% ex aequo)
+===
+
+Best pools of size 6 by successful median distance (atol=5e-07):
+('bim', 'brendel', 'carlini', 'deepfool', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238499656319618
+Win 100.00%, lose 0.00% (0.00% ex aequo)
+===
+('bim', 'brendel', 'carlini', 'deepfool', 'fast_gradient', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006243268493562937
+Win 94.91%, lose 3.42% (1.67% ex aequo)
+===
+('bim', 'brendel', 'carlini', 'deepfool', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238499656319618
+Win 99.08%, lose 0.04% (0.88% ex aequo)
+===
+('brendel', 'carlini', 'deepfool', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238862406462431
+Win 95.74%, lose 2.55% (1.71% ex aequo)
+===
+
+Best pools of size 6 by successful average distance (atol=5e-07):
+('bim', 'brendel', 'carlini', 'deepfool', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238499656319618
+Win 100.00%, lose 0.00% (0.00% ex aequo)
+===
+('bim', 'brendel', 'carlini', 'deepfool', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238499656319618
+Win 99.08%, lose 0.04% (0.88% ex aequo)
+===
+('brendel', 'carlini', 'deepfool', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238862406462431
+Win 95.74%, lose 2.55% (1.71% ex aequo)
+===
+
+Best pools of size 6 by loose win rate:
+('bim', 'brendel', 'carlini', 'deepfool', 'fast_gradient', 'pgd'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238499656319618
+Win 100.00%, lose 0.00% (0.00% ex aequo)
+===
+==Pool of size 7==
+
+Best pools of size 7 by success rate:
+('bim', 'brendel', 'carlini', 'deepfool', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238499656319618
+===
+
+Best pools of size 7 by successful median distance (atol=5e-07):
+('bim', 'brendel', 'carlini', 'deepfool', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238499656319618
+===
+
+Best pools of size 7 by successful average distance (atol=5e-07):
+('bim', 'brendel', 'carlini', 'deepfool', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238499656319618
+===
+
+Best pools of size 7 by loose win rate:
+('bim', 'brendel', 'carlini', 'deepfool', 'fast_gradient', 'pgd', 'uniform'):
+Success Rate: 100.00%
+Median Successful Distance: 0.0047216578386723995
+Average Successful Distance: 0.006238499656319618
+===
+===Attack Ranking Stats===
+Attack bim (atol=5e-07):
+The attack is 1°: 2.50%
+The attack is 1° ex aequo: 1.71%
+The attack is 2°: 8.21%
+The attack is 2° ex aequo: 4.52%
+The attack is 3°: 23.05%
+The attack is 3° ex aequo: 11.90%
+The attack is 4°: 29.02%
+The attack is 4° ex aequo: 5.62%
+The attack is 5°: 12.12%
+The attack is 5° ex aequo: 0.88%
+The attack is 6°: 0.48%
+The attack is 6° ex aequo: 0.00%
+The attack is 7°: 0.00%
+The attack is 7° ex aequo: 0.00%
+The attack fails: 0.00%
+
+Attack brendel (atol=5e-07):
+The attack is 1°: 34.37%
+The attack is 1° ex aequo: 0.44%
+The attack is 2°: 6.23%
+The attack is 2° ex aequo: 0.09%
+The attack is 3°: 2.63%
+The attack is 3° ex aequo: 0.00%
+The attack is 4°: 0.75%
+The attack is 4° ex aequo: 0.00%
+The attack is 5°: 1.67%
+The attack is 5° ex aequo: 0.00%
+The attack is 6°: 32.48%
+The attack is 6° ex aequo: 0.00%
+The attack is 7°: 21.33%
+The attack is 7° ex aequo: 0.00%
+The attack fails: 0.00%
+
+Attack carlini (atol=5e-07):
+The attack is 1°: 48.95%
+The attack is 1° ex aequo: 0.35%
+The attack is 2°: 35.43%
+The attack is 2° ex aequo: 0.26%
+The attack is 3°: 4.78%
+The attack is 3° ex aequo: 0.04%
+The attack is 4°: 4.30%
+The attack is 4° ex aequo: 0.09%
+The attack is 5°: 4.13%
+The attack is 5° ex aequo: 0.00%
+The attack is 6°: 1.67%
+The attack is 6° ex aequo: 0.00%
+The attack is 7°: 0.00%
+The attack is 7° ex aequo: 0.00%
+The attack fails: 0.00%
+
+Attack deepfool (atol=5e-07):
+The attack is 1°: 8.82%
+The attack is 1° ex aequo: 0.00%
+The attack is 2°: 34.11%
+The attack is 2° ex aequo: 0.18%
+The attack is 3°: 26.16%
+The attack is 3° ex aequo: 0.13%
+The attack is 4°: 8.87%
+The attack is 4° ex aequo: 0.04%
+The attack is 5°: 10.23%
+The attack is 5° ex aequo: 0.09%
+The attack is 6°: 11.33%
+The attack is 6° ex aequo: 0.00%
+The attack is 7°: 0.04%
+The attack is 7° ex aequo: 0.00%
+The attack fails: 0.00%
+
+Attack fast_gradient (atol=5e-07):
+The attack is 1°: 0.00%
+The attack is 1° ex aequo: 0.88%
+The attack is 2°: 0.04%
+The attack is 2° ex aequo: 1.36%
+The attack is 3°: 5.49%
+The attack is 3° ex aequo: 3.16%
+The attack is 4°: 14.75%
+The attack is 4° ex aequo: 0.66%
+The attack is 5°: 47.32%
+The attack is 5° ex aequo: 0.26%
+The attack is 6°: 26.08%
+The attack is 6° ex aequo: 0.00%
+The attack is 7°: 0.00%
+The attack is 7° ex aequo: 0.00%
+The attack fails: 0.00%
+
+Attack pgd (atol=5e-07):
+The attack is 1°: 3.38%
+The attack is 1° ex aequo: 1.67%
+The attack is 2°: 9.31%
+The attack is 2° ex aequo: 4.52%
+The attack is 3°: 20.19%
+The attack is 3° ex aequo: 11.63%
+The attack is 4°: 22.96%
+The attack is 4° ex aequo: 5.44%
+The attack is 5°: 14.62%
+The attack is 5° ex aequo: 0.92%
+The attack is 6°: 5.36%
+The attack is 6° ex aequo: 0.00%
+The attack is 7°: 0.00%
+The attack is 7° ex aequo: 0.00%
+The attack fails: 0.00%
+
+Attack uniform (atol=5e-07):
+The attack is 1°: 0.00%
+The attack is 1° ex aequo: 0.00%
+The attack is 2°: 0.00%
+The attack is 2° ex aequo: 0.00%
+The attack is 3°: 0.00%
+The attack is 3° ex aequo: 0.00%
+The attack is 4°: 0.00%
+The attack is 4° ex aequo: 0.00%
+The attack is 5°: 0.04%
+The attack is 5° ex aequo: 0.00%
+The attack is 6°: 21.33%
+The attack is 6° ex aequo: 0.00%
+The attack is 7°: 78.62%
+The attack is 7° ex aequo: 0.00%
+The attack fails: 0.00%
+
+
+===One vs One Comparison===
+atol= 5e-07
+bim beats brendel: 56.19%
+bim beats carlini: 13.39%
+bim beats deepfool: 32.05%
+bim beats fast_gradient: 84.28%
+bim beats pgd: 42.84%
+bim beats uniform: 100.00%
+brendel beats bim: 43.59%
+brendel beats carlini: 36.30%
+brendel beats deepfool: 40.91%
+brendel beats fast_gradient: 44.95%
+brendel beats pgd: 43.68%
+brendel beats uniform: 78.67%
+carlini beats bim: 86.26%
+carlini beats brendel: 63.39%
+carlini beats deepfool: 86.96%
+carlini beats fast_gradient: 93.50%
+carlini beats pgd: 85.47%
+carlini beats uniform: 100.00%
+deepfool beats bim: 67.82%
+deepfool beats brendel: 59.09%
+deepfool beats carlini: 13.04%
+deepfool beats fast_gradient: 80.47%
+deepfool beats pgd: 67.30%
+deepfool beats uniform: 99.91%
+fast_gradient beats bim: 9.92%
+fast_gradient beats brendel: 54.83%
+fast_gradient beats carlini: 6.32%
+fast_gradient beats deepfool: 19.36%
+fast_gradient beats pgd: 12.34%
+fast_gradient beats uniform: 100.00%
+pgd beats bim: 33.32%
+pgd beats brendel: 56.10%
+pgd beats carlini: 14.31%
+pgd beats deepfool: 32.40%
+pgd beats fast_gradient: 82.44%
+pgd beats uniform: 100.00%
+uniform beats bim: 0.00%
+uniform beats brendel: 21.33%
+uniform beats carlini: 0.00%
+uniform beats deepfool: 0.09%
+uniform beats fast_gradient: 0.00%
+uniform beats pgd: 0.00%
+
+
+
+

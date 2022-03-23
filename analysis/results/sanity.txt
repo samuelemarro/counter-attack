@@ -1,0 +1,710 @@
+================================================================================
+mnist a standard
+================================================================================
+Loading MIP dataset...
+Done.
+Loading comparison dataset...
+Done.
+Comparison success rate:
+bim : 100.0%
+brendel : 100.0%
+deepfool : 100.0%
+fast_gradient : 100.0%
+pgd : 100.0%
+uniform : 99.95610184372256%
+carlini : 100.0%
+Gurobi success rate: 99.47322212467077%
+Gurobi bounds rate: 99.47322212467077%
+Gurobi optimality rate: 95.39069359086918%
+================================================================================
+Upper higher than lower
+#violations: 0
+Violations:
+================================================================================
+Gurobi upper is best attack
+#violations: 9
+Worst violation: 0.0008571306382938737
+Worst violation (%): 1.0444241142933506
+================================================================================
+Gurobi upper is best attack (optimal only)
+#violations: 6
+Worst violation: 7.076288504700989e-06
+Worst violation (%): 0.17665392031942023
+================================================================================
+Gurobi lower is best attack
+#violations: 0
+Violations:
+
+
+
+
+================================================================================
+mnist b standard
+================================================================================
+Loading MIP dataset...
+Done.
+Loading comparison dataset...
+Done.
+Comparison success rate:
+bim : 100.0%
+brendel : 100.0%
+deepfool : 100.0%
+fast_gradient : 100.0%
+pgd : 100.0%
+uniform : 100.0%
+carlini : 100.0%
+Gurobi success rate: 99.73427812223207%
+Gurobi bounds rate: 99.73427812223207%
+Gurobi optimality rate: 99.60141718334809%
+================================================================================
+Upper higher than lower
+#violations: 0
+Violations:
+================================================================================
+Gurobi upper is best attack
+#violations: 7
+Worst violation: 4.415503685115119e-06
+Worst violation (%): 0.8153993033881548
+================================================================================
+Gurobi upper is best attack (optimal only)
+#violations: 7
+Worst violation: 4.415503685115119e-06
+Worst violation (%): 0.8153993033881548
+================================================================================
+Gurobi lower is best attack
+#violations: 0
+Violations:
+
+
+
+
+================================================================================
+mnist c standard
+================================================================================
+Loading MIP dataset...
+Done.
+Loading comparison dataset...
+Done.
+Comparison success rate:
+bim : 100.0%
+brendel : 100.0%
+deepfool : 100.0%
+fast_gradient : 100.0%
+pgd : 100.0%
+uniform : 100.0%
+carlini : 100.0%
+Gurobi success rate: 91.37323943661971%
+Gurobi bounds rate: 91.37323943661971%
+Gurobi optimality rate: 82.35035211267606%
+================================================================================
+Upper higher than lower
+#violations: 0
+Violations:
+================================================================================
+Gurobi upper is best attack
+#violations: 1
+Worst violation: 4.5299530029296875e-06
+Worst violation (%): 4.668304668304668
+================================================================================
+Gurobi upper is best attack (optimal only)
+#violations: 1
+Worst violation: 4.5299530029296875e-06
+Worst violation (%): 4.668304668304668
+================================================================================
+Gurobi lower is best attack
+#violations: 0
+Violations:
+
+
+
+
+================================================================================
+mnist a adversarial
+================================================================================
+Loading MIP dataset...
+Done.
+Loading comparison dataset...
+Done.
+Comparison success rate:
+bim : 100.0%
+brendel : 100.0%
+deepfool : 100.0%
+fast_gradient : 100.0%
+pgd : 100.0%
+uniform : 98.11237928007024%
+carlini : 100.0%
+Gurobi success rate: 96.53204565408254%
+Gurobi bounds rate: 96.53204565408254%
+Gurobi optimality rate: 74.58296751536434%
+================================================================================
+Upper higher than lower
+#violations: 0
+Violations:
+================================================================================
+Gurobi upper is best attack
+#violations: 11
+Worst violation: 0.0014131687685465522
+Worst violation (%): 1.0463186834016336
+================================================================================
+Gurobi upper is best attack (optimal only)
+#violations: 1
+Worst violation: 2.3649252274271504e-06
+Worst violation (%): 0.0026226468242304354
+================================================================================
+Gurobi lower is best attack
+#violations: 0
+Violations:
+
+
+
+
+================================================================================
+mnist b adversarial
+================================================================================
+Loading MIP dataset...
+Done.
+Loading comparison dataset...
+Done.
+Comparison success rate:
+bim : 100.0%
+brendel : 100.0%
+deepfool : 100.0%
+fast_gradient : 98.85864793678665%
+pgd : 100.0%
+uniform : 99.91220368744513%
+carlini : 100.0%
+Gurobi success rate: 91.78743961352657%
+Gurobi bounds rate: 91.78743961352657%
+Gurobi optimality rate: 85.7707509881423%
+================================================================================
+Upper higher than lower
+#violations: 0
+Violations:
+================================================================================
+Gurobi upper is best attack
+#violations: 7
+Worst violation: 6.3739560809406015e-06
+Worst violation (%): 0.06590950248361699
+================================================================================
+Gurobi upper is best attack (optimal only)
+#violations: 7
+Worst violation: 6.3739560809406015e-06
+Worst violation (%): 0.06590950248361699
+================================================================================
+Gurobi lower is best attack
+#violations: 0
+Violations:
+
+
+
+
+================================================================================
+mnist c adversarial
+================================================================================
+Loading MIP dataset...
+Done.
+Loading comparison dataset...
+Done.
+Comparison success rate:
+bim : 100.0%
+brendel : 100.0%
+deepfool : 100.0%
+fast_gradient : 98.37576821773486%
+pgd : 100.0%
+uniform : 100.0%
+carlini : 100.0%
+Gurobi success rate: 89.3532776066872%
+Gurobi bounds rate: 89.3532776066872%
+Gurobi optimality rate: 75.58293004839419%
+================================================================================
+Upper higher than lower
+#violations: 0
+Violations:
+================================================================================
+Gurobi upper is best attack
+#violations: 2
+Worst violation: 2.581255535281067e-06
+Worst violation (%): 0.03424956444126548
+================================================================================
+Gurobi upper is best attack (optimal only)
+#violations: 2
+Worst violation: 2.581255535281067e-06
+Worst violation (%): 0.03424956444126548
+================================================================================
+Gurobi lower is best attack
+#violations: 0
+Violations:
+
+
+
+
+================================================================================
+mnist a relu
+================================================================================
+Loading MIP dataset...
+Done.
+Loading comparison dataset...
+Done.
+Comparison success rate:
+bim : 100.0%
+brendel : 100.0%
+deepfool : 100.0%
+fast_gradient : 100.0%
+pgd : 100.0%
+uniform : 96.92712906057946%
+carlini : 100.0%
+Gurobi success rate: 96.57594381035996%
+Gurobi bounds rate: 96.57594381035996%
+Gurobi optimality rate: 86.21597892888498%
+================================================================================
+Upper higher than lower
+#violations: 0
+Violations:
+================================================================================
+Gurobi upper is best attack
+#violations: 7
+Worst violation: 0.002160924888587379
+Worst violation (%): 1.8579749656596711
+================================================================================
+Gurobi upper is best attack (optimal only)
+#violations: 0
+================================================================================
+Gurobi lower is best attack
+#violations: 0
+Violations:
+
+
+
+
+================================================================================
+mnist b relu
+================================================================================
+Loading MIP dataset...
+Done.
+Loading comparison dataset...
+Done.
+Comparison success rate:
+bim : 100.0%
+brendel : 100.0%
+deepfool : 100.0%
+fast_gradient : 99.82440737489026%
+pgd : 100.0%
+uniform : 99.95610184372256%
+carlini : 100.0%
+Gurobi success rate: 98.63736263736264%
+Gurobi bounds rate: 98.63736263736264%
+Gurobi optimality rate: 97.27472527472527%
+================================================================================
+Upper higher than lower
+#violations: 0
+Violations:
+================================================================================
+Gurobi upper is best attack
+#violations: 4
+Worst violation: 9.041557674116518e-06
+Worst violation (%): 0.04352876360598641
+================================================================================
+Gurobi upper is best attack (optimal only)
+#violations: 4
+Worst violation: 9.041557674116518e-06
+Worst violation (%): 0.04352876360598641
+================================================================================
+Gurobi lower is best attack
+#violations: 0
+Violations:
+
+
+
+
+================================================================================
+mnist c relu
+================================================================================
+Loading MIP dataset...
+Done.
+Loading comparison dataset...
+Done.
+Comparison success rate:
+bim : 100.0%
+brendel : 99.95610184372256%
+deepfool : 100.0%
+fast_gradient : 99.95610184372256%
+pgd : 100.0%
+uniform : 100.0%
+carlini : 100.0%
+Gurobi success rate: 97.22833260008798%
+Gurobi bounds rate: 97.22833260008798%
+Gurobi optimality rate: 95.64452265728113%
+================================================================================
+Upper higher than lower
+#violations: 0
+Violations:
+================================================================================
+Gurobi upper is best attack
+#violations: 5
+Worst violation: 7.299270986874107e-06
+Worst violation (%): 0.01917975900287386
+================================================================================
+Gurobi upper is best attack (optimal only)
+#violations: 5
+Worst violation: 7.299270986874107e-06
+Worst violation (%): 0.01917975900287386
+================================================================================
+Gurobi lower is best attack
+#violations: 0
+Violations:
+
+
+
+
+================================================================================
+cifar10 a standard
+================================================================================
+Loading MIP dataset...
+Done.
+Loading comparison dataset...
+Done.
+Comparison success rate:
+bim : 100.0%
+brendel : 100.0%
+carlini : 100.0%
+deepfool : 100.0%
+fast_gradient : 100.0%
+pgd : 100.0%
+uniform : 100.0%
+Gurobi success rate: 97.36263736263736%
+Gurobi bounds rate: 97.36263736263736%
+Gurobi optimality rate: 81.18681318681318%
+================================================================================
+Upper higher than lower
+#violations: 0
+Violations:
+================================================================================
+Gurobi upper is best attack
+#violations: 105
+Worst violation: 8.17448930050149e-06
+Worst violation (%): 0.9708622797290956
+================================================================================
+Gurobi upper is best attack (optimal only)
+#violations: 105
+Worst violation: 8.17448930050149e-06
+Worst violation (%): 0.9708622797290956
+================================================================================
+Gurobi lower is best attack
+#violations: 0
+Violations:
+
+
+
+
+================================================================================
+cifar10 b standard
+================================================================================
+Loading MIP dataset...
+Done.
+Loading comparison dataset...
+Done.
+Comparison success rate:
+bim : 100.0%
+brendel : 100.0%
+carlini : 100.0%
+deepfool : 100.0%
+fast_gradient : 100.0%
+pgd : 100.0%
+uniform : 100.0%
+Gurobi success rate: 98.5513608428446%
+Gurobi bounds rate: 98.5513608428446%
+Gurobi optimality rate: 82.4846356453029%
+================================================================================
+Upper higher than lower
+#violations: 0
+Violations:
+================================================================================
+Gurobi upper is best attack
+#violations: 68
+Worst violation: 0.00017997954018993123
+Worst violation (%): 2.0065425432166486
+================================================================================
+Gurobi upper is best attack (optimal only)
+#violations: 67
+Worst violation: 8.622091258759677e-06
+Worst violation (%): 2.0065425432166486
+================================================================================
+Gurobi lower is best attack
+#violations: 0
+Violations:
+
+
+
+
+================================================================================
+cifar10 c standard
+================================================================================
+Loading MIP dataset...
+Done.
+Loading comparison dataset...
+Done.
+Comparison success rate:
+bim : 100.0%
+brendel : 100.0%
+carlini : 100.0%
+deepfool : 100.0%
+fast_gradient : 100.0%
+pgd : 100.0%
+uniform : 100.0%
+Gurobi success rate: 99.34152765583846%
+Gurobi bounds rate: 99.34152765583846%
+Gurobi optimality rate: 92.756804214223%
+================================================================================
+Upper higher than lower
+#violations: 0
+Violations:
+================================================================================
+Gurobi upper is best attack
+#violations: 38
+Worst violation: 6.693824254242874e-06
+Worst violation (%): 0.9886038962027565
+================================================================================
+Gurobi upper is best attack (optimal only)
+#violations: 38
+Worst violation: 6.693824254242874e-06
+Worst violation (%): 0.9886038962027565
+================================================================================
+Gurobi lower is best attack
+#violations: 0
+Violations:
+
+
+
+
+================================================================================
+cifar10 a adversarial
+================================================================================
+Loading MIP dataset...
+Done.
+Loading comparison dataset...
+Done.
+Comparison success rate:
+bim : 93.50307287093942%
+brendel : 100.0%
+carlini : 99.95610184372256%
+deepfool : 100.0%
+fast_gradient : 100.0%
+pgd : 100.0%
+uniform : 100.0%
+Gurobi success rate: 96.31093544137023%
+Gurobi bounds rate: 96.31093544137023%
+Gurobi optimality rate: 56.302151954325865%
+================================================================================
+Upper higher than lower
+#violations: 0
+Violations:
+================================================================================
+Gurobi upper is best attack
+#violations: 61
+Worst violation: 0.0031568388004894893
+Worst violation (%): 6.835280865434372
+================================================================================
+Gurobi upper is best attack (optimal only)
+#violations: 50
+Worst violation: 7.921329956057845e-06
+Worst violation (%): 2.908057320437827
+================================================================================
+Gurobi lower is best attack
+#violations: 0
+Violations:
+
+
+
+
+================================================================================
+cifar10 b adversarial
+================================================================================
+Loading MIP dataset...
+Done.
+Loading comparison dataset...
+Done.
+Comparison success rate:
+bim : 93.8076416337286%
+brendel : 100.0%
+carlini : 99.95608256477821%
+deepfool : 100.0%
+fast_gradient : 100.0%
+pgd : 100.0%
+uniform : 100.0%
+Gurobi success rate: 97.32103645147123%
+Gurobi bounds rate: 97.32103645147123%
+Gurobi optimality rate: 58.8054457619675%
+================================================================================
+Upper higher than lower
+#violations: 0
+Violations:
+================================================================================
+Gurobi upper is best attack
+#violations: 43
+Worst violation: 0.009916649684458281
+Worst violation (%): 16.950594291598783
+================================================================================
+Gurobi upper is best attack (optimal only)
+#violations: 37
+Worst violation: 7.931106171059658e-06
+Worst violation (%): 1.0078589524580628
+================================================================================
+Gurobi lower is best attack
+#violations: 0
+Violations:
+
+
+
+
+================================================================================
+cifar10 c adversarial
+================================================================================
+Loading MIP dataset...
+Done.
+Loading comparison dataset...
+Done.
+Comparison success rate:
+bim : 91.26426690079018%
+brendel : 100.0%
+carlini : 100.0%
+deepfool : 100.0%
+fast_gradient : 100.0%
+pgd : 100.0%
+uniform : 100.0%
+Gurobi success rate: 97.05882352941177%
+Gurobi bounds rate: 97.05882352941177%
+Gurobi optimality rate: 81.69446883230904%
+================================================================================
+Upper higher than lower
+#violations: 0
+Violations:
+================================================================================
+Gurobi upper is best attack
+#violations: 21
+Worst violation: 0.003641037401584779
+Worst violation (%): 8.27272637263613
+================================================================================
+Gurobi upper is best attack (optimal only)
+#violations: 19
+Worst violation: 6.937476162784811e-06
+Worst violation (%): 0.5917020556871508
+================================================================================
+Gurobi lower is best attack
+#violations: 0
+Violations:
+
+
+
+
+================================================================================
+cifar10 a relu
+================================================================================
+Loading MIP dataset...
+Done.
+Loading comparison dataset...
+Done.
+Comparison success rate:
+bim : 82.66022827041265%
+brendel : 100.0%
+carlini : 100.0%
+deepfool : 100.0%
+fast_gradient : 100.0%
+pgd : 100.0%
+uniform : 99.95610184372256%
+Gurobi success rate: 100.0%
+Gurobi bounds rate: 100.0%
+Gurobi optimality rate: 100.0%
+================================================================================
+Upper higher than lower
+#violations: 0
+Violations:
+================================================================================
+Gurobi upper is best attack
+#violations: 0
+================================================================================
+Gurobi upper is best attack (optimal only)
+#violations: 0
+================================================================================
+Gurobi lower is best attack
+#violations: 0
+Violations:
+
+
+
+
+================================================================================
+cifar10 b relu
+================================================================================
+Loading MIP dataset...
+Done.
+Loading comparison dataset...
+Done.
+Comparison success rate:
+bim : 86.17208077260756%
+brendel : 100.0%
+carlini : 99.95610184372256%
+deepfool : 100.0%
+fast_gradient : 100.0%
+pgd : 100.0%
+uniform : 100.0%
+Gurobi success rate: 100.0%
+Gurobi bounds rate: 100.0%
+Gurobi optimality rate: 100.0%
+================================================================================
+Upper higher than lower
+#violations: 0
+Violations:
+================================================================================
+Gurobi upper is best attack
+#violations: 9
+Worst violation: 8.405061672274883e-06
+Worst violation (%): 1.0395384774477434
+================================================================================
+Gurobi upper is best attack (optimal only)
+#violations: 9
+Worst violation: 8.405061672274883e-06
+Worst violation (%): 1.0395384774477434
+================================================================================
+Gurobi lower is best attack
+#violations: 0
+Violations:
+
+
+
+
+================================================================================
+cifar10 c relu
+================================================================================
+Loading MIP dataset...
+Done.
+Loading comparison dataset...
+Done.
+Comparison success rate:
+bim : 78.79719051799825%
+brendel : 100.0%
+carlini : 100.0%
+deepfool : 100.0%
+fast_gradient : 100.0%
+pgd : 100.0%
+uniform : 99.95610184372256%
+Gurobi success rate: 100.0%
+Gurobi bounds rate: 100.0%
+Gurobi optimality rate: 100.0%
+================================================================================
+Upper higher than lower
+#violations: 0
+Violations:
+================================================================================
+Gurobi upper is best attack
+#violations: 0
+================================================================================
+Gurobi upper is best attack (optimal only)
+#violations: 0
+================================================================================
+Gurobi lower is best attack
+#violations: 0
+Violations:
+
+
+
+
