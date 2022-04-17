@@ -95,9 +95,16 @@ def compare(**kwargs):
             attack_name, kwargs['domain'], p, 'standard', model, attack_config, device, seed=kwargs['seed'])
         attacks.append(attack)
 
+    if kwargs['indices_path'] is None:
+        start = kwargs['start']
+        stop = kwargs['stop']
+    else:
+        start = None
+        stop = None
+
     result_dataset = tests.multiple_attack_test(model, attack_names, attacks, dataloader, p,
                                                 kwargs['misclassification_policy'], device,
-                                                attack_config, dataset.start, dataset.stop,
+                                                attack_config, start, stop,
                                                 kwargs, indices_override=indices_override)
 
     if not kwargs['no_stats']:
