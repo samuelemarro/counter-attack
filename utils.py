@@ -14,7 +14,7 @@ import torch.cuda
 logger = logging.getLogger(__name__)
 
 
-def save_zip(obj, path, protocol=0):
+def save_zip(obj, path, protocol=4):
     """
     Saves a compressed object to disk.
     """
@@ -22,8 +22,7 @@ def save_zip(obj, path, protocol=0):
     Path(path).parent.mkdir(parents=True, exist_ok=True)
 
     file = gzip.GzipFile(path, 'wb')
-    pickled = pickle.dumps(obj, protocol)
-    file.write(pickled)
+    pickle.dump(obj, file, protocol)
     file.close()
 
 
@@ -32,13 +31,7 @@ def load_zip(path):
     Loads a compressed object from disk.
     """
     file = gzip.GzipFile(path, 'rb')
-    buffer = b''
-    while True:
-        data = file.read()
-        if data == b'':
-            break
-        buffer += data
-    obj = pickle.loads(buffer)
+    obj = pickle.load(file)
     file.close()
     return obj
 
