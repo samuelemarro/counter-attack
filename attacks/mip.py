@@ -40,7 +40,7 @@ GUROBI_MODEL_ATTRIBUTES = [
     ('ModelName', 'string'),
     ('ModelSense', 'int'),
     ('ObjCon', 'double'),
-    ('Fingerprint', 'int'),
+    # ('Fingerprint', 'int'),
     ('ObjVal', 'double'),
     ('ObjBound', 'double'),
     ('ObjBoundC', 'double'),
