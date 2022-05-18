@@ -3,8 +3,6 @@
 Counter-Attack (also known as DL-VAX) is an adversarial defense that uses adversarial attacks to identify adversarial examples.
 It is a continuation of [counter-attack-legacy](https://github.com/samuelemarro/counter-attack-legacy).
 
-This project is currently in development, so new updates might likely break existing workflows.
-
 # Installing
 
 * `git clone https://github.com/samuelemarro/counter-attack`
