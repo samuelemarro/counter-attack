@@ -15,8 +15,6 @@ class Detector(torch.nn.Module):
     def forward(self, x):
         raise NotImplementedError
 
-# TODO: Come si deve comportare CA in caso di fallimento???
-
 
 class CounterAttackDetector(Detector):
     def __init__(self, attack, model, p):
@@ -26,10 +24,8 @@ class CounterAttackDetector(Detector):
         self.p = p
 
     def forward(self, x):
-        # Importante, altrimenti rischia di portare i gradienti dell'attacco fuori dal suo contesto
         x = x.detach().clone()
         with torch.enable_grad():
-            # Nota l'assenza di y=
             adversarials = self.attack.perturb(x).detach()
         adversarials = adversarials.detach()
 
@@ -43,12 +39,8 @@ class CounterAttackDetector(Detector):
         successful = utils.misclassified(
             self.model, adversarials, labels, False).detach()
 
-        # TODO: Testare
-        # Comportamento attuale: Accetta quando fallisci (dà problemi perché uso inf)
-        # distances[~successful] = np.inf
         distances[~successful] = 10000
 
-        # Distanza alta = bassa probabilità che sia un adversarial
         return -distances
 
 
