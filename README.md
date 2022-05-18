@@ -1,11 +1,11 @@
 # Counter-Attack
 
-Counter-Attack (also known as DL-VAX) is an adversarial defense that uses adversarial attacks to identify adversarial examples.
+Counter-Attack (also known as DL-VAX) is an adversarial metadefense that uses adversarial attacks to identify non-robust inputs.
 It is a continuation of [counter-attack-legacy](https://github.com/samuelemarro/counter-attack-legacy).
 
 # Installing
 
-* `git clone https://github.com/samuelemarro/counter-attack`
+* Clone this repo
 * `cd counter-attack`
 * `pip install -r requirements.txt` or `conda install -r requirements.txt`
 * For CUDA support, install a CUDA-compatible PyTorch version following the instructions [here](https://pytorch.org/get-started)
