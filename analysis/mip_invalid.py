@@ -48,8 +48,11 @@ def main(domain, parameter_set, atol, rtol, test_override):
 
             valid_rate = num_valid_inputs / len(approximations)
 
+            print(f'{domain}-{architecture}-{test}: {valid_rate*100:.2f}%')
+
             all_valid_rates.append(valid_rate)
 
+    print('=' * 80)
     print('Valid rate:')
     print(np.mean(all_valid_rates))
     print('Invalid rate:')

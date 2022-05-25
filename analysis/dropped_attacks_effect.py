@@ -9,9 +9,12 @@ import click
 import numpy as np
 import scipy.stats
 
+import utils
+
 EIGHT_BIT_DISTANCE = 1/255
 
 ATTACK_NAME_TO_DISPLAY_NAME = {
+    'none': 'None',
     'bim': 'BIM',
     'brendel': 'B\\&B',
     'carlini': 'C\\&W',
@@ -73,7 +76,7 @@ def get_r2(domain, parameter_set, atol, rtol, test_override, attacks):
                 average_target = np.average(target_distances)
                 average_approximation = np.average(approximation_distances)
                 difference_between_averages = (average_approximation - average_target) / average_target
-                _, _, r_value, _, _ = scipy.stats.linregress(target_distances, approximation_distances)
+                slope, intercept, r_value, p_value, std_err = scipy.stats.linregress(target_distances, approximation_distances)
                 num_difference_below_eight_bit = len([target_distance for target_distance, approximation_distance in zip(target_distances, approximation_distances) \
                     if np.abs(target_distance - approximation_distance) < EIGHT_BIT_DISTANCE])
             
@@ -91,6 +94,8 @@ def pool_selector(pool):
     (success_mean, _), (_, _), (r2_mean, _), (_, _) = pool
     return (success_mean, r2_mean)
 
+ALL_ATTACKS = ['bim', 'brendel', 'carlini', 'deepfool', 'fast_gradient', 'pgd', 'uniform']
+
 @click.command()
 @click.argument('domain')
 @click.argument('parameter_set')
@@ -98,16 +103,17 @@ def pool_selector(pool):
 @click.argument('rtol', type=float)
 @click.option('--test-override', type=str, default=None)
 def main(domain, parameter_set, atol, rtol, test_override):
-    csv = 'Attack,Success Rate,Difference,\% Below 1/255,$R^2$\n'
+    csv = 'Dropped Attack,Success Rate,Difference,\% Below 1/255,$R^2$\n'
 
-    for attack in ['bim', 'brendel', 'carlini', 'deepfool', 'fast_gradient', 'pgd', 'uniform']:
-        pool_result = get_r2(domain, parameter_set, atol, rtol, test_override, [attack])
+    for attack in ['none'] + ALL_ATTACKS:
+        remaining_attacks = [a for a in ALL_ATTACKS if a != attack]
+        pool_result = get_r2(domain, parameter_set, atol, rtol, test_override, remaining_attacks)
 
         (success_rate_mean, success_rate_std), (difference_mean, difference_std), (r2_mean, r2_std), (below_eight_mean, below_eight_std) = pool_result
 
         csv += f'{ATTACK_NAME_TO_DISPLAY_NAME[attack]},{success_rate_mean * 100:.2f}\\textpm{success_rate_std * 100:.2f}\%,{difference_mean * 100:.2f}\\textpm{difference_std * 100:.2f}\%,{below_eight_mean * 100:.2f}\\textpm{below_eight_std * 100:.2f}\%,{r2_mean:.3f}\\textpm{r2_std:.3f}\n'
 
-    csv_path = f'analysis/individual-attacks/{domain}-{parameter_set}.csv'
+    csv_path = f'analysis/dropped-attacks/{domain}-{parameter_set}.csv'
 
     Path(csv_path).parent.mkdir(parents=True, exist_ok=True)
 

@@ -46,7 +46,7 @@ def main(domain, architecture, test, parameter_set, atol, rtol):
         best_distance = min(valid_distances)
         csv += f'{upper};{best_distance}\n'
 
-    csv_path = f'analysis/distances/{parameter_set}/csv/{domain}-{architecture}-{test}.csv'
+    csv_path = f'analysis/distances/{parameter_set}/csv/{domain}-{architecture}-{test}-{parameter_set}.csv'
 
     Path(csv_path).parent.mkdir(parents=True, exist_ok=True)
 
