@@ -1,0 +1,9 @@
+Dropped Attack,Success Rate,Difference,\% Below 1/255,$R^2$
+None,100.00\textpm0.00\%,4.65\textpm2.16\%,77.78\textpm16.08\%,0.990\textpm0.006
+BIM,100.00\textpm0.00\%,5.13\textpm2.27\%,76.14\textpm15.98\%,0.988\textpm0.007
+B\&B,100.00\textpm0.00\%,7.93\textpm3.69\%,60.79\textpm25.99\%,0.987\textpm0.006
+C\&W,100.00\textpm0.00\%,4.93\textpm2.22\%,77.05\textpm15.96\%,0.988\textpm0.006
+Deepfool,100.00\textpm0.00\%,5.03\textpm2.14\%,76.34\textpm16.36\%,0.988\textpm0.005
+FGSM,100.00\textpm0.00\%,4.65\textpm2.16\%,77.78\textpm16.08\%,0.990\textpm0.006
+PGD,100.00\textpm0.00\%,4.85\textpm2.10\%,77.33\textpm15.85\%,0.989\textpm0.005
+Uniform,100.00\textpm0.00\%,4.65\textpm2.16\%,77.78\textpm16.08\%,0.990\textpm0.006

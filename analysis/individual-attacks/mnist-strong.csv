@@ -1,0 +1,8 @@
+Attack,Success Rate,Difference,\% Below 1/255,$R^2$
+BIM,100.00\textpm0.00\%,10.90\textpm4.42\%,53.57\textpm28.07\%,0.966\textpm0.012
+B\&B,99.99\textpm0.01\%,18.50\textpm7.09\%,58.78\textpm9.91\%,0.812\textpm0.044
+C\&W,100.00\textpm0.00\%,17.52\textpm2.74\%,48.02\textpm21.28\%,0.910\textpm0.024
+Deepfool,100.00\textpm0.00\%,21.59\textpm7.73\%,44.15\textpm20.02\%,0.923\textpm0.027
+FGSM,99.72\textpm0.51\%,44.43\textpm15.76\%,28.20\textpm17.30\%,0.761\textpm0.132
+PGD,100.00\textpm0.00\%,10.98\textpm4.41\%,51.83\textpm27.78\%,0.975\textpm0.010
+Uniform,99.52\textpm0.91\%,414.47\textpm140.54\%,0.82\textpm0.55\%,0.623\textpm0.138

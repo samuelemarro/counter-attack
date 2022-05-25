@@ -1,0 +1,8 @@
+Size,Attacks,Success Rate,Difference,\% Below 1/255,$R^2$
+1,BIM,100.00\textpm0.00\%,11.72\textpm4.18\%,50.92\textpm26.43\%,0.965\textpm0.010
+2,BIM? B\&B,100.00\textpm0.00\%,6.11\textpm2.28\%,73.23\textpm15.90\%,0.980\textpm0.007
+3,BIM? B\&B? C\&W,100.00\textpm0.00\%,5.29\textpm2.06\%,75.72\textpm16.10\%,0.986\textpm0.005
+4,BIM? B\&B? C\&W? Deepfool,100.00\textpm0.00\%,4.85\textpm2.10\%,77.33\textpm15.85\%,0.989\textpm0.005
+5,BIM? B\&B? C\&W? Deepfool? PGD,100.00\textpm0.00\%,4.65\textpm2.16\%,77.78\textpm16.08\%,0.990\textpm0.006
+6,BIM? B\&B? C\&W? Deepfool? FGSM? PGD,100.00\textpm0.00\%,4.65\textpm2.16\%,77.78\textpm16.08\%,0.990\textpm0.006
+7,BIM? B\&B? C\&W? Deepfool? FGSM? PGD? Uniform noise,100.00\textpm0.00\%,4.65\textpm2.16\%,77.78\textpm16.08\%,0.990\textpm0.006

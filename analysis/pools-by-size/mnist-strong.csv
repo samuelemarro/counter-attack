@@ -1,0 +1,8 @@
+Pool Size,Attacks,Success Rate,Average Difference,\% Below 1/255,$R^2$
+1,PGD,100.00\textpm0.00\%,10.98\textpm4.41\%,51.83\textpm27.78\%,0.975\textpm0.010
+2,C\&W? PGD,100.00\textpm0.00\%,7.99\textpm3.31\%,60.68\textpm25.43\%,0.986\textpm0.005
+3,B\&B? C\&W? PGD,100.00\textpm0.00\%,4.71\textpm1.97\%,77.97\textpm15.52\%,0.989\textpm0.004
+4,B\&B? C\&W? Deepfool? PGD,100.00\textpm0.00\%,4.36\textpm2.03\%,79.02\textpm15.62\%,0.991\textpm0.005
+5,BIM? B\&B? C\&W? Deepfool? PGD,100.00\textpm0.00\%,4.09\textpm2.02\%,79.81\textpm15.70\%,0.992\textpm0.005
+6,BIM? B\&B? C\&W? Deepfool? FGSM? PGD,100.00\textpm0.00\%,4.09\textpm2.02\%,79.81\textpm15.70\%,0.992\textpm0.005
+7,BIM? B\&B? C\&W? Deepfool? FGSM? PGD? Uniform noise,100.00\textpm0.00\%,4.09\textpm2.02\%,79.81\textpm15.70\%,0.992\textpm0.005
