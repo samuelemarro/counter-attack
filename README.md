@@ -42,6 +42,12 @@ The adversarial examples are available anonymously at the following links:
 - [Heuristic Strong](https://figshare.com/s/b4841d9fa2d8e79af1d7)
 - [Heuristic Balanced](https://figshare.com/s/17130277649b015f492d)
 
+The datasets can be loaded as follows:
+```
+import utils
+dataset = utils.load_zip('/path/to/the/dataset.zip')
+```
+
 ## UG100 Distances
 For ease of study, we also include the distances of the adversarial examples in JSON format. They can be found in ./analysis/distances.
 
