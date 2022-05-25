@@ -27,11 +27,12 @@ def run_and_log(command, log_file):
 @click.argument('domain', type=click.Choice(['cifar10', 'mnist']))
 @click.argument('architecture', type=click.Choice(['a', 'b', 'c']))
 @click.argument('test_name', type=click.Choice(['standard', 'adversarial', 'relu']))
+@click.argument('parameter_set', type=click.Choice(['original', 'default'])) # Original: the one used for the MIP results in the paper; default: the one used for the attack study in the paper
 @click.argument('start', type=click.IntRange(0, None))
 @click.argument('stop', type=click.IntRange(1, None))
 @click.option('--log-dir', type=click.Path(file_okay=False, dir_okay=True), default='logs')
 @click.option('--no-log', is_flag=True)
-def main(domain, architecture, test_name, start, stop, log_dir, no_log):
+def main(domain, architecture, test_name, parameter_set, start, stop, log_dir, no_log):
     assert stop > start
 
     create_logs = not no_log
@@ -55,6 +56,11 @@ def main(domain, architecture, test_name, start, stop, log_dir, no_log):
     misclassification_policy = 'use_predicted'
     no_stats_argument = '--no-stats'
 
+    if parameter_set == 'original':
+        parameter_set_path = 'original_mip_attack_configuration.cfg'
+    else:
+        parameter_set_path = 'default_attack_configuration.cfg'
+
     if test_name == 'relu':
         state_dict_path = f'trained-models/classifiers/{test_name}/relu-pruned/{domain}-{architecture}.pth'
         masked_relu_argument = '--masked-relu'
@@ -77,6 +83,7 @@ def main(domain, architecture, test_name, start, stop, log_dir, no_log):
         compare_command += f'--misclassification-policy {misclassification_policy} {no_stats_argument} '
         compare_command += f'--start {start} --stop {stop} --save-to {compare_results_path} '
         compare_command += f'--deterministic --seed {seed} '
+        compare_command += f'--attack-config-file {parameter_set_path} '
 
         print(f'Compare | Running command\n{compare_command}')
 
