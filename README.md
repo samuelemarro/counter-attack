@@ -2,6 +2,7 @@
 
 Counter-Attack (also known as DL-VAX) is an adversarial metadefense that uses adversarial attacks to identify non-robust inputs.
 It is a continuation of [counter-attack-legacy](https://github.com/samuelemarro/counter-attack-legacy).
+Counter-Attack is the companion code of the paper "Asymmetries in Adversarial Settings", currently under double-blind review at NeurIPS 2022.
 
 # Installing
 
@@ -47,6 +48,10 @@ The datasets can be loaded as follows:
 import utils
 dataset = utils.load_zip('/path/to/the/dataset.zip')
 ```
+
+## MNIST and CIFAR10 Indices
+
+The chosen indices for UG100 are reported in mnist_indices_intersection.json and cifar10_indices_intersection.json.
 
 ## UG100 Distances
 For ease of study, we also include the distances of the adversarial examples in JSON format. They can be found in ./analysis/distances.
