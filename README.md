@@ -10,7 +10,7 @@ Counter-Attack is the companion code of the paper "Asymmetries in Adversarial Se
 * `cd counter-attack`
 * `pip install -r requirements.txt` or `conda install -r requirements.txt`
 * For CUDA support, install a CUDA-compatible PyTorch version following the instructions [here](https://pytorch.org/get-started)
-* For MIP support, install [MipVerify.jl v0.2.2](https://github.com/vtjeng/MIPVerify.jl) and [Gurobi](https://www.gurobi.com/)
+* For MIP support, install [MipVerify.jl v0.2.2](https://github.com/vtjeng/MIPVerify.jl) and [Gurobi](https://www.gurobi.com/). All package versions are reported in version_info.txt
 
 # Running
 
