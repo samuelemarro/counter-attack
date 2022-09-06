@@ -32,6 +32,13 @@ class BestSampleWrapper(nn.Module):
         self.model = model
         self.training = model.training
         self.tracker = None
+    
+    def successful(self, outputs, relevant_labels):
+        adversarial_labels = torch.argmax(outputs, dim=1)
+        if self.tracker.targeted:
+            return torch.eq(adversarial_labels, relevant_labels)
+        else:
+            return ~torch.eq(adversarial_labels, relevant_labels)
 
     def forward(self, x, active_mask=None, filter_=None):
         if self.tracker is None:
@@ -59,11 +66,7 @@ class BestSampleWrapper(nn.Module):
             # x doesn't need to be masked, since len(x) == torch.count_nonzero(active_mask)
 
         with torch.no_grad():
-            adversarial_labels = torch.argmax(outputs, dim=1)
-            if self.tracker.targeted:
-                successful = torch.eq(adversarial_labels, relevant_labels)
-            else:
-                successful = ~torch.eq(adversarial_labels, relevant_labels)
+            successful = self.successful(outputs, relevant_labels)
 
             distances = utils.adversarial_distance(
                 relevant_genuines, x, self.tracker.p)
