@@ -146,8 +146,9 @@ class BrendelBethgeAttack(FoolboxAttackWrapper):
                 # to initialize the unsuccessful starting_points
                 fallback = ~self.successful(starting_points, y)
 
-                fallback_adversarials = self.run_init_attack(x[fallback], y[fallback])
-                starting_points[fallback] = fallback_adversarials
+                # We attack all samples to avoid issues during best sample tracking
+                fallback_adversarials = self.run_init_attack(x, y)
+                starting_points[fallback] = fallback_adversarials[fallback]
 
             successful_starting = self.successful(starting_points, y)
 
