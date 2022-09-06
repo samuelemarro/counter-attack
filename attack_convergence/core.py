@@ -103,11 +103,11 @@ class ConvergenceWrapper(nn.Module):
                 utils.replace_active(distances, self.tracker.best_distances, active_mask, replace)
                 self.tracker.found_adversarial[active_mask] = new_found_adversarial
 
-            if force_track or self.tracker.counter >= self.stop or self.tracker.counter == 1 or (self.tracker.counter % self.track_every == 0):
+            if force_track or (self.stop is not None and self.tracker.counter >= self.stop) or self.tracker.counter == 1 or (self.tracker.counter % self.track_every == 0):
                 # print(self.tracker.counter % self.track_every)
                 self.tracker.stats.append((self.tracker.counter, self.tracker.found_adversarial.detach().cpu(), self.tracker.best_distances.detach().cpu()))
 
-            if self.tracker.counter >= self.stop:
+            if self.stop is not None and self.tracker.counter >= self.stop:
                 raise AttackStopException()
 
         return outputs
