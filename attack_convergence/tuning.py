@@ -127,30 +127,23 @@ def generate_overrides():
 
     brendel_overrides = []
     for steps in [10, 50, 100, 200, 500]:
-        for lr in [1e-2, 1e-3, 1e-4, 1e-5]:
+        for lr in [1e-1, 1e-2, 1e-3, 1e-4, 1e-5]:
             for lr_num_decay in [25, 50, 100]:
                 for momentum in [0, 0.5, 0.8]:
                     for binary_search_steps in [5, 10, 15]:
-                        brendel_overrides.append({
-                            'steps' : steps,
-                            'lr' : lr,
-                            'lr_num_decay' : lr_num_decay,
-                            'momentum' : momentum,
-                            'binary_search_steps' : binary_search_steps
-                        })
-    # Extra sets
-    for steps in [10, 50, 100, 200, 500]:
-        for lr in [1e-1]:
-            for lr_num_decay in [25, 50, 100]:
-                for momentum in [0, 0.5, 0.8]:
-                    for binary_search_steps in [5, 10, 15]:
-                        brendel_overrides.append({
-                            'steps' : steps,
-                            'lr' : lr,
-                            'lr_num_decay' : lr_num_decay,
-                            'momentum' : momentum,
-                            'binary_search_steps' : binary_search_steps
-                        })
+                        for initialization_attempts in [1, 5, 10]:
+                            for init_directions in [1, 10, 100, 1000]:
+                                for init_steps in [1, 10, 100, 1000]:
+                                    brendel_overrides.append({
+                                        'steps' : steps,
+                                        'lr' : lr,
+                                        'lr_num_decay' : lr_num_decay,
+                                        'momentum' : momentum,
+                                        'binary_search_steps' : binary_search_steps,
+                                        'initialization_attempts' : initialization_attempts,
+                                        'init_directions' : init_directions,
+                                        'init_steps' : init_steps
+                                    })
     all_overrides['brendel'] = brendel_overrides
 
     carlini_overrides = []

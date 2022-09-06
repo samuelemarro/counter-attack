@@ -66,7 +66,9 @@ class BrendelBethgeAttack(FoolboxAttackWrapper):
             momentum: float = 0.8,
             tensorboard: Union[Literal[False], None, str] = False,
             binary_search_steps: int = 10,
-            initialization_attempts = 10):
+            initialization_attempts = 10,
+            init_directions = 1000,
+            init_steps = 1000):
     
         self.init_attack = init_attack
         self.initialization_attempts = initialization_attempts
@@ -100,6 +102,9 @@ class BrendelBethgeAttack(FoolboxAttackWrapper):
         super().__init__(model, foolbox_attack, targeted,
                          clip_min=clip_min, clip_max=clip_max)
 
+        self.init_directions = init_directions
+        self.init_steps = init_steps
+
     def successful(self, x, y):
         same_label = torch.eq(torch.argmax(self.foolbox_model(x), dim=1), y)
 
@@ -114,7 +119,7 @@ class BrendelBethgeAttack(FoolboxAttackWrapper):
         if self.init_attack is None:
             # BrendelBethge's default init_attack is LinearSearchBlendedUniformNoiseAttack
             # with default parameters.
-            init_attack = fb.attacks.LinearSearchBlendedUniformNoiseAttack()
+            init_attack = fb.attacks.LinearSearchBlendedUniformNoiseAttack(directions=self.init_directions, steps=self.init_steps)
         else:
             init_attack = self.init_attack
         
