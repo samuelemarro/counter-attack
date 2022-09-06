@@ -14,6 +14,8 @@ import parsing
 import utils
 
 def run_one(domain, model, attack_name, override_number, track_every, attack_config_file, parameter_overrides):
+    utils.set_seed(1) # 0 for tuning, 1 for actual tests
+
     # Prepare the attacks
     stop = 101000
     wrapped_model = ConvergenceWrapper(model, track_every, stop=stop)
@@ -61,8 +63,6 @@ def run_one(domain, model, attack_name, override_number, track_every, attack_con
               'attack configuration.')
 def main(domain, architecture, test_type, track_every, attack_config_file):
     utils.enable_determinism()
-
-    utils.set_seed(1) # 0 for tuning, 1 for actual tests
 
     # Load the model
     if test_type == 'relu':
