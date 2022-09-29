@@ -1,8 +1,7 @@
 # Counter-Attack
 
-Counter-Attack (also known as DL-VAX) is an adversarial metadefense that uses adversarial attacks to identify non-robust inputs.
-It is a continuation of [counter-attack-legacy](https://github.com/samuelemarro/counter-attack-legacy).
-Counter-Attack is the companion code of the paper "Asymmetries in Adversarial Settings", currently under double-blind review at NeurIPS 2022.
+Counter-Attack is an adversarial metadefense that uses adversarial attacks to identify non-robust inputs.
+This repo is the companion code of the paper "Countering the Attack-Defense Complexity Gap for Robust Classifiers".
 
 # Installing
 
