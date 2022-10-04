@@ -32,7 +32,7 @@ class ConvergenceTracker:
             [len(genuines)], device=genuines.device, dtype=genuines.dtype)
         self.counter = 0
         self.stats = []
-
+        self.mask_default = None
 
 class ConvergenceWrapper(nn.Module):
     def __init__(self, model, track_every, stop=None):
@@ -46,6 +46,9 @@ class ConvergenceWrapper(nn.Module):
     def forward(self, x, active_mask=None, filter_=None, force_track=False):
         if self.tracker is None:
             raise RuntimeError('No convergence tracker set.')
+
+        if active_mask is None:
+            active_mask = self.tracker.mask_default
 
         self.tracker.counter += 1
 
@@ -146,10 +149,11 @@ class ConvergenceAttack(attacks.Attack, attacks.LabelMixin):
 
         stats = list(tracker.stats)
         final_stats = tracker.stats[-1]
+        best_adversarials = tracker.best
 
         self.wrapped_model.tracker = None
 
-        return stats, final_stats
+        return stats, final_stats, best_adversarials
 
 class CustomIndexedDataset(torch.utils.data.Dataset):
     def __init__(self, dataset, indices):

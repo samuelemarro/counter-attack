@@ -37,7 +37,7 @@ def run_one(domain, model, attack_config_file, attack_name, parameter_overrides,
     true_labels = true_labels.cuda()
 
     images, true_labels, labels = utils.apply_misclassification_policy(model, images, true_labels, 'use_predicted')
-    stats, (final_step, final_found, final_distances) = attack(images, labels)
+    stats, (final_step, final_found, final_distances), _ = attack(images, labels)
 
     for index in range(num_samples):
         individual_results[index]['final_stats'] = {
@@ -277,6 +277,15 @@ def main(domain, attack_config_file):
 
     pbar = tqdm(all_runs)
     for attack_name, i, overrides in pbar:
+        if attack_name == 'brendel':
+            if overrides['initialization_attempts'] != 1 or overrides['init_directions'] == 1000 or overrides['init_steps'] == 1000 \
+                or overrides['binary_search_steps'] == 15:
+                # Hackish, but preserves parameter numbering
+                continue
+            from random import randint
+            if randint(0, 9) != 0:
+                continue
+
         pbar.set_description(attack_name)
         save_path = f'./attack_convergence/tuning_results/{domain}/{attack_name}/{i}.json'
         if not Path(save_path).exists():
