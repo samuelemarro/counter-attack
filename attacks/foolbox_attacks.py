@@ -70,6 +70,7 @@ class BrendelBethgeAttack(FoolboxAttackWrapper):
             init_directions = 1000,
             init_steps = 1000):
     
+        self.p = p
         self.init_attack = init_attack
         self.initialization_attempts = initialization_attempts
 

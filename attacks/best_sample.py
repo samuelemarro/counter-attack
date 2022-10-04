@@ -107,6 +107,7 @@ class BestSampleAttack(attacks.Attack, attacks.LabelMixin):
         self.inner_attack = inner_attack
         self.p = p
         self.targeted = targeted
+        self.predict = wrapped_model.model
 
     def perturb(self, x, y=None, **kwargs):
         x, y = self._verify_and_process_inputs(x, y)
