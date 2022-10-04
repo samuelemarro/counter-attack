@@ -41,7 +41,9 @@ def main(domain, parameter_set, atol, rtol, test_override):
                 upper = mip_distances[index]['upper']
                 lower = mip_distances[index]['lower']
 
-                if upper is None or lower is None and not (np.abs(upper - lower) <= atol or np.abs((upper - lower) / upper) <= rtol):
+                if upper is None or lower is None:
+                    continue
+                if not (np.abs(upper - lower) <= atol or np.abs((upper - lower) / upper) <= rtol):
                     continue
 
                 num_valid_inputs += 1
