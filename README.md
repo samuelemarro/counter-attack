@@ -1,7 +1,7 @@
 # Counter-Attack
 
 Counter-Attack is an adversarial metadefense that uses adversarial attacks to identify non-robust inputs.
-This repo is the companion code of the paper "Computational Asymmetries in Robust Classification".
+This repo is the companion code of the paper ["Computational Asymmetries in Robust Classification"](https://arxiv.org/abs/2306.14326).
 
 # Installing
 
